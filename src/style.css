@@ -1,0 +1,243 @@
+:root {
+  --black: #000000;
+  --white: #f2f2f2;
+  --gray: #8a8a8a;
+  --dim: #b8b8b8;
+  --serif: "Playfair Display", "Georgia", "Times New Roman", serif;
+  --dot: "DotGothic16", "Courier New", monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: var(--serif);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+.serif {
+  font-family: var(--serif);
+}
+
+.dot {
+  font-family: var(--dot);
+}
+
+/* --- Fixed background canvas --- */
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  display: block;
+}
+
+/* Dim overlay: darkens the clay world behind text */
+#dim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: var(--black);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+/* --- Scroll content --- */
+#scroll {
+  position: relative;
+  z-index: 2;
+}
+
+/* HERO */
+#hero {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.hero-inner {
+  max-width: 820px;
+}
+
+#hero h1 {
+  font-size: clamp(2.5rem, 8vw, 6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+}
+
+#hero .mission {
+  margin-top: 1.6rem;
+  font-size: clamp(1.1rem, 2.6vw, 1.6rem);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--dim);
+}
+
+#cta {
+  margin-top: 2.6rem;
+  padding: 14px 40px;
+  font-family: var(--serif);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: var(--black);
+  background: var(--white);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+#cta:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+}
+
+#cta:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 3px;
+}
+
+#hero .strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  font-size: clamp(0.7rem, 1.6vw, 0.95rem);
+  letter-spacing: 0.14em;
+  color: var(--gray);
+  text-align: center;
+}
+
+/* STORY */
+#story {
+  position: relative;
+  height: 400vh;
+}
+
+.caption {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 760px;
+  width: calc(100% - 48px);
+  text-align: center;
+  font-size: clamp(1.5rem, 4.5vw, 3rem);
+  font-weight: 600;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.caption .kicker {
+  display: block;
+  font-family: var(--dot);
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: var(--gray);
+  margin-bottom: 1rem;
+}
+
+/* TAIL */
+#tail {
+  padding: 80px 24px 0;
+}
+
+.tail-sec {
+  max-width: 720px;
+  margin: 0 auto 72px;
+  text-align: center;
+}
+
+.tail-sec h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.tail-sec p {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: var(--dim);
+  line-height: 1.6;
+}
+
+.tail-sec strong {
+  color: var(--white);
+  font-weight: 600;
+}
+
+.tail-sec a {
+  color: var(--white);
+  text-decoration: underline;
+}
+
+.tail-sec a:hover {
+  color: #ffffff;
+}
+
+#tail footer {
+  text-align: center;
+  padding: 32px 0 48px;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: var(--gray);
+}
+
+/* LOADING */
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--black);
+  color: var(--gray);
+  font-family: var(--dot);
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
+  transition: opacity 0.6s ease;
+}
+
+#loading.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  #cta {
+    transition: none;
+  }
+
+  .caption {
+    transition: none;
+  }
+
+  #loading {
+    transition: none;
+  }
+}

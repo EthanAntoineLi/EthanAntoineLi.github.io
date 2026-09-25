@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Ethan Antoine Li — Rescue Robotics</title>
+    <meta
+      name="description"
+      content="Ethan Antoine Li — student engineer building robots for mountain rescue."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,600&family=DotGothic16&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <div id="dim" aria-hidden="true"></div>
+
+    <div id="scroll">
+      <!-- HERO -->
+      <section id="hero">
+        <div class="hero-inner">
+          <h1 class="serif">Ethan Antoine Li</h1>
+          <p class="mission serif">
+            Why send more people into the same dangerous ground to save someone — why not robots?
+          </p>
+          <button id="cta" type="button">See the system</button>
+          <div class="strip dot">2 PROTOTYPES · 5 DOF · 1 RESCUE MISSION · ∞ QUESTIONS</div>
+        </div>
+      </section>
+
+      <!-- STORY (scroll-driven camera) -->
+      <section id="story" aria-label="The rescue system">
+        <div class="caption serif" id="cap1">
+          <span class="kicker">01 / The arm</span>
+          This is what I designed — a 5-DOF robotic arm.
+        </div>
+        <div class="caption serif" id="cap2">
+          <span class="kicker">02 / The drone</span>
+          Visual recognition + spatial recognition, feeding the robot.
+        </div>
+      </section>
+
+      <!-- TAIL -->
+      <div id="tail">
+        <section class="tail-sec">
+          <h2 class="serif">Toolbox</h2>
+          <p>3D printing — <strong>Bambu Lab H2S</strong> · 3D modelling — <strong>Shapr3D</strong></p>
+        </section>
+        <section class="tail-sec">
+          <h2 class="serif">In progress</h2>
+          <p>The arm is my EPQ, ongoing. The drone's vision module is next.</p>
+        </section>
+        <section class="tail-sec">
+          <h2 class="serif">Contact</h2>
+          <p><a href="mailto:ethan.li.1@outlook.com">ethan.li.1@outlook.com</a></p>
+        </section>
+        <footer>
+          <span class="dot">PROTOTYPE STAGE · BUILT BY HAND</span>
+        </footer>
+      </div>
+    </div>
+
+    <div id="loading">loading the world…</div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
