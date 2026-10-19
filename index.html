@@ -56,7 +56,7 @@
     <div class="stage" aria-hidden="true">
       <canvas id="arm-canvas"></canvas>
       <img class="stage-fallback" id="stage-fallback" src="./img/arm-plate.png" alt="" />
-      <span class="scan-sweep" id="scan-sweep" aria-hidden="true"></span>
+      <span class="scan-line" id="scan-line" aria-hidden="true"></span>
     </div>
 
     <!-- ------------------------------------------------------------ chrome -->
@@ -74,6 +74,7 @@
         <div class="mode" role="group" aria-label="Render mode">
           <button type="button" data-mode="mesh" class="on">Mesh</button>
           <button type="button" data-mode="points">Points</button>
+          <button type="button" data-mode="xray">X-ray</button>
         </div>
         <p class="chrome-clock mono" id="clock">GMT+8 —:—</p>
         <button class="index-toggle mono" id="index-toggle" aria-expanded="false" aria-controls="index-panel">
@@ -200,7 +201,7 @@
               <span class="dim-line">The drone half <em>isn’t built yet.</em></span>
             </h2>
           </div>
-          <p class="act-note mono">Point cloud — sampled from the EPQ CAD, not a photo</p>
+          <p class="act-note mono">X-ray of the real EPQ 3.1 CAD — edges only, no stand-in geometry</p>
         </div>
       </section>
 

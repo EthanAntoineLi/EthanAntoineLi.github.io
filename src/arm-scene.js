@@ -18,6 +18,11 @@
 //                                   running for ~2.2 s; see "scan reveal" below)
 //   scene.setStop(name, t = 1)     name: 'hero' | 'joints' | 'profile' | 'scan' | 'outro'
 //   scene.setMode(mode)            'mesh' | 'points' | 'xray'
+//                                  xray = translucent shell + crisp black edges
+//   scene.setScan(0..1 | null)     clip-plane wipe revealing the x-ray model
+//                                  top-down, with a thin line at the slice
+//   scene.setCloseUp(name, 0..1)   macro push-in aimed at an anchor:
+//                                  'base'|'shoulder'|'elbow'|'wrist'|'tip'
 //   scene.setOrbit(dx, dy)         add user drag deltas in RADIANS (clamped, damped)
 //   scene.setPointer(x, y)         pointer position normalised to -1..1 (subtle parallax)
 //   scene.projectAnchor(name)      -> { x, y, visible }  canvas-local CSS pixels
@@ -177,9 +182,11 @@ for (const key of STOP_NAMES) {
 // Mode target opacities. Mesh opacity is the PBR material set, points opacity
 // the sampled cloud. X-ray = ghosted translucent mesh + a dense point cloud.
 const MODE_TARGETS = {
-  mesh: { mesh: 1, points: 0, pointsSize: 1 },
-  points: { mesh: 0, points: 1, pointsSize: 1.15 },
-  xray: { mesh: 0.28, points: 0.72, pointsSize: 0.95 }
+  mesh: { mesh: 1, points: 0, pointsSize: 1, lines: 0 },
+  points: { mesh: 0, points: 1, pointsSize: 1.15, lines: 0 },
+  // X-ray is the technical drawing: a barely-there translucent shell with
+  // crisp black edge lines. No stipple — edges carry the perspective.
+  xray: { mesh: 0.16, points: 0, pointsSize: 1, lines: 1 }
 }
 
 // Point colours come from the source material name (the same four materials the
@@ -379,6 +386,32 @@ function installMaterials(meshes) {
 }
 
 // ---------------------------------------------------------------------------
+// X-ray edges: one LineSegments per primitive, parented to the same node, so
+// the wireframe follows the joint animation exactly like the mesh does.
+// ---------------------------------------------------------------------------
+function buildEdges(arm) {
+  const material = new THREE.LineBasicMaterial({
+    color: 0x0c0f12,
+    transparent: true,
+    opacity: 0,
+    depthTest: true,
+    depthWrite: false
+  })
+  const objects = []
+  for (const mesh of arm.meshes) {
+    if (!mesh.geometry || !mesh.geometry.attributes.position) continue
+    const edges = new THREE.EdgesGeometry(mesh.geometry, 32)
+    const lines = new THREE.LineSegments(edges, material)
+    lines.renderOrder = 3
+    lines.visible = false
+    lines.frustumCulled = false
+    mesh.add(lines)
+    objects.push(lines)
+  }
+  return { material, objects }
+}
+
+// ---------------------------------------------------------------------------
 // Sample the animated meshes into one point cloud. Each primitive's points are
 // stored in its parent's space (position baked through the mesh's local matrix)
 // and parented to that same node, so the cloud follows the joint animation for
@@ -561,6 +594,12 @@ export async function createArmScene(canvas, opts = {}) {
     pointsMaterial: null,
     pointsTexture: null,
     pointsObjects: [],
+    edgeMaterial: null,
+    edgeObjects: [],
+    // close-up camera override: aim at a named anchor by `amount` (0..1)
+    closeup: { anchor: 'elbow', amount: 0, live: 0 },
+    // scan reveal: vertical clip plane + a line on the model at the slice
+    scan: { on: false, value: 1, plane: null, line: null },
     envRT: null,
     loaded: false,
     disposed: false,
@@ -605,7 +644,7 @@ export async function createArmScene(canvas, opts = {}) {
     pose: STOP_DEFS.hero.poseRad.slice(),
     // modes
     mode: 'mesh',
-    modeLive: { mesh: 1, points: 0, pointsSize: 1 },
+    modeLive: { mesh: 1, points: 0, pointsSize: 1, lines: 0 },
     // entry reveal
     entryStart: 0,
     entryRaw: 1,
@@ -944,14 +983,27 @@ export async function createArmScene(canvas, opts = {}) {
     return dist
   }
 
+  const _closeAnchor = new THREE.Vector3()
+  const _closeTarget = new THREE.Vector3()
+
   function placeCameraFromLive() {
     const az = state.live.az + state.orbit.liveAz + state.pointer.liveX * 0.035
     const el = state.live.el + state.orbit.liveEl - state.pointer.liveY * 0.022
     cameraBasis(az, el)
     const camera = state.camera
-    camera.position.copy(state.live.lookTarget).addScaledVector(_dir, state.live.dist)
+    let target = state.live.lookTarget
+    let dist = state.live.dist
+    // A macro close-up on a named anchor: drives the transitions that dive
+    // into a joint instead of just moving the copy.
+    if (state.closeup.live > 0.002 && state.arm) {
+      anchorWorld(state.closeup.anchor, _closeAnchor)
+      _closeTarget.copy(target).lerp(_closeAnchor, state.closeup.live * 0.94)
+      dist = dist * (1 - state.closeup.live * 0.58)
+      target = _closeTarget
+    }
+    camera.position.copy(target).addScaledVector(_dir, dist)
     camera.up.set(0, 1, 0)
-    camera.lookAt(state.live.lookTarget)
+    camera.lookAt(target)
     if (Math.abs(camera.fov - state.live.fov) > 1e-4) {
       camera.fov = state.live.fov
       camera.updateProjectionMatrix()
@@ -995,6 +1047,7 @@ export async function createArmScene(canvas, opts = {}) {
     state.modeLive.mesh = target.mesh
     state.modeLive.points = target.points
     state.modeLive.pointsSize = target.pointsSize
+    state.modeLive.lines = target.lines || 0
     state.uniforms.uSizeMul.value = state.modeLive.pointsSize
   }
 
@@ -1083,7 +1136,10 @@ export async function createArmScene(canvas, opts = {}) {
     state.modeLive.mesh = damp(state.modeLive.mesh, modeTarget.mesh, modeRate, dt)
     state.modeLive.points = damp(state.modeLive.points, modeTarget.points, modeRate, dt)
     state.modeLive.pointsSize = damp(state.modeLive.pointsSize, modeTarget.pointsSize, modeRate, dt)
+    state.modeLive.lines = damp(state.modeLive.lines, modeTarget.lines, modeRate, dt)
     state.uniforms.uSizeMul.value = state.modeLive.pointsSize
+    // close-up damp
+    state.closeup.live = damp(state.closeup.live, state.closeup.amount, 6, dt)
 
     // Entry reveal: the cloud is visible regardless of mode, converges, then
     // the mesh materialises while the last points fade. Never a pop.
@@ -1091,17 +1147,21 @@ export async function createArmScene(canvas, opts = {}) {
     const revealPoints = state.settings.reducedMotion ? 0 : 1 - smoothstep01((state.entryRaw - 0.62) / 0.38)
     const meshOpacity = state.modeLive.mesh * revealMesh
     const pointsOpacity = Math.max(state.modeLive.points, revealPoints * 0.92)
-    applyMaterialState(meshOpacity, pointsOpacity)
+    const linesOpacity = state.modeLive.lines * (state.settings.reducedMotion ? 1 : revealMesh)
+    applyMaterialState(meshOpacity, pointsOpacity, linesOpacity)
   }
 
   // Shared PBR materials are only recalculated when opacity actually moves.
   let lastMeshOpacity = -1
   let lastPointsOpacity = -1
+  let lastLinesOpacity = -1
+  let lastLinesVisible = null
   let lastTransparent = null
 
-  function applyMaterialState(meshOpacity, pointsOpacity) {
+  function applyMaterialState(meshOpacity, pointsOpacity, linesOpacity = 0) {
     const clampedMesh = clamp(meshOpacity, 0, 1)
     const clampedPoints = clamp(pointsOpacity, 0, 1)
+    const clampedLines = clamp(linesOpacity, 0, 1)
     // Mesh
     if (meshOpacity > 0.004) {
       if (Math.abs(clampedMesh - lastMeshOpacity) > 0.0015) {
@@ -1124,6 +1184,18 @@ export async function createArmScene(canvas, opts = {}) {
     } else {
       for (const mesh of state.arm.meshes) mesh.visible = false
       lastMeshOpacity = -1
+    }
+    // X-ray edges
+    if (state.edgeMaterial) {
+      if (Math.abs(clampedLines - lastLinesOpacity) > 0.0015) {
+        state.edgeMaterial.opacity = clampedLines
+        lastLinesOpacity = clampedLines
+      }
+      const showLines = clampedLines > 0.004
+      if (showLines !== lastLinesVisible) {
+        for (const object of state.edgeObjects) object.visible = showLines
+        lastLinesVisible = showLines
+      }
     }
     // Points
     if (pointsOpacity > 0.004) {
@@ -1330,6 +1402,19 @@ export async function createArmScene(canvas, opts = {}) {
       state.pointsTexture.dispose()
       state.pointsTexture = null
     }
+    if (state.edgeMaterial) {
+      state.edgeMaterial.dispose()
+      state.edgeMaterial = null
+    }
+    for (const object of state.edgeObjects) {
+      if (object.geometry) object.geometry.dispose()
+    }
+    state.edgeObjects = []
+    if (state.scan.line) {
+      if (state.scan.line.geometry) state.scan.line.geometry.dispose()
+      if (state.scan.line.material) state.scan.line.material.dispose()
+      state.scan.line = null
+    }
     if (state.scene) {
       state.scene.environment = null
       state.scene.clear()
@@ -1351,10 +1436,112 @@ export async function createArmScene(canvas, opts = {}) {
     state.renderer = null
   }
 
+  // ------------------------------------------------------------ x-ray scan
+
+  function buildScanRing() {
+    if (!state.arm || !state.scan || state.scan.line) return
+    const b = state.bounds
+    if (!Number.isFinite(b.min.x) || !Number.isFinite(b.max.x)) return
+    const ring = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(b.min.x - 0.03, 0, b.min.z - 0.03),
+      new THREE.Vector3(b.max.x + 0.03, 0, b.min.z - 0.03),
+      new THREE.Vector3(b.max.x + 0.03, 0, b.max.z + 0.03),
+      new THREE.Vector3(b.min.x - 0.03, 0, b.max.z + 0.03)
+    ])
+    const ringMat = new THREE.LineBasicMaterial({
+      color: 0x8f3a22,
+      transparent: true,
+      opacity: 0.5,
+      depthTest: false,
+      depthWrite: false
+    })
+    const line = new THREE.LineLoop(ring, ringMat)
+    line.renderOrder = 6
+    line.visible = false
+    line.frustumCulled = false
+    state.arm.root.add(line)
+    state.scan.line = line
+  }
+
+  function applyScanPlane() {
+    if (!state.scan.plane) return
+    const b = state.bounds
+    const range = Math.max(1e-4, b.max.y - b.min.y)
+    const y = b.max.y - state.scan.value * range
+    state.scan.plane.constant = -y
+    if (state.scan.line) {
+      state.scan.line.position.y = y
+      state.scan.line.visible = state.scan.on
+    }
+    const planes = state.scan.on ? [state.scan.plane] : null
+    if (state.materials) {
+      for (const material of state.materials.values()) {
+        const current = material.clippingPlanes
+        const count = current ? current.length : 0
+        if (count !== (planes ? planes.length : 0)) {
+          material.clippingPlanes = planes
+          material.needsUpdate = true
+        }
+      }
+    }
+    if (state.edgeMaterial) {
+      const current = state.edgeMaterial.clippingPlanes
+      const count = current ? current.length : 0
+      if (count !== (planes ? planes.length : 0)) {
+        state.edgeMaterial.clippingPlanes = planes
+        state.edgeMaterial.needsUpdate = true
+      }
+    }
+  }
+
+  function setScan(value) {
+    if (state.disposed) return false
+    if (value === null || value === undefined) {
+      state.scan.on = false
+      state.scan.value = 1
+      applyScanPlane()
+      return true
+    }
+    const v = Number(value)
+    if (!Number.isFinite(v)) return false
+    state.scan.value = clamp(v, 0, 1)
+    state.scan.on = state.scan.value < 0.998
+    applyScanPlane()
+    return true
+  }
+
+  // Screen-space y (CSS px) of the scan plane right now, so the page can draw a
+  // hairline exactly on the cut. Returns null when the scanner is off.
+  const _scanWorld = new THREE.Vector3()
+  function scanScreenY() {
+    if (!state.arm || !state.camera || !state.scan.on) return null
+    const b = state.bounds
+    const range = Math.max(1e-4, b.max.y - b.min.y)
+    const y = b.max.y - state.scan.value * range
+    _scanWorld.set(0, y, 0)
+    state.arm.root.localToWorld(_scanWorld)
+    _scanWorld.project(state.camera)
+    return ((1 - _scanWorld.y) / 2) * state.height
+  }
+
+  const CLOSEUP_ANCHORS = new Set(['base', 'shoulder', 'elbow', 'wrist', 'tip'])
+
+  function setCloseUp(name, amount) {
+    if (state.disposed) return false
+    const a = Number(amount)
+    if (!Number.isFinite(a)) return false
+    if (name && CLOSEUP_ANCHORS.has(name)) state.closeup.anchor = name
+    state.closeup.amount = clamp(a, 0, 1)
+    return true
+  }
+
   const api = {
     ready,
     setStop,
     setMode,
+    setScan,
+    setCloseUp,
+    scanScreenY,
     setOrbit,
     setPointer,
     projectAnchor,
@@ -1479,6 +1666,7 @@ export async function createArmScene(canvas, opts = {}) {
       stencil: false
     })
     state.renderer = renderer
+    renderer.localClippingEnabled = true
     renderer.setClearColor(0x000000, 0)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DPR))
     renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -1544,7 +1732,12 @@ export async function createArmScene(canvas, opts = {}) {
       if (state.disposed) return
       state.arm = arm
       state.materials = installMaterials(arm.meshes)
+      const edges = buildEdges(arm)
+      state.edgeMaterial = edges.material
+      state.edgeObjects = edges.objects
       state.scene.add(arm.root)
+      // scan slice: a clip plane plus a thin line around the model at the slice
+      state.scan.plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
       state.loaded = true
 
       // Initial pose + grounded measurements (silhouette samples first).

@@ -150,6 +150,7 @@ function setProgress(i) {
 
 /* ------------------------------------------------------- motion transitions */
 const stageEl = document.querySelector('.stage')
+const scanLine = document.getElementById('scan-line')
 const rootStyle = document.documentElement.style
 // Each boundary uses a different motion family (see CSS): rise, split,
 // slide, dolly. Pure movement, single palette — no colour wipes.
@@ -175,11 +176,16 @@ function countSpecs() {
   requestAnimationFrame(tick)
 }
 
+// Which named joint a transition dives into. Boundary 3 (geometry -> scan) is
+// the scan itself, so it has no close-up.
+const CLOSEUP_BY_BOUNDARY = ['shoulder', 'elbow', null, null]
+
 function updateStage(y, vh) {
   if (!stageEl || reducedMotion) return
   let fam = 'none'
   let bump = 0
-  let sweep = 0
+  let scanP = null
+  let closeAnchor = null
   for (let n = 0; n < ACTS.length - 1; n++) {
     const centre = ACTS[n + 1].el.offsetTop - vh * 0.5
     const span = vh * 0.36
@@ -187,12 +193,37 @@ function updateStage(y, vh) {
     if (p > 0 && p < 1) {
       fam = ACTS[n + 1].el.dataset.ent || 'none'
       bump = Math.sin(Math.PI * p)
-      sweep = p
+      if (n === 2) scanP = p
+      else closeAnchor = CLOSEUP_BY_BOUNDARY[n]
     }
   }
   stageEl.dataset.fam = fam
   rootStyle.setProperty('--bump', bump.toFixed(3))
-  rootStyle.setProperty('--sweep', sweep.toFixed(3))
+
+  if (!scene) return
+  scene.setCloseUp(closeAnchor || 'elbow', closeAnchor ? bump * 0.85 : 0)
+  if (scanP !== null) {
+    scene.setScan(scanP)
+  } else if (activeAct === 3) {
+    scene.setScan(1)
+  } else {
+    scene.setScan(null)
+  }
+  if (!userMode) setMode(scanP !== null || activeAct === 3 ? 'xray' : 'mesh', false)
+
+  if (scanLine) {
+    if (scanP !== null && scene.scanScreenY) {
+      const y = scene.scanScreenY()
+      if (y !== null && Number.isFinite(y)) {
+        scanLine.style.top = `${y.toFixed(1)}px`
+        scanLine.style.opacity = '1'
+      } else {
+        scanLine.style.opacity = '0'
+      }
+    } else {
+      scanLine.style.opacity = '0'
+    }
+  }
 }
 
 function updateTransitions(y, vh) {
@@ -228,7 +259,6 @@ function measure() {
     const f = Math.min(1, Math.max(0.04, 1 - Math.abs(top) / (vh * 0.82)))
     a.el.style.setProperty('--f', f.toFixed(3))
   }
-  updateTransitions(y, vh)
   updateVelocity(y)
 
   // Stops sit at the top of each 100vh act. Scroll progress between two act
@@ -251,10 +281,12 @@ function measure() {
     setGhost(shownAct.ghost)
     setProgress(shown)
     body.classList.toggle('at-end', shown === ACTS.length - 1)
-    if (!userMode) setMode(shown === 3 ? 'points' : 'mesh', false)
     if (shown === 1) countSpecs()
   }
   applyStop(i, t)
+  // Runs last: the stage/scan/close-up state depends on the freshly updated
+  // activeAct (otherwise it is one frame behind and can sit in the wrong mode).
+  updateTransitions(y, vh)
 }
 
 let queued = false
@@ -399,8 +431,11 @@ function initIndex() {
 
 /* --------------------------------------------------------------- mode switch */
 let userMode = null
+let appliedMode = null
 function setMode(mode, fromUser = true) {
   if (fromUser) userMode = mode
+  if (mode === appliedMode && !fromUser) return
+  appliedMode = mode
   document.querySelectorAll('.mode button').forEach((b) => {
     b.classList.toggle('on', b.dataset.mode === mode)
   })
