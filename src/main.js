@@ -93,12 +93,13 @@ const phone = window.matchMedia('(max-width: 820px)').matches
 // render (the stage is desktop-tuned).
 let sceneReady = Promise.resolve(null)
 function startScene() {
-  if (!canvas || phone) return
+  if (!canvas) return
   sceneReady = (async () => {
     try {
       scene = await createArmScene(canvas, {
         modelUrl: './models/arm-opt.glb',
         reducedMotion,
+        phone,
       })
       await scene.ready
       body.classList.add('scene-ready')
@@ -201,7 +202,7 @@ function updateStage(y, vh) {
   rootStyle.setProperty('--bump', bump.toFixed(3))
 
   if (!scene) return
-  scene.setCloseUp(closeAnchor || 'elbow', closeAnchor ? bump * 0.85 : 0)
+  scene.setCloseUp(closeAnchor || 'elbow', closeAnchor ? bump * (phone ? 0.3 : 0.85) : 0)
   if (scanP !== null) {
     scene.setScan(scanP)
   } else if (activeAct === 3) {

@@ -608,7 +608,10 @@ export async function createArmScene(canvas, opts = {}) {
         ? opts.reducedMotion
         : typeof window !== 'undefined' && window.matchMedia
           ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-          : false
+          : false,
+    // Portrait/phone layout: the object sits in the upper half (the page puts
+    // its copy at the bottom), so the stop offsets are re-composed here.
+    phone: opts.phone === true
   }
 
   const state = {
@@ -875,6 +878,13 @@ export async function createArmScene(canvas, opts = {}) {
     desired.screenY = from ? lerp(from.screenY || 0, to.screenY || 0, t) : to.screenY || 0
     for (let i = 0; i < 5; i++) {
       desired.pose[i] = from ? lerp(from.poseRad[i], to.poseRad[i], t) : to.poseRad[i]
+    }
+    if (settings.phone) {
+      // centre horizontally, lift the object into the upper part of the frame
+      desired.screenX = 0
+      desired.screenY = desired.screenY * 0.25 + 0.25
+      desired.fillX *= 0.9
+      desired.fillY *= 0.68
     }
     // Focus target = live bounds centre + (offset blended between stops).
     if (!state.arm) {
@@ -1696,7 +1706,7 @@ export async function createArmScene(canvas, opts = {}) {
     state.renderer = renderer
     renderer.localClippingEnabled = true
     renderer.setClearColor(0x000000, 0)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DPR))
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, settings.phone ? 1.5 : MAX_DPR))
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.0
     renderer.outputColorSpace = THREE.SRGBColorSpace

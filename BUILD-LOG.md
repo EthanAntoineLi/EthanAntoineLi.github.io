@@ -253,3 +253,18 @@ five 100vh acts, ~171 words on the whole page (v2 had ~1,100).
 - Tuned the `joints` stop to clear the spec row; contact outro sits lower-right with the
   footer note moved bottom-left; progress marker moved to the left edge; index overlay is
   opaque.
+
+## 2026-10-19 — mobile pass (branch `mobile`)
+
+- Phone layout (≤820px): the 3D stage stays, the scene re-composes its stops for
+  portrait (`phone: true` → object centred, lifted into the upper half, fills ×0.68–0.9,
+  DPR capped at 1.5). Copy becomes a bottom-anchored single column.
+- Scene: hero/payload/geometry/scan/outro all reframed for 390×844; spec figures become
+  compact stacked rows; joint table compresses; contact centres; market chrome keeps only
+  brand + INDEX; progress/mode/frame/clock hidden.
+- Fixed a real mobile bug: horizontal entrance transforms (swing) and the velocity tilt
+  on the fixed stage widened the layout viewport (innerWidth 449 on a 390 screen). Phones
+  now use vertical-only transitions and a clipped, untransformed stage.
+- Close-up strength on phones reduced to 0.3 (was 0.85).
+- Verified: innerWidth == clientWidth == 390, no horizontal scroll, scene-ready, 0 console
+  errors; desktop 1440×900 unchanged.
