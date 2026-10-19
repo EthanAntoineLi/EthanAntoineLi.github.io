@@ -245,3 +245,11 @@ five 100vh acts, ~171 words on the whole page (v2 had ~1,100).
   `../review-v4/ref/awwwards/MECHANISMS.md`. Design notes: `../review-v4/DESIGN-NOTES.md`.
 - Verified: build green, no console errors at 1440x900, scene fallback image when WebGL
   fails, reduced-motion path, resize re-fit.
+
+### v4 addendum (same day)
+- Deferred scene creation until after the loader curtain; phones (≤820px) keep the
+  still render and skip WebGL, so mobile is presentable without being tuned.
+- Loader is wall-clock driven (the GLB parse used to stretch the frame-count animation).
+- Tuned the `joints` stop to clear the spec row; contact outro sits lower-right with the
+  footer note moved bottom-left; progress marker moved to the left edge; index overlay is
+  opaque.

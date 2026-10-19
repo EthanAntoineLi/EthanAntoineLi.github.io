@@ -13,12 +13,13 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
 const body = document.body
 
 /* ------------------------------------------------------------- loader */
-function initLoader() {
+function initLoader(onDone) {
   const countEl = document.getElementById('loader-count')
   const barEl = document.getElementById('loader-bar')
   const finish = () => {
     body.classList.remove('is-loading')
     body.classList.add('loaded')
+    if (onDone) onDone()
   }
 
   if (!countEl || !barEl || reducedMotion) {
@@ -31,6 +32,9 @@ function initLoader() {
   body.classList.add('is-loading')
   const start = performance.now()
   const DURATION = 1400
+  // Wall-clock driven: the GLB parse blocks the main thread for a moment, so a
+  // frame-count animation would stretch the loader. The curtain lifts on time.
+  setTimeout(finish, DURATION + 300)
   const tick = (now) => {
     const t = Math.min(1, (now - start) / DURATION)
     const eased = 1 - Math.pow(1 - t, 3)
@@ -38,7 +42,6 @@ function initLoader() {
     countEl.textContent = String(n).padStart(3, '0')
     barEl.style.width = `${eased * 100}%`
     if (t < 1) requestAnimationFrame(tick)
-    else setTimeout(finish, 260)
   }
   requestAnimationFrame(tick)
 }
@@ -76,22 +79,31 @@ let scene = null
 let activeAct = 0
 
 const canvas = document.getElementById('arm-canvas')
-const sceneReady = (async () => {
-  if (!canvas) return null
-  try {
-    scene = await createArmScene(canvas, {
-      modelUrl: './models/arm-opt.glb',
-      reducedMotion,
-    })
-    await scene.ready
-    body.classList.add('scene-ready')
-    applyStop(activeAct, 1)
-    return scene
-  } catch (err) {
-    console.warn('[scene] unavailable, keeping still render:', err)
-    return null
-  }
-})()
+const phone = window.matchMedia('(max-width: 820px)').matches
+
+// Scene creation is deferred until the loading curtain has lifted: parsing the
+// GLB and building the 90k-point cloud is several hundred ms of main-thread
+// work, and it must not hold the first paint hostage. Phones keep the still
+// render (the stage is desktop-tuned).
+let sceneReady = Promise.resolve(null)
+function startScene() {
+  if (!canvas || phone) return
+  sceneReady = (async () => {
+    try {
+      scene = await createArmScene(canvas, {
+        modelUrl: './models/arm-opt.glb',
+        reducedMotion,
+      })
+      await scene.ready
+      body.classList.add('scene-ready')
+      applyStop(activeAct, 1)
+      return scene
+    } catch (err) {
+      console.warn('[scene] unavailable, keeping still render:', err)
+      return null
+    }
+  })()
+}
 
 function applyStop(i, t = 1) {
   const act = ACTS[i]
@@ -362,7 +374,7 @@ function initDrag() {
 }
 
 /* -------------------------------------------------------------- boot */
-initLoader()
+initLoader(startScene)
 initReveals()
 initCursor()
 initClock()
@@ -371,7 +383,6 @@ initIndex()
 initMode()
 initDrag()
 
-sceneReady.then(() => measure())
 initScroll()
 measure()
 
