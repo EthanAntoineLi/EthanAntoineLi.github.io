@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#EEF2F7" />
+    <meta name="theme-color" content="#F2EEE5" />
     <title>Ethan Antoine Li — Rescue Robotics</title>
     <meta
       name="description"
@@ -25,6 +25,7 @@
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="preload" href="./fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="./fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./fonts/instr-sans-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="./src/style.css" />
     <script>
       document.documentElement.classList.add('js')
@@ -45,6 +46,7 @@
 
     <div class="sheet-frame" aria-hidden="true"></div>
     <div class="paper-grid" aria-hidden="true"></div>
+    <div class="sheet-edge" aria-hidden="true"><span>Sheet 01 — Portfolio 2026 — Rev C</span></div>
 
     <header class="topbar">
       <a class="brand" href="#top" aria-label="Ethan Antoine Li — back to top">
@@ -133,7 +135,7 @@
       </section>
 
       <!-- ========================================================= MISSION -->
-      <section class="sec" id="mission" aria-labelledby="mission-h">
+      <section class="sec sec--mission" id="mission" aria-labelledby="mission-h">
         <header class="sec-head">
           <p class="sec-index mono"><span>01</span> Mission</p>
           <h2 class="sec-title" id="mission-h">
@@ -344,7 +346,8 @@
       </section>
 
       <!-- =========================================================== DRONE -->
-      <section class="sec" id="drone" aria-labelledby="drone-h">
+      <section class="sec sec--drone" id="drone" aria-labelledby="drone-h">
+        <span class="stamp" aria-hidden="true">Not built — 2026</span>
         <header class="sec-head">
           <p class="sec-index mono"><span>03</span> The drone</p>
           <h2 class="sec-title" id="drone-h">
@@ -395,7 +398,7 @@
       </section>
 
       <!-- ========================================================== STATUS -->
-      <section class="sec" id="status" aria-labelledby="status-h">
+      <section class="sec sec--status" id="status" aria-labelledby="status-h">
         <header class="sec-head">
           <p class="sec-index mono"><span>04</span> Status</p>
           <h2 class="sec-title" id="status-h">What exists, what is being built, and what is next.</h2>

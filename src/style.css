@@ -1,7 +1,8 @@
 /* ==========================================================================
    Ethan Antoine Li — rescue robotics portfolio
-   Design language: drafting sheet. Paper, hairline rules, mono annotations,
-   one signal accent. Serif for voice, sans for prose, mono for data.
+   Design language: technical plate. Warm drafting paper, hairline rules,
+   mono annotations, one signal accent, and three inverted "printed" bands.
+   Serif for voice, sans for prose, mono for data.
    ========================================================================== */
 
 /* ------------------------------------------------------------------ fonts */
@@ -23,28 +24,50 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
     U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/instr-sans-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 /* ----------------------------------------------------------------- tokens */
 :root {
-  --paper: #eef2f7;
-  --paper-hi: #f8fbfe;
-  --ink: #0b1b2f;
-  --muted: #4a5b70;
-  --dim: #5a6a7e;
-  --accent: #c2410c;
-  --accent-soft: rgba(194, 65, 12, 0.09);
-  --grid: #d3dde8;
-  --line: rgba(11, 27, 47, 0.14);
-  --line-soft: rgba(11, 27, 47, 0.07);
+  /* paper & ink — warm drafting stock, not blue-grey office paper */
+  --paper: #f2eee5;
+  --paper-2: #e9e2d4;
+  --paper-3: #fbf8f1;
+  --ink: #14171b;
+  --ink-soft: #2b3037;
+  --body: #3d434b;
+  --muted: #545a61;
+  --dim: #61666d;
+
+  /* one signal accent + one blueprint tone */
+  --accent: #b23e22;
+  --accent-soft: rgba(178, 62, 34, 0.09);
+  --blueprint: #0f2438;
+  --blueprint-2: #16304a;
+  --blueprint-line: rgba(206, 220, 229, 0.22);
+  --blueprint-ink: #e9eef0;
+  --blueprint-body: #c2d0da;
+
+  --line: rgba(20, 23, 27, 0.16);
+  --line-soft: rgba(20, 23, 27, 0.07);
+  --grid: rgba(122, 108, 84, 0.13);
 
   --serif: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Helvetica,
-    Arial, sans-serif;
+  --sans: "Instrument Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "IBM Plex Mono", monospace;
 
-  --max: 1280px;
-  --pad: clamp(20px, 4.2vw, 56px);
-  --topbar-h: 58px;
+  --max: 1320px;
+  --pad: clamp(20px, 4vw, 56px);
+  --topbar-h: 60px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ------------------------------------------------------------------ reset */
@@ -63,14 +86,25 @@ html {
 body {
   margin: 0;
   text-wrap: pretty;
-  color: var(--ink);
+  color: var(--body);
   background: var(--paper);
   font-family: var(--sans);
-  font-size: 16.5px;
-  line-height: 1.7;
+  font-size: 16px;
+  line-height: 1.68;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+}
+
+/* Paper grain. One fixed layer, very low opacity — no filters, no masks. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
 }
 
 img,
@@ -114,8 +148,8 @@ button {
 }
 
 ::selection {
-  background: var(--ink);
-  color: var(--paper-hi);
+  background: var(--accent);
+  color: var(--paper-3);
 }
 
 :focus-visible {
@@ -126,11 +160,11 @@ button {
 /* ------------------------------------------------------------- utilities */
 .mono {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--dim);
   line-height: 1.5;
 }
 
@@ -145,7 +179,7 @@ button {
   z-index: 100;
   padding: 10px 16px;
   background: var(--ink);
-  color: var(--paper-hi);
+  color: var(--paper-3);
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.1em;
@@ -158,28 +192,26 @@ button {
 }
 
 /* ------------------------------------------------------- page furniture */
+/* A 40px construction grid, kept faint: structure, not graph paper. */
 .paper-grid {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: linear-gradient(0deg, rgba(211, 221, 232, 0.62) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(211, 221, 232, 0.62) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background-image: linear-gradient(0deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
-/* Fade the grid toward the sheet edges with a plain gradient rather than a
-   mask: masks on a fixed full-viewport layer are expensive to composite while
-   scrolling, and they make headless captures hang. */
 .paper-grid::after {
   content: "";
   position: absolute;
   inset: 0;
   background: radial-gradient(
-    125% 100% at 50% 30%,
-    rgba(238, 242, 247, 0) 32%,
-    rgba(238, 242, 247, 0.82) 74%,
-    rgba(238, 242, 247, 0.98) 100%
+    130% 100% at 50% 26%,
+    rgba(242, 238, 229, 0) 30%,
+    rgba(242, 238, 229, 0.7) 72%,
+    rgba(242, 238, 229, 0.96) 100%
   );
 }
 
@@ -188,7 +220,24 @@ button {
   inset: 12px;
   z-index: 30;
   pointer-events: none;
-  border: 1px solid rgba(11, 27, 47, 0.13);
+  border: 1px solid rgba(20, 23, 27, 0.1);
+}
+
+/* rotating edge label — the "sheet" tell */
+.sheet-edge {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  z-index: 30;
+  pointer-events: none;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(20, 23, 27, 0.3);
+  white-space: nowrap;
 }
 
 /* ----------------------------------------------------------------- topbar */
@@ -204,7 +253,7 @@ button {
   justify-content: space-between;
   gap: 24px;
   padding: 0 var(--pad);
-  background: rgba(238, 242, 247, 0.95);
+  background: rgba(242, 238, 229, 0.97);
   border-bottom: 1px solid var(--line-soft);
 }
 
@@ -220,11 +269,7 @@ button {
   height: 26px;
   flex: none;
   border: 1px solid var(--ink);
-  background: linear-gradient(
-      90deg,
-      var(--ink) 0 7px,
-      transparent 7px 100%
-    ),
+  background: linear-gradient(90deg, var(--ink) 0 7px, transparent 7px 100%),
     linear-gradient(0deg, var(--accent) 0 7px, transparent 7px 100%);
 }
 
@@ -254,7 +299,7 @@ button {
 .nav {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .nav a {
@@ -287,7 +332,7 @@ button {
   background: var(--ink);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.24s ease;
+  transition: transform 0.24s var(--ease);
 }
 
 .nav a:hover,
@@ -332,15 +377,16 @@ main,
 /* ------------------------------------------------------------------- hero */
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
   align-items: start;
-  gap: clamp(32px, 5vw, 88px);
+  gap: clamp(32px, 5vw, 84px);
   padding-top: calc(var(--topbar-h) + clamp(48px, 8vh, 96px));
+  padding-bottom: clamp(56px, 9vh, 120px);
   min-height: calc(100vh - var(--topbar-h));
 }
 
 .hero-copy {
-  padding-bottom: 40px;
+  padding-bottom: 24px;
 }
 
 .eyebrow {
@@ -359,12 +405,13 @@ main,
 }
 
 .hero-name {
-  margin-top: 22px;
+  margin-top: 24px;
   font-family: var(--serif);
   font-weight: 400;
-  font-size: clamp(3.5rem, 7.6vw, 6.6rem);
+  font-size: clamp(3.7rem, 7.8vw, 6.9rem);
   line-height: 0.86;
   letter-spacing: -0.028em;
+  color: var(--ink);
 }
 
 .hero-name .line {
@@ -375,21 +422,21 @@ main,
 }
 
 .hero-mission {
-  margin-top: clamp(24px, 3.4vh, 40px);
-  max-width: 27ch;
+  margin-top: clamp(26px, 3.6vh, 44px);
+  max-width: 26ch;
   font-family: var(--serif);
   font-style: italic;
-  font-size: clamp(1.3rem, 1.9vw, 1.72rem);
-  line-height: 1.3;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  line-height: 1.28;
   letter-spacing: -0.005em;
-  color: #16263c;
+  color: var(--ink-soft);
 }
 
 .hero-lede {
-  margin-top: 22px;
-  max-width: 46ch;
-  font-size: 15.5px;
-  line-height: 1.72;
+  margin-top: 24px;
+  max-width: 45ch;
+  font-size: 16px;
+  line-height: 1.7;
   color: var(--muted);
 }
 
@@ -397,7 +444,7 @@ main,
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  margin-top: 34px;
+  margin-top: 36px;
   padding: 4px 0;
   color: var(--ink);
 }
@@ -419,7 +466,7 @@ main,
   inset: 0;
   background: var(--accent);
   transform: translateX(-100%);
-  transition: transform 0.32s ease;
+  transition: transform 0.36s var(--ease);
 }
 .downlink:hover .downlink-line::after {
   transform: translateX(0);
@@ -429,9 +476,9 @@ main,
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
-  margin-top: clamp(44px, 7vh, 76px);
+  margin-top: clamp(48px, 8vh, 84px);
   padding-top: 16px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--ink);
 }
 .hero-facts dt {
   font-size: 9px;
@@ -467,12 +514,14 @@ picture {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  filter: drop-shadow(0 26px 54px rgba(20, 23, 27, 0.16));
+  cursor: crosshair;
 }
 
 .plate-tick {
   position: absolute;
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   pointer-events: none;
 }
 .plate-tick--tl {
@@ -480,14 +529,14 @@ picture {
   left: 0;
   border-top: 1px solid var(--ink);
   border-left: 1px solid var(--ink);
-  opacity: 0.5;
+  opacity: 0.45;
 }
 .plate-tick--br {
   right: 0;
   bottom: 0;
   border-right: 1px solid var(--ink);
   border-bottom: 1px solid var(--ink);
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .plate-caption {
@@ -504,10 +553,45 @@ picture {
 
 /* ---------------------------------------------------------------- sections */
 .sec {
+  position: relative;
   margin-top: clamp(80px, 12vh, 150px);
   padding-top: clamp(28px, 4vh, 44px);
   border-top: 1px solid var(--ink);
 }
+
+/* full-bleed inverted plates */
+.sec--mission,
+.sec--contact {
+  margin-top: 0;
+  margin-inline: calc(50% - 50vw);
+  width: 100vw;
+  border-top: 0;
+  padding-top: clamp(72px, 11vh, 132px);
+  padding-bottom: clamp(72px, 11vh, 132px);
+  padding-inline: max(var(--pad), calc((100vw - var(--max)) / 2 + var(--pad)));
+}
+
+.sec--mission {
+  background: var(--blueprint);
+  color: var(--blueprint-body);
+}
+
+.sec--contact {
+  background: var(--ink);
+  color: rgba(242, 238, 229, 0.72);
+  margin-bottom: 0;
+}
+
+.sec--drone {
+  margin-inline: calc(50% - 50vw);
+  width: 100vw;
+  margin-top: clamp(80px, 12vh, 150px);
+  padding-inline: max(var(--pad), calc((100vw - var(--max)) / 2 + var(--pad)));
+  padding-bottom: clamp(48px, 7vh, 80px);
+  background: var(--paper-2);
+  border-top: 1px solid var(--ink);
+}
+
 .sec-head {
   display: grid;
   grid-template-columns: 190px minmax(0, 1fr);
@@ -527,11 +611,12 @@ picture {
 .sec-title {
   font-family: var(--serif);
   font-weight: 400;
-  font-size: clamp(1.7rem, 3vw, 2.7rem);
-  line-height: 1.14;
+  font-size: clamp(1.85rem, 3.2vw, 3rem);
+  line-height: 1.08;
   letter-spacing: -0.016em;
   max-width: 27ch;
   text-wrap: balance;
+  color: var(--ink);
 }
 
 .sec-body {
@@ -545,12 +630,36 @@ picture {
   gap: clamp(24px, 3.4vw, 48px);
 }
 .cols p {
-  font-size: 15.5px;
-  line-height: 1.74;
+  font-size: 16px;
+  line-height: 1.72;
+  color: var(--body);
+}
+.cols p + p {
   color: var(--muted);
 }
-.cols p::first-letter {
-  color: var(--ink);
+
+/* inverted section skins */
+.sec--mission .sec-index,
+.sec--contact .sec-index {
+  color: rgba(233, 238, 240, 0.62);
+}
+.sec--mission .sec-index span {
+  color: #e2784f;
+}
+.sec--contact .sec-index span {
+  color: #e2784f;
+}
+.sec--mission .sec-title {
+  color: var(--blueprint-ink);
+}
+.sec--contact .sec-title {
+  color: #f4efe4;
+}
+.sec--mission .cols p {
+  color: var(--blueprint-body);
+}
+.sec--mission .cols p + p {
+  color: rgba(194, 208, 218, 0.78);
 }
 
 /* --------------------------------------------------------------- diagram */
@@ -559,7 +668,7 @@ picture {
   margin-left: calc(190px + clamp(20px, 4vw, 56px));
   padding: 16px 16px 12px;
   border: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.14));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.08));
 }
 
 .diagram-head,
@@ -609,7 +718,7 @@ picture {
 }
 .d-drone rect,
 .d-arm rect {
-  fill: var(--paper-hi);
+  fill: var(--paper-3);
   stroke: var(--ink);
   stroke-width: 1.3;
 }
@@ -630,7 +739,7 @@ picture {
 }
 .d-arm circle,
 .d-subject circle {
-  fill: var(--paper-hi);
+  fill: var(--paper-3);
   stroke: var(--ink);
   stroke-width: 1.4;
 }
@@ -673,6 +782,59 @@ picture {
   fill: var(--accent);
 }
 
+/* cyanotype skin for the same drawing on the blueprint band */
+.sec--mission .figure {
+  border-color: var(--blueprint-line);
+  background: linear-gradient(180deg, rgba(233, 238, 240, 0.05), rgba(233, 238, 240, 0.01));
+}
+.sec--mission .diagram-head,
+.sec--mission .diagram-foot {
+  color: rgba(194, 208, 218, 0.7);
+  border-color: var(--blueprint-line);
+}
+.sec--mission .d-ground {
+  stroke: var(--blueprint-ink);
+  stroke-opacity: 0.6;
+}
+.sec--mission .d-ground-soft {
+  stroke: var(--blueprint-ink);
+  stroke-opacity: 0.2;
+}
+.sec--mission .d-drone rect,
+.sec--mission .d-arm rect,
+.sec--mission .d-arm circle,
+.sec--mission .d-subject circle {
+  fill: var(--blueprint);
+  stroke: var(--blueprint-ink);
+}
+.sec--mission .d-drone path,
+.sec--mission .d-arm path,
+.sec--mission .d-subject path,
+.sec--mission .d-drone ellipse {
+  stroke: var(--blueprint-ink);
+}
+.sec--mission .d-dashed {
+  stroke: var(--blueprint-ink);
+  stroke-opacity: 0.35;
+}
+.sec--mission .d-dashed--accent {
+  stroke: #e2784f;
+  stroke-opacity: 1;
+}
+.sec--mission .d-label {
+  fill: var(--blueprint-ink);
+}
+.sec--mission .d-status,
+.sec--mission .d-note {
+  fill: rgba(194, 208, 218, 0.72);
+}
+.sec--mission .d-status--built {
+  fill: var(--blueprint-ink);
+}
+.sec--mission .d-note--accent {
+  fill: #e2784f;
+}
+
 /* ------------------------------------------------------------- arm layout */
 .arm-grid {
   display: grid;
@@ -691,23 +853,23 @@ picture {
 }
 
 .arm-copy > p {
-  font-size: 15.5px;
-  line-height: 1.74;
-  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.72;
+  color: var(--body);
 }
 .arm-copy > p + p {
   margin-top: 18px;
 }
 .arm-copy .lead {
   font-family: var(--serif);
-  font-size: clamp(1.2rem, 1.7vw, 1.42rem);
-  line-height: 1.42;
+  font-size: clamp(1.24rem, 1.8vw, 1.5rem);
+  line-height: 1.4;
   color: var(--ink);
   letter-spacing: -0.006em;
 }
 
 .spec-block {
-  margin-top: 36px;
+  margin-top: 38px;
   border-top: 1px solid var(--ink);
 }
 .spec-block-head {
@@ -730,9 +892,13 @@ picture {
   gap: 20px;
   padding: 9px 0;
   border-bottom: 1px solid var(--line-soft);
+  transition: background 0.16s ease;
+}
+.spec > div:hover {
+  background: rgba(20, 23, 27, 0.025);
 }
 .spec dt {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--muted);
   white-space: nowrap;
 }
@@ -795,7 +961,7 @@ picture {
 .arrow-link .arrow {
   font-size: 14px;
   color: var(--accent);
-  transition: transform 0.2s ease;
+  transition: transform 0.24s var(--ease);
 }
 .arrow-link:hover {
   color: var(--accent);
@@ -815,7 +981,8 @@ picture {
   position: relative;
   height: clamp(420px, 61vh, 640px);
   border: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.1));
+  background: radial-gradient(120% 100% at 50% 0%, var(--paper-3) 0%, var(--paper) 68%);
+  box-shadow: 0 22px 48px rgba(20, 23, 27, 0.07);
   overflow: hidden;
 }
 
@@ -834,7 +1001,7 @@ picture {
 .viewer-stage .plate-tick {
   width: 9px;
   height: 9px;
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .viewer-fallback {
@@ -894,7 +1061,7 @@ picture {
 .viewer-presets button.on {
   background: var(--ink);
   border-color: var(--ink);
-  color: var(--paper-hi);
+  color: var(--paper-3);
 }
 
 .pp {
@@ -930,6 +1097,25 @@ picture {
 }
 
 /* ------------------------------------------------------------- pipeline */
+.sec--drone {
+  overflow: hidden;
+}
+.sec--drone .stamp {
+  position: absolute;
+  top: clamp(24px, 4vh, 44px);
+  right: max(var(--pad), calc((100vw - var(--max)) / 2 + var(--pad)));
+  transform: rotate(-7deg);
+  padding: 8px 16px;
+  border: 2px solid var(--accent);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
 .pipeline {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -939,8 +1125,9 @@ picture {
   border-bottom: 1px solid var(--line);
 }
 .pipeline-step {
-  padding: 20px 20px 22px;
+  padding: 20px 20px 24px;
   border-right: 1px solid var(--line);
+  transition: background 0.2s ease;
 }
 .pipeline-step:last-child {
   border-right: 0;
@@ -954,12 +1141,13 @@ picture {
   margin-top: 14px;
   font-family: var(--serif);
   font-weight: 400;
-  font-size: 1.55rem;
+  font-size: 1.6rem;
   letter-spacing: -0.01em;
+  color: var(--ink);
 }
 .pipeline-step p {
   margin-top: 8px;
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.6;
   color: var(--muted);
 }
@@ -972,23 +1160,50 @@ picture {
 .pipeline-step.is-built .pipeline-status {
   color: var(--accent);
 }
+.pipeline-step.is-built {
+  background: var(--paper-3);
+}
 .pipeline-step.is-built h3,
 .pipeline-step.is-built .pipeline-idx {
   color: var(--ink);
 }
 .pipeline-step.is-todo {
-  background: rgba(255, 255, 255, 0.28);
+  background: transparent;
 }
 .pipeline-step.is-todo h3 {
   color: var(--dim);
 }
+.pipeline-step.is-todo .pipeline-status {
+  color: var(--muted);
+}
 
 /* --------------------------------------------------------------- status */
+.sec--status {
+  padding-bottom: clamp(40px, 7vh, 84px);
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: 1.15fr 1fr 1fr;
   gap: clamp(24px, 4vw, 56px);
   margin-top: clamp(36px, 5vh, 52px);
+  counter-reset: statuscol;
+}
+.status-col {
+  position: relative;
+  padding-top: 34px;
+}
+.status-col::before {
+  counter-increment: statuscol;
+  content: "0" counter(statuscol);
+  position: absolute;
+  top: -14px;
+  left: -4px;
+  font-family: var(--serif);
+  font-size: 64px;
+  line-height: 1;
+  color: rgba(20, 23, 27, 0.055);
+  pointer-events: none;
 }
 .status-h {
   padding-bottom: 12px;
@@ -1001,9 +1216,13 @@ picture {
   position: relative;
   padding: 12px 0 12px 18px;
   border-bottom: 1px solid var(--line-soft);
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
   color: var(--muted);
+  transition: color 0.16s ease;
+}
+.status-col ul li:hover {
+  color: var(--ink);
 }
 .status-col ul li::before {
   content: "";
@@ -1040,65 +1259,67 @@ picture {
 .contact-rows {
   margin-top: clamp(36px, 5vh, 56px);
   margin-left: calc(190px + clamp(20px, 4vw, 56px));
-  border-top: 1px solid var(--ink);
+  border-top: 1px solid rgba(242, 238, 229, 0.28);
 }
 .contact-row {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(242, 238, 229, 0.14);
 }
 .contact-label {
   font-size: 9px;
   letter-spacing: 0.2em;
-  color: var(--dim);
+  color: rgba(242, 238, 229, 0.5);
 }
 .contact-value {
   font-family: var(--serif);
-  font-size: clamp(1.15rem, 1.8vw, 1.5rem);
+  font-size: clamp(1.2rem, 1.9vw, 1.6rem);
   line-height: 1.2;
   letter-spacing: -0.005em;
+  color: #f4efe4;
 }
 .contact-value a {
-  background-image: linear-gradient(var(--accent), var(--accent));
+  background-image: linear-gradient(#e2784f, #e2784f);
   background-size: 0% 1px;
   background-position: 0 100%;
   background-repeat: no-repeat;
-  transition: background-size 0.3s ease, color 0.2s ease;
+  transition: background-size 0.34s var(--ease), color 0.2s ease;
 }
 .contact-value a:hover {
-  color: var(--accent);
+  color: #e2784f;
   background-size: 100% 1px;
 }
 .copy {
   padding: 7px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(242, 238, 229, 0.26);
   font-size: 9px;
   letter-spacing: 0.18em;
-  color: var(--muted);
+  color: rgba(242, 238, 229, 0.7);
   transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
 }
 .copy:hover {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper-hi);
+  background: #f4efe4;
+  border-color: #f4efe4;
+  color: var(--ink);
 }
 .copy.is-done {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: #e2784f;
+  color: #e2784f;
 }
 
 /* --------------------------------------------------------------- footer */
 .footer {
-  margin-top: clamp(90px, 13vh, 150px);
+  margin-top: 0;
+  padding-top: clamp(56px, 8vh, 96px);
   padding-bottom: 46px;
 }
 .titleblock {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  border: 1px solid var(--line);
+  border: 1px solid var(--ink);
 }
 .titleblock > div {
   padding: 11px 14px 13px;
@@ -1142,9 +1363,8 @@ picture {
 /* -------------------------------------------------------------- reveals */
 .js .reveal {
   opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
-    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transform: translateY(18px);
+  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
 }
 .js .reveal.is-in {
   opacity: 1;
@@ -1154,7 +1374,7 @@ picture {
 /* hero entrance */
 @media (prefers-reduced-motion: no-preference) {
   .hero-copy > * {
-    animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation: rise 0.9s var(--ease) both;
   }
   .hero-copy > *:nth-child(1) {
     animation-delay: 0.05s;
@@ -1174,8 +1394,17 @@ picture {
   .hero-copy > *:nth-child(6) {
     animation-delay: 0.42s;
   }
+  .hero-name .line {
+    animation: lineUp 1s var(--ease) both;
+  }
+  .hero-name .line:nth-child(1) {
+    animation-delay: 0.14s;
+  }
+  .hero-name .line:nth-child(2) {
+    animation-delay: 0.22s;
+  }
   .plate {
-    animation: rise 1.1s 0.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation: rise 1.1s 0.2s var(--ease) both;
   }
 }
 
@@ -1186,6 +1415,19 @@ picture {
   }
   to {
     opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lineUp {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 105% 0);
+    transform: translateY(0.14em);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(-20% 0 -20% 0);
     transform: none;
   }
 }
@@ -1202,13 +1444,22 @@ picture {
   .contact-rows {
     margin-left: calc(150px + 28px);
   }
+  .sheet-edge {
+    display: none;
+  }
+}
+
+@media (max-width: 1400px) {
+  .sheet-edge {
+    display: none;
+  }
 }
 
 @media (max-width: 1040px) {
   .hero {
     grid-template-columns: 1fr;
     min-height: 0;
-    gap: 40px;
+    gap: 44px;
     padding-top: calc(var(--topbar-h) + 46px);
   }
   .hero-copy {
@@ -1258,6 +1509,12 @@ picture {
   .pipeline-step:nth-last-child(-n + 2) {
     border-bottom: 0;
   }
+  .sec--drone .stamp {
+    position: static;
+    display: inline-block;
+    margin-top: 22px;
+    transform: rotate(-4deg);
+  }
 }
 
 @media (max-width: 860px) {
@@ -1265,15 +1522,21 @@ picture {
     display: none;
   }
   .topbar {
-    background: rgba(238, 242, 247, 0.99);
+    background: rgba(242, 238, 229, 0.985);
   }
-  .topbar-status span,
   .topbar-status {
     font-size: 8.5px;
   }
-  .status-grid {
+  .sec--status {
+  padding-bottom: clamp(40px, 7vh, 84px);
+}
+
+.status-grid {
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 34px;
+  }
+  .status-col {
+    padding-top: 26px;
   }
   .titleblock {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1287,6 +1550,14 @@ picture {
   .cols {
     grid-template-columns: 1fr;
   }
+  .contact-row {
+    grid-template-columns: 1fr auto;
+    gap: 6px 16px;
+    align-items: start;
+  }
+  .contact-label {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1295,7 +1566,7 @@ picture {
     --topbar-h: 54px;
   }
   body {
-    font-size: 16px;
+    font-size: 15.5px;
   }
   .brand-sub {
     display: none;
@@ -1307,7 +1578,7 @@ picture {
     inset: 7px;
   }
   .hero-name {
-    font-size: clamp(2.9rem, 15vw, 4rem);
+    font-size: clamp(3rem, 15.5vw, 4.2rem);
   }
   .hero-facts {
     grid-template-columns: 1fr;
@@ -1331,7 +1602,7 @@ picture {
     gap: 4px;
   }
   .sec-title {
-    font-size: clamp(1.55rem, 6.4vw, 2rem);
+    font-size: clamp(1.6rem, 6.6vw, 2.1rem);
   }
   .spec > div {
     gap: 12px;
@@ -1355,16 +1626,8 @@ picture {
   .pipeline-step:last-child {
     border-bottom: 0;
   }
-  .contact-row {
-    grid-template-columns: 1fr auto;
-    gap: 6px 16px;
-    align-items: start;
-  }
-  .contact-label {
-    grid-column: 1 / -1;
-  }
   .contact-value {
-    font-size: 1.05rem;
+    font-size: 1.08rem;
     word-break: break-word;
   }
   .titleblock {
@@ -1394,6 +1657,10 @@ picture {
   .viewer-foot {
     flex-direction: column;
     gap: 4px;
+  }
+  .status-col::before {
+    font-size: 48px;
+    top: -6px;
   }
 }
 

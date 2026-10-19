@@ -206,3 +206,20 @@ Keyframes (locked, from page-plan.md + inbound PNGs):
 - **Beat 1 (wide): PASS**
 - **Beat 2 (arm): PASS**
 - **Beat 3 (drone): PASS (composition)** — drone dominant + pair in depth below; quadcopter readability deferred to the real colored drone model (drop-in models/ swap, per locked color-reveal plan).
+
+## 2026-10-19 — v3 visual pass (branch `design/v3`)
+
+Design-only pass; no content, copy or JS behaviour changed.
+
+- Reworked the palette to warm paper (`#f2eee5`), ink (`#14171b`), rust signal (`#b23e22`) and a
+  blueprint navy (`#0f2438`). Every text pair re-checked for WCAG AA.
+- Body type moved from the system sans to self-hosted Instrument Sans 400 (latin subset, 17 KB);
+  mono annotations raised to 10.5px and darkened.
+- Mission is now a full-bleed navy plate, the diagram re-inked in white/rust; the drone section is a
+  recessed band with a "NOT BUILT — 2026" stamp; contact closes on ink. Section rhythm is no longer
+  monotone paper.
+- Hero render gets a drop shadow and crosshair; the viewer stage gets a raised-paper radial.
+- Added sheet-edge label, paper grain, ghost status numerals via CSS counters, line-clip hero
+  entrance, and a tightened reveal curve.
+- Verified: `npm run build` green; no console errors; no horizontal overflow at 1440/390.
+- Reference board and design rationale: `../review-v3/DESIGN-NOTES.md`.
