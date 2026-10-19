@@ -1,246 +1,382 @@
-// ============================================================
-// main.js — page behaviour for the portfolio.
+// ============================================================================
+// main.js — page behaviour for the v4 product-film portfolio.
 //
-// Owns: reveal animations, section nav state, the lazy arm viewer,
-// camera presets / play toggle, live pose readout, copy-email.
-// The Three.js viewer itself lives in ./arm-viewer.js.
-// ============================================================
+// Owns: loader, Lenis smooth scroll, section/stop choreography into the 3D
+// scene, ghost type, progress, custom cursor, clock, index overlay, mode
+// switch, drag-to-orbit routing, scroll reveals.
+//
+// The 3D scene itself lives in ./arm-scene.js (createArmScene).
+// ============================================================================
+import { createArmScene } from './arm-scene.js'
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const body = document.body
 
-// The pose used for the rendered stills (hero plate + viewer placeholder), so
-// the hand-off from still to live 3D is seamless.
-const PLATE_POSE = [12, 38, 8, 52, 20]
+/* ------------------------------------------------------------- loader */
+function initLoader() {
+  const countEl = document.getElementById('loader-count')
+  const barEl = document.getElementById('loader-bar')
+  const finish = () => {
+    body.classList.remove('is-loading')
+    body.classList.add('loaded')
+  }
 
-/* ------------------------------------------------------------- reveals */
-function initReveals() {
-  const targets = document.querySelectorAll(
-    '.sec-head, .sec-body, .figure, .pipeline, .status-grid, .status-foot, .contact-rows, .titleblock',
-  )
-  if (!targets.length) return
-
-  if (reducedMotion || !('IntersectionObserver' in window)) {
-    targets.forEach((el) => el.classList.add('is-in'))
+  if (!countEl || !barEl || reducedMotion) {
+    if (countEl) countEl.textContent = '100'
+    if (barEl) barEl.style.width = '100%'
+    setTimeout(finish, 120)
     return
   }
 
-  targets.forEach((el) => el.classList.add('reveal'))
+  body.classList.add('is-loading')
+  const start = performance.now()
+  const DURATION = 1400
+  const tick = (now) => {
+    const t = Math.min(1, (now - start) / DURATION)
+    const eased = 1 - Math.pow(1 - t, 3)
+    const n = Math.round(eased * 100)
+    countEl.textContent = String(n).padStart(3, '0')
+    barEl.style.width = `${eased * 100}%`
+    if (t < 1) requestAnimationFrame(tick)
+    else setTimeout(finish, 260)
+  }
+  requestAnimationFrame(tick)
+}
 
+/* --------------------------------------------------------- smooth scroll */
+let lenis = null
+function initScroll() {
+  if (reducedMotion) return null
+  return import('lenis')
+    .then(({ default: Lenis }) => {
+      lenis = new Lenis({
+        duration: 1.15,
+        smoothWheel: true,
+        wheelMultiplier: 1,
+      })
+      const raf = (time) => {
+        lenis.raf(time)
+        requestAnimationFrame(raf)
+      }
+      requestAnimationFrame(raf)
+      return lenis
+    })
+    .catch(() => null)
+}
+
+/* -------------------------------------------------------------- the scene */
+const ACTS = [...document.querySelectorAll('.act')].map((el) => ({
+  el,
+  stop: el.dataset.stop,
+  ghost: el.dataset.ghost || '',
+  index: el.dataset.index || '',
+}))
+
+let scene = null
+let activeAct = 0
+
+const canvas = document.getElementById('arm-canvas')
+const sceneReady = (async () => {
+  if (!canvas) return null
+  try {
+    scene = await createArmScene(canvas, {
+      modelUrl: './models/arm-opt.glb',
+      reducedMotion,
+    })
+    await scene.ready
+    body.classList.add('scene-ready')
+    applyStop(activeAct, 1)
+    return scene
+  } catch (err) {
+    console.warn('[scene] unavailable, keeping still render:', err)
+    return null
+  }
+})()
+
+function applyStop(i, t = 1) {
+  const act = ACTS[i]
+  if (!act || !scene) return
+  try {
+    // The scene blends between an arrived stop and a destination stop:
+    // pin the current one, then blend towards the next by its local progress.
+    scene.setStop(act.stop, 1)
+    const next = ACTS[i + 1]
+    if (next && t < 1) scene.setStop(next.stop, t)
+  } catch {
+    /* scene not ready — no-op */
+  }
+}
+
+/* --------------------------------------------------------------- ghost type */
+const ghostEl = document.getElementById('ghost')
+let ghostWord = ghostEl ? ghostEl.textContent : ''
+let ghostTimer = 0
+function setGhost(word) {
+  if (!ghostEl || !word || word === ghostWord) return
+  ghostWord = word
+  clearTimeout(ghostTimer)
+  ghostEl.classList.add('is-out')
+  ghostTimer = window.setTimeout(() => {
+    ghostEl.textContent = word
+    ghostEl.classList.remove('is-out')
+  }, reducedMotion ? 0 : 280)
+}
+
+/* ---------------------------------------------------------------- progress */
+const progressNum = document.getElementById('progress-num')
+const progressTicks = [...document.querySelectorAll('#progress-ticks li')]
+function setProgress(i) {
+  if (progressNum) progressNum.textContent = String(i + 1).padStart(2, '0')
+  progressTicks.forEach((li, n) => li.classList.toggle('on', n === i))
+}
+
+/* -------------------------------------------------------------- scroll map */
+function measure() {
+  const y = window.scrollY
+  const vh = window.innerHeight
+
+  // Cross-fade each act's copy with the fold so two sections' text never shout
+  // over each other during a transition.
+  for (const a of ACTS) {
+    const top = a.el.getBoundingClientRect().top
+    const f = Math.min(1, Math.max(0.04, 1 - Math.abs(top) / (vh * 0.82)))
+    a.el.style.setProperty('--f', f.toFixed(3))
+  }
+
+  // Stops sit at the top of each 100vh act. Scroll progress between two act
+  // tops is the blend t; the act whose top is closest to the fold owns the
+  // chrome (ghost word, progress, mode).
+  let i = 0
+  for (let n = 0; n < ACTS.length; n++) {
+    if (y >= ACTS[n].el.offsetTop - 1) i = n
+  }
+  const act = ACTS[i]
+  const next = ACTS[i + 1]
+  const start = act.el.offsetTop
+  const end = next ? next.el.offsetTop : start + act.el.offsetHeight
+  const t = Math.min(1, Math.max(0, (y - start) / Math.max(1, end - start)))
+
+  const shown = t > 0.5 && next ? i + 1 : i
+  if (shown !== activeAct) {
+    activeAct = shown
+    const shownAct = ACTS[shown]
+    setGhost(shownAct.ghost)
+    setProgress(shown)
+    body.classList.toggle('at-end', shown === ACTS.length - 1)
+    if (!userMode) setMode(shown === 3 ? 'points' : 'mesh', false)
+  }
+  applyStop(i, t)
+}
+
+let queued = false
+function onScroll() {
+  if (queued) return
+  queued = true
+  requestAnimationFrame(() => {
+    queued = false
+    measure()
+  })
+}
+window.addEventListener('scroll', onScroll, { passive: true })
+window.addEventListener('resize', () => {
+  onScroll()
+  if (scene) scene.resize?.()
+})
+
+/* --------------------------------------------------------------- reveals */
+function initReveals() {
   const io = new IntersectionObserver(
     (entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue
-        entry.target.classList.add('is-in')
-        io.unobserve(entry.target)
+      for (const e of entries) {
+        if (e.isIntersecting) e.target.classList.add('is-in')
       }
     },
-    { rootMargin: '0px 0px -12% 0px', threshold: 0.04 },
+    { rootMargin: '0px 0px -18% 0px', threshold: 0.12 },
   )
-  targets.forEach((el) => io.observe(el))
+  ACTS.forEach((a) => io.observe(a.el))
 }
 
-/* ------------------------------------------------------------ nav state */
-function initNav() {
-  const links = [...document.querySelectorAll('.nav a[data-nav]')]
-  if (!links.length) return
-  const sections = links
-    .map((link) => document.getElementById(link.dataset.nav))
-    .filter(Boolean)
-  if (!sections.length) return
+/* ------------------------------------------------------------------ cursor */
+function initCursor() {
+  const cursor = document.getElementById('cursor')
+  const label = document.getElementById('cursor-label')
+  if (!cursor || reducedMotion) return
+  let x = window.innerWidth / 2
+  let y = window.innerHeight / 2
+  let cx = x
+  let cy = y
 
-  let queued = false
+  const loop = () => {
+    cx += (x - cx) * 0.22
+    cy += (y - cy) * 0.22
+    cursor.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`
+    requestAnimationFrame(loop)
+  }
+  requestAnimationFrame(loop)
+
+  window.addEventListener(
+    'pointermove',
+    (e) => {
+      x = e.clientX
+      y = e.clientY
+      cursor.classList.add('is-on')
+
+      const target = e.target instanceof Element ? e.target.closest('a, button, [data-cursor]') : null
+      const overCanvas = e.target === canvas
+      cursor.classList.toggle('is-hover', Boolean(target) || overCanvas)
+      if (label) {
+        label.textContent = target?.dataset.cursor
+          ? target.dataset.cursor.toUpperCase()
+          : overCanvas
+            ? 'DRAG'
+            : ''
+      }
+    },
+    { passive: true },
+  )
+  window.addEventListener(
+    'pointermove',
+    (e) => {
+      const nx = (e.clientX / window.innerWidth) * 2 - 1
+      const ny = (e.clientY / window.innerHeight) * 2 - 1
+      scene?.setPointer?.(nx, ny)
+    },
+    { passive: true },
+  )
+  window.addEventListener('pointerleave', () => cursor.classList.remove('is-on'))
+}
+
+/* ------------------------------------------------------------- frame counter */
+function initFrameCounter() {
+  const el = document.getElementById('chrome-frame')
+  if (!el || reducedMotion) return 0
+  let frames = 0
+  let last = 0
+  const loop = (now) => {
+    frames++
+    if (now - last > 80) {
+      last = now
+      el.textContent = 'F ' + String(frames).padStart(6, '0')
+    }
+    requestAnimationFrame(loop)
+  }
+  requestAnimationFrame(loop)
+}
+
+/* ------------------------------------------------------------------- clock */
+function initClock() {
+  const el = document.getElementById('clock')
+  if (!el) return
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Shanghai',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
   const update = () => {
-    queued = false
-    const line = window.innerHeight * 0.4
-    let current = null
-    for (const section of sections) {
-      const rect = section.getBoundingClientRect()
-      if (rect.top <= line && rect.bottom > line) current = section.id
-    }
-    for (const link of links) {
-      const active = link.dataset.nav === current
-      if (active) link.setAttribute('aria-current', 'true')
-      else link.removeAttribute('aria-current')
-    }
+    el.textContent = `GMT+8 ${fmt.format(new Date())}`
   }
-  const onScroll = () => {
-    if (queued) return
-    queued = true
-    requestAnimationFrame(update)
-  }
-  window.addEventListener('scroll', onScroll, { passive: true })
-  window.addEventListener('resize', onScroll, { passive: true })
   update()
+  setInterval(update, 15000)
 }
 
-/* ---------------------------------------------------------- arm viewer */
-function initArmViewer() {
-  const stage = document.querySelector('.viewer-stage')
-  const canvas = document.getElementById('arm-canvas')
-  const fallback = document.getElementById('arm-fallback')
-  const status = document.getElementById('viewer-status')
-  const readout = document.getElementById('pose-readout')
-  const playBtn = document.getElementById('play-toggle')
-  const presetButtons = [...document.querySelectorAll('[data-preset]')]
-  const viewerHost = canvas ? canvas.parentElement : stage
-  if (!canvas || !viewerHost) return
+/* ----------------------------------------------------------- index overlay */
+function initIndex() {
+  const toggle = document.getElementById('index-toggle')
+  const panel = document.getElementById('index-panel')
+  if (!toggle || !panel) return
 
-  let viewer = null
-  let playing = false
-  let started = false
-
-  const setStatus = (text, hidden = false) => {
-    if (!status) return
-    status.textContent = text
-    status.classList.toggle('is-hidden', hidden)
+  const setOpen = (open) => {
+    panel.hidden = false
+    panel.classList.toggle('is-open', open)
+    toggle.setAttribute('aria-expanded', String(open))
+    body.style.overflow = open ? 'hidden' : ''
+    if (open) panel.querySelector('a')?.focus({ preventScroll: true })
   }
 
-  const showFallback = (message) => {
-    if (fallback) {
-      fallback.hidden = false
-      fallback.alt =
-        'Still render of the 5-DOF robotic arm CAD assembly, shown because the interactive 3D view could not start.'
-    }
-    canvas.hidden = true
-    setStatus(message)
-  }
-
-  const setPlaying = (next) => {
-    if (!viewer) return
-    playing = next
-    if (next) viewer.play()
-    else viewer.pause()
-    if (playBtn) {
-      playBtn.setAttribute('aria-pressed', String(next))
-      const label = playBtn.querySelector('.pp-label')
-      if (label) label.textContent = next ? 'Pause' : 'Play'
-    }
-  }
-
-  const start = async () => {
-    if (started) return
-    started = true
-    setStatus('Loading CAD…')
-    try {
-      const { createArmViewer } = await import('./arm-viewer.js')
-      viewer = await createArmViewer(canvas, {
-        modelUrl: './models/arm-opt.glb',
-        reducedMotion,
-        onPose: (deg) => {
-          if (!readout) return
-          readout.textContent = deg
-            .map((value, index) => `J${index + 1} ${Math.round(value)}°`)
-            .join(' · ')
-        },
-      })
-      await viewer.ready
-      viewer.setPose(PLATE_POSE, { immediate: true })
-      if (fallback) fallback.hidden = true
-      setStatus('', true)
-      if (!reducedMotion) setPlaying(true)
-      else {
-        if (playBtn) {
-          playBtn.setAttribute('aria-pressed', 'false')
-          const label = playBtn.querySelector('.pp-label')
-          if (label) label.textContent = 'Play'
-        }
-      }
-    } catch (error) {
-      console.error('arm viewer failed:', error)
-      showFallback('3D view unavailable — still shown')
-      if (playBtn) playBtn.hidden = true
-      presetButtons.forEach((button) => (button.hidden = true))
-    }
-  }
-
-  // Load only when the viewer is close to the viewport.
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          io.disconnect()
-          start()
-        }
-      },
-      { rootMargin: '500px 0px' },
-    )
-    io.observe(viewerHost)
-  } else {
-    start()
-  }
-
-  presetButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      if (!viewer) return
-      presetButtons.forEach((other) => other.classList.toggle('on', other === button))
-      try {
-        viewer.setPreset(button.dataset.preset)
-      } catch (error) {
-        console.error(error)
-      }
-    })
+  toggle.addEventListener('click', () => {
+    setOpen(toggle.getAttribute('aria-expanded') !== 'true')
   })
-
-  if (playBtn) {
-    playBtn.addEventListener('click', () => {
-      if (!viewer) return
-      setPlaying(!playing)
-    })
-  }
-}
-
-/* -------------------------------------------------------- copy email */
-function initCopyEmail() {
-  const button = document.getElementById('copy-email')
-  if (!button) return
-  const original = button.textContent
-  let timer = null
-
-  const done = (label) => {
-    button.textContent = label
-    button.classList.add('is-done')
-    clearTimeout(timer)
-    timer = setTimeout(() => {
-      button.textContent = original
-      button.classList.remove('is-done')
-    }, 1800)
-  }
-
-  button.addEventListener('click', async () => {
-    const email = button.dataset.email || ''
-    try {
-      await navigator.clipboard.writeText(email)
-      done('Copied')
-    } catch (error) {
-      const field = document.createElement('textarea')
-      field.value = email
-      field.setAttribute('readonly', '')
-      field.style.position = 'fixed'
-      field.style.opacity = '0'
-      document.body.appendChild(field)
-      field.select()
-      try {
-        document.execCommand('copy')
-        done('Copied')
-      } catch (fallbackError) {
-        done('Copy failed')
-      }
-      field.remove()
-    }
+  panel.addEventListener('click', (e) => {
+    if (e.target === panel) setOpen(false)
+  })
+  panel.querySelectorAll('a').forEach((a) => {
+    a.addEventListener('click', () => setOpen(false))
+  })
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') setOpen(false)
   })
 }
 
-/* ------------------------------------------------------------- boot */
-function boot() {
-  document.documentElement.classList.add('js')
-  initReveals()
-  initNav()
-  initArmViewer()
-  initCopyEmail()
+/* --------------------------------------------------------------- mode switch */
+let userMode = null
+function setMode(mode, fromUser = true) {
+  if (fromUser) userMode = mode
+  document.querySelectorAll('.mode button').forEach((b) => {
+    b.classList.toggle('on', b.dataset.mode === mode)
+  })
+  scene?.setMode?.(mode)
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', boot, { once: true })
-} else {
-  boot()
+function initMode() {
+  const buttons = [...document.querySelectorAll('.mode button')]
+  if (!buttons.length) return
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => setMode(btn.dataset.mode, true))
+  })
 }
+
+/* ------------------------------------------------------------- drag orbit */
+function initDrag() {
+  if (!canvas) return
+  let dragging = false
+  let lastX = 0
+  let lastY = 0
+
+  const down = (e) => {
+    if (e.target !== canvas) return
+    dragging = true
+    lastX = e.clientX
+    lastY = e.clientY
+    canvas.classList.add('is-grabbing')
+    canvas.setPointerCapture?.(e.pointerId)
+  }
+  const move = (e) => {
+    if (!dragging) return
+    const dx = e.clientX - lastX
+    const dy = e.clientY - lastY
+    lastX = e.clientX
+    lastY = e.clientY
+    scene?.setOrbit?.(dx * 0.005, dy * 0.004)
+  }
+  const up = (e) => {
+    if (!dragging) return
+    dragging = false
+    canvas.classList.remove('is-grabbing')
+    canvas.releasePointerCapture?.(e.pointerId)
+  }
+  canvas.addEventListener('pointerdown', down)
+  window.addEventListener('pointermove', move, { passive: true })
+  window.addEventListener('pointerup', up)
+  window.addEventListener('pointercancel', up)
+}
+
+/* -------------------------------------------------------------- boot */
+initLoader()
+initReveals()
+initCursor()
+initClock()
+initFrameCounter()
+initIndex()
+initMode()
+initDrag()
+
+sceneReady.then(() => measure())
+initScroll()
+measure()
+
+// Keep the scene in sync if fonts or images change layout.
+window.addEventListener('load', () => {
+  onScroll()
+  if (scene) scene.resize?.()
+})

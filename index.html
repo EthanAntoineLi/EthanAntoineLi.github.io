@@ -4,492 +4,224 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#F2EEE5" />
+    <meta name="theme-color" content="#f6f6f4" />
     <title>Ethan Antoine Li — Rescue Robotics</title>
     <meta
       name="description"
-      content="A-level student building a 5-DOF robotic arm and an FPV drone for mountain rescue. Real CAD, printed prototypes, and an honest account of what isn't built yet."
+      content="A five-axis robotic arm, printed and programmed. Built toward a mountain-rescue system. Real CAD, real prototype, honest about what is not built."
     />
     <meta property="og:title" content="Ethan Antoine Li — Rescue Robotics" />
     <meta
       property="og:description"
-      content="A 5-DOF robotic arm and an FPV drone, built toward a mountain-rescue system. Prototypes, CAD, and what's still missing."
+      content="A five-axis arm, printed and programmed. The drone half is not built yet."
     />
     <meta property="og:type" content="website" />
     <meta name="author" content="Ethan Antoine Li" />
     <meta property="og:url" content="https://ethanantoineli.github.io/personal-page/" />
     <meta property="og:image" content="https://ethanantoineli.github.io/personal-page/img/og.jpg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <link rel="preload" href="./fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./fonts/inter-tight-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./fonts/inter-tight-300.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="./fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="./fonts/instr-sans-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="./src/style.css" />
     <script>
       document.documentElement.classList.add('js')
     </script>
-    <noscript>
-      <style>
-        #viewer-status,
-        .viewer-presets,
-        #play-toggle,
-        .viewer-foot {
-          display: none !important;
-        }
-      </style>
-    </noscript>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
-    <div class="sheet-frame" aria-hidden="true"></div>
-    <div class="paper-grid" aria-hidden="true"></div>
-    <div class="sheet-edge" aria-hidden="true"><span>Sheet 01 — Portfolio 2026 — Rev C</span></div>
+    <!-- ---------------------------------------------------------- loader -->
+    <div class="loader" id="loader" aria-hidden="true">
+      <p class="loader-label mono">Scanning</p>
+      <p class="loader-count" id="loader-count">000</p>
+      <div class="loader-bar"><span id="loader-bar"></span></div>
+      <p class="mono loader-foot">EPQ 3.1 · 5-axis arm · CAD</p>
+    </div>
 
-    <header class="topbar">
-      <a class="brand" href="#top" aria-label="Ethan Antoine Li — back to top">
+    <!-- ----------------------------------------------------------- cursor -->
+    <div class="cursor" id="cursor" aria-hidden="true">
+      <span class="cursor-dot"></span>
+      <span class="cursor-label mono" id="cursor-label"></span>
+    </div>
+
+    <!-- ------------------------------------------------------ ghost letters -->
+    <div class="ghost-wrap" aria-hidden="true">
+      <span class="ghost" id="ghost">SCAN</span>
+    </div>
+
+    <!-- ---------------------------------------------------------- 3D stage -->
+    <div class="stage" aria-hidden="true">
+      <canvas id="arm-canvas"></canvas>
+      <img class="stage-fallback" id="stage-fallback" src="./img/arm-plate.png" alt="" />
+    </div>
+
+    <!-- ------------------------------------------------------------ chrome -->
+    <header class="chrome">
+      <a class="brand" href="#top" aria-label="Ethan Antoine Li — top">
         <span class="brand-mark" aria-hidden="true"></span>
-        <span class="brand-text">
-          <span class="brand-name">Ethan Antoine Li</span>
-          <span class="brand-sub">Rescue robotics · portfolio 2026</span>
-        </span>
+        <span class="brand-name">ethan antoine li</span>
+        <span class="brand-tag mono">rescue robotics</span>
       </a>
 
-      <nav class="nav" aria-label="Sections">
-        <a href="#mission" data-nav="mission"><span class="mono">01</span>Mission</a>
-        <a href="#arm" data-nav="arm"><span class="mono">02</span>Arm</a>
-        <a href="#drone" data-nav="drone"><span class="mono">03</span>Drone</a>
-        <a href="#status" data-nav="status"><span class="mono">04</span>Status</a>
-        <a href="#contact" data-nav="contact"><span class="mono">05</span>Contact</a>
-      </nav>
+      <p class="chrome-meta mono">5-axis arm · EPQ 2026</p>
 
-      <p class="topbar-status mono"><i aria-hidden="true"></i>Prototype stage</p>
+      <div class="chrome-right">
+        <p class="chrome-frame mono" id="chrome-frame" aria-hidden="true">F 000000</p>
+        <div class="mode" role="group" aria-label="Render mode">
+          <button type="button" data-mode="mesh" class="on">Mesh</button>
+          <button type="button" data-mode="points">Points</button>
+        </div>
+        <p class="chrome-clock mono" id="clock">GMT+8 —:—</p>
+        <button class="index-toggle mono" id="index-toggle" aria-expanded="false" aria-controls="index-panel">
+          index
+        </button>
+      </div>
     </header>
 
+    <!-- ----------------------------------------------------- index overlay -->
+    <nav class="index-panel" id="index-panel" aria-label="Sections" hidden>
+      <ol>
+        <li><a href="#act-arm"><span class="mono">01</span>Payload</a></li>
+        <li><a href="#act-geometry"><span class="mono">02</span>Geometry</a></li>
+        <li><a href="#act-scan"><span class="mono">03</span>Scan</a></li>
+        <li><a href="#act-contact"><span class="mono">04</span>Contact</a></li>
+      </ol>
+      <p class="index-foot mono">ethan.li.1@outlook.com</p>
+    </nav>
+
+    <!-- ------------------------------------------------------ left progress -->
+    <aside class="progress" aria-hidden="true">
+      <p class="progress-num" id="progress-num">01</p>
+      <ol class="progress-ticks" id="progress-ticks">
+        <li class="on"></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+      </ol>
+    </aside>
+
+    <!-- ------------------------------------------------------------ main -->
     <main id="main">
-      <!-- ============================================================ HERO -->
-      <section class="hero" id="top" aria-labelledby="hero-name">
-        <div class="hero-copy">
-          <p class="eyebrow mono"><span class="dot" aria-hidden="true"></span>Portfolio — sheet 01 / 2026</p>
-
-          <h1 class="hero-name" id="hero-name">
-            <span class="line">Ethan</span>
-            <span class="line line--indent">Antoine Li</span>
-          </h1>
-
-          <p class="hero-mission">
-            Why send more people into the same dangerous ground to save someone — why not robots?
-          </p>
-
-          <p class="hero-lede">
-            A-level student. I design, print and program the pieces of a mountain-rescue system: a
-            five-axis robotic arm, and an FPV drone that is meant to be its eyes. Both are
-            prototypes. Where something isn’t built yet, this page says so.
-          </p>
-
-          <a class="downlink" href="#mission">
-            <span class="downlink-line" aria-hidden="true"></span>
-            <span class="mono">Start at 01 — mission</span>
-          </a>
-
-          <dl class="hero-facts">
-            <div>
-              <dt class="mono">Discipline</dt>
-              <dd>A-level engineering path<br />Maths, Further Maths, Physics, Chemistry</dd>
-            </div>
-            <div>
-              <dt class="mono">Toolchain</dt>
-              <dd>Shapr3D · Bambu Lab H2S<br />STM32F407 · three.js</dd>
-            </div>
-            <div>
-              <dt class="mono">State</dt>
-              <dd>Prototype<br />In build, not finished</dd>
-            </div>
-          </dl>
-        </div>
-
-        <figure class="plate">
-          <div class="plate-media">
-            <picture>
-              <source type="image/webp" srcset="./img/arm-plate.webp" />
-              <img
-                id="arm-plate"
-                src="./img/arm-plate.png"
-                width="900"
-                height="949"
-                alt="Rendered view of Ethan's 5-DOF robotic arm CAD assembly: five printed joints, stepper motors and the end-effector flange, floating against drafting paper."
-                loading="eager"
-                decoding="async"
-              />
-            </picture>
-            <span class="plate-tick plate-tick--tl" aria-hidden="true"></span>
-            <span class="plate-tick plate-tick--br" aria-hidden="true"></span>
+      <!-- =========================================================== HERO -->
+      <section class="act act--hero" id="top" data-stop="hero" data-ghost="SCAN" data-index="1">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>Rescue robotics</p>
+            <h1 class="hero-name">
+              <span class="line">Ethan</span>
+              <span class="line line--indent">Antoine Li</span>
+            </h1>
           </div>
-          <figcaption class="plate-caption mono">
-            <span>Fig. 01 — EPQ 3.1 arm</span>
-            <span>5 DOF built · 6 DOF designed</span>
-          </figcaption>
-        </figure>
-      </section>
 
-      <!-- ========================================================= MISSION -->
-      <section class="sec sec--mission" id="mission" aria-labelledby="mission-h">
-        <header class="sec-head">
-          <p class="sec-index mono"><span>01</span> Mission</p>
-          <h2 class="sec-title" id="mission-h">
-            Someone is hurt on a slope that’s hard to reach. The rescue team has to walk into the
-            same ground to get them out.
-          </h2>
-        </header>
-
-        <div class="sec-body cols">
-          <p class="col">
-            I ski. Every winter I see the same shape of accident: a person down on a line that is
-            difficult, exposed, or both — and a team that has to commit people to that ground to
-            reach them. The question at the top of this page isn’t rhetorical. It’s the reason I
-            started building.
-          </p>
-          <p class="col">
-            The system I’m working towards is two machines and a handoff. The drone finds the person
-            and stays overhead. The arm does the reaching and the lifting. Each half is a real
-            prototype; the handoff between them does not exist yet. That distinction matters to me
-            more than a demo that looks finished.
-          </p>
-        </div>
-
-        <figure class="diagram figure" aria-labelledby="diagram-cap">
-          <div class="diagram-head mono">
-            <span>Fig. 02 — System intent</span>
-            <span>Not a simulation</span>
-          </div>
-          <div class="diagram-scroll">
-          <svg
-            class="diagram-svg"
-            viewBox="0 0 1200 420"
-            role="img"
-            aria-labelledby="diagram-title diagram-desc"
-            preserveAspectRatio="xMidYMid meet"
-          >
-            <title id="diagram-title">The intended rescue system: drone, handoff, arm, subject.</title>
-            <desc id="diagram-desc">
-              A schematic on a slope. The drone flies and finds a subject; a position fix is meant to
-              pass to the arm, which reaches the subject. Only the drone flight and the arm prototype
-              are built.
-            </desc>
-
-            <!-- ground line -->
-            <path class="d-ground" d="M20 372 L470 348 L760 322 L1180 296" />
-            <path class="d-ground-soft" d="M20 400 L470 378 L760 354 L1180 328" />
-            <text class="d-note" x="24" y="392">SLOPE ▸</text>
-
-            <!-- drone -->
-            <g class="d-drone">
-              <rect x="196" y="128" width="46" height="20" rx="3" />
-              <path d="M214 138 L156 112 M228 138 L286 112 M214 148 L156 174 M228 148 L286 174" />
-              <ellipse cx="150" cy="110" rx="42" ry="11" />
-              <ellipse cx="292" cy="110" rx="42" ry="11" />
-              <ellipse cx="150" cy="176" rx="42" ry="11" />
-              <ellipse cx="292" cy="176" rx="42" ry="11" />
-            </g>
-            <text class="d-label" x="150" y="72">DRONE — FIND</text>
-            <text class="d-status d-status--built" x="150" y="90">● FLYING AS FPV</text>
-
-            <!-- search arc -->
-            <path class="d-dashed" d="M190 306 Q300 210 430 240" />
-            <text class="d-note" x="248" y="298">SEARCH</text>
-
-            <!-- arm -->
-            <g class="d-arm">
-              <rect x="520" y="268" width="58" height="18" />
-              <circle cx="549" cy="262" r="9" />
-              <path d="M549 262 L604 206 L664 236 L714 198" />
-              <circle cx="604" cy="206" r="7" />
-              <circle cx="664" cy="236" r="7" />
-              <circle cx="714" cy="198" r="6" />
-              <path d="M714 198 L742 172" />
-            </g>
-            <text class="d-label" x="512" y="330">ARM — REACH</text>
-            <text class="d-status" x="512" y="348">◐ BENCH PROTOTYPE</text>
-
-            <!-- subject -->
-            <g class="d-subject">
-              <circle cx="962" cy="266" r="10" />
-              <path d="M962 276 L962 300 M962 284 L942 296 M962 284 L982 296 M962 300 L948 316 M962 300 L978 316" />
-            </g>
-            <text class="d-label" x="916" y="238">SUBJECT</text>
-            <text class="d-note" x="912" y="352">POSITION UNKNOWN</text>
-
-            <!-- connectors -->
-            <path class="d-dashed d-dashed--accent" d="M430 200 C520 150 660 148 750 176" />
-            <text class="d-note d-note--accent" x="520" y="140">POSITION FIX — NOT BUILT</text>
-
-            <path class="d-dashed d-dashed--accent" d="M760 200 C820 214 880 232 934 250" />
-            <text class="d-note d-note--accent" x="800" y="196">HANDOFF — NOT BUILT</text>
-          </svg>
-          </div>
-          <figcaption class="diagram-foot mono" id="diagram-cap">
-            <span>Two builds, one missing link.</span>
-            <span>Vision · fix · handoff = next phase</span>
-          </figcaption>
-        </figure>
-      </section>
-
-      <!-- ============================================================= ARM -->
-      <section class="sec sec--arm" id="arm" aria-labelledby="arm-h">
-        <header class="sec-head">
-          <p class="sec-index mono"><span>02</span> The arm</p>
-          <h2 class="sec-title" id="arm-h">
-            The first piece: a five-axis arm I designed, printed, and articulated.
-          </h2>
-        </header>
-
-        <div class="arm-grid">
-          <div class="arm-copy">
-            <p class="lead">
-              This is my EPQ artefact. The constraint that shaped every part was buildability: it has
-              to be printable on one Bambu Lab H2S and assemble from hardware I can actually buy.
+          <div class="hero-foot">
+            <p class="hero-line">
+              A five-axis arm, printed<br />
+              and programmed. Mountain<br />
+              rescue is the target.
             </p>
-
-            <p>
-              Six degrees of freedom were designed. Five were built — the budget stopped at five
-              motors. All five joints are driven by steppers through planetary and worm reductions,
-              commanded over RS485/Modbus from an STM32F407. The base carries a 25:1 planetary; the
-              shoulder uses a self-locking 50:1 worm, so it holds position without drawing current.
-            </p>
-
-            <div class="spec-block">
-              <div class="spec-block-head mono">
-                <span>Table 01 — Architecture</span>
-                <span>EPQ 3.1 · final CAD</span>
-              </div>
-              <dl class="spec">
-                <div><dt>Degrees of freedom</dt><dd>5 built · 6 designed</dd></div>
-                <div><dt>Actuators</dt><dd>UMIR57 ×2 · UMIR42 ×3 steppers</dd></div>
-                <div><dt>Reductions</dt><dd>25:1 planetary base · 50:1 worm shoulder</dd></div>
-                <div><dt>Torque</dt><dd>19 N·m base · 5.4 N·m shoulder</dd></div>
-                <div><dt>Controller</dt><dd>STM32F407</dd></div>
-                <div><dt>Bus</dt><dd>RS485 / Modbus-RTU</dd></div>
-                <div><dt>Payload target</dt><dd>500 g</dd></div>
-                <div><dt>Design / print</dt><dd>Shapr3D · Bambu Lab H2S</dd></div>
-              </dl>
-            </div>
-
-            <div class="spec-block">
-              <div class="spec-block-head mono">
-                <span>Table 02 — Joint travel</span>
-                <span>From the EPQ report</span>
-              </div>
-              <dl class="spec spec--joints">
-                <div><dt><span class="j">J1</span> Base yaw</dt><dd>±120°</dd></div>
-                <div><dt><span class="j">J2</span> Shoulder pitch</dt><dd>0–150°</dd></div>
-                <div><dt><span class="j">J3</span> Upper-arm roll</dt><dd>±135°</dd></div>
-                <div><dt><span class="j">J4</span> Elbow pitch</dt><dd>0–140°</dd></div>
-                <div><dt><span class="j">J5</span> Wrist roll</dt><dd>±180°</dd></div>
-              </dl>
-            </div>
-
-            <aside class="note">
-              <p class="mono note-label">Reading the model</p>
-              <p>
-                The arm beside this text is the real CAD assembly, exported with five articulated
-                joint nodes and posed at runtime. Same file as the EPQ model — no stand-in geometry,
-                no video.
-              </p>
-            </aside>
-
-            <a
-              class="arrow-link"
-              href="https://ethanantoineli.github.io/HAVK/"
-              target="_blank"
-              rel="noopener"
-            >
-              <span>Full visualiser — ranges, motion sequences, camera presets</span>
-              <span class="arrow" aria-hidden="true">↗</span>
+            <p class="pull">“Why send people into the same dangerous ground — why not robots?”</p>
+            <a class="scroll-cue" href="#act-arm" data-cursor="scroll">
+              <span class="scroll-dots" aria-hidden="true"></span>
+              <span class="mono">Scroll</span>
             </a>
           </div>
+        </div>
+      </section>
 
-          <div class="arm-viewer-col">
-            <div class="viewer">
-              <div class="viewer-stage">
-                <canvas
-                  id="arm-canvas"
-                  role="img"
-                  aria-label="Interactive 3D render of the 5-DOF robotic arm. Use the camera preset buttons to change view; drag to orbit."
-                ></canvas>
-                <img class="viewer-fallback" id="arm-fallback" src="./img/arm-plate.png" alt="Rendered still of the 5-DOF arm CAD assembly; replaced by the interactive 3D view when it loads." />
-                <p class="viewer-status mono" id="viewer-status">Loading CAD…</p>
-                <span class="plate-tick plate-tick--tl" aria-hidden="true"></span>
-                <span class="plate-tick plate-tick--br" aria-hidden="true"></span>
-              </div>
+      <!-- =========================================================== ARM -->
+      <section class="act act--arm" id="act-arm" data-stop="joints" data-ghost="ARM" data-index="2">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>01 / Payload</p>
+            <h2 class="act-title">
+              Built to hold<br />
+              <em>500 grams.</em>
+            </h2>
+          </div>
 
-              <div class="viewer-bar">
-                <div class="viewer-presets" role="group" aria-label="Camera preset">
-                  <button type="button" data-preset="iso" class="on">Iso</button>
-                  <button type="button" data-preset="profile">Profile</button>
-                  <button type="button" data-preset="front">Front</button>
-                  <button type="button" data-preset="top">Top</button>
-                </div>
-                <button type="button" class="viewer-play" id="play-toggle" aria-pressed="true">
-                  <span class="pp" aria-hidden="true"></span><span class="pp-label">Pause</span>
-                </button>
-              </div>
-
-              <div class="viewer-foot">
-                <p class="pose mono" id="pose-readout" aria-live="off">J1 0° · J2 0° · J3 0° · J4 0° · J5 0°</p>
-                <p class="viewer-hint mono">Drag to orbit · no zoom</p>
-              </div>
-            </div>
+          <div class="act-bottom">
+            <ul class="spec-row" id="spec-row">
+              <li class="spec" data-spec="dof">
+                <span class="spec-num">5</span>
+                <span class="spec-unit">DOF</span>
+                <span class="spec-label mono">[ built · 6 drawn ]</span>
+              </li>
+              <li class="spec" data-spec="payload">
+                <span class="spec-num">500</span>
+                <span class="spec-unit">g</span>
+                <span class="spec-label mono">[ payload target ]</span>
+              </li>
+              <li class="spec" data-spec="torque">
+                <span class="spec-num">19</span>
+                <span class="spec-unit">N·m</span>
+                <span class="spec-label mono">[ base torque ]</span>
+              </li>
+            </ul>
+            <p class="act-note mono">UMIR57 ×2 · UMIR42 ×3 · RS485 / Modbus-RTU</p>
           </div>
         </div>
       </section>
 
-      <!-- =========================================================== DRONE -->
-      <section class="sec sec--drone" id="drone" aria-labelledby="drone-h">
-        <span class="stamp" aria-hidden="true">Not built — 2026</span>
-        <header class="sec-head">
-          <p class="sec-index mono"><span>03</span> The drone</p>
-          <h2 class="sec-title" id="drone-h">
-            The second piece is a camera that can fly. The software that makes it useful does not
-            exist yet.
-          </h2>
-        </header>
+      <!-- ======================================================== GEOMETRY -->
+      <section class="act act--geometry" id="act-geometry" data-stop="profile" data-ghost="AXIS" data-index="3">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>02 / Geometry</p>
+            <h2 class="act-title">
+              Six axes drawn.<br />
+              Five built.
+            </h2>
+          </div>
 
-        <div class="sec-body cols">
-          <p class="col">
-            I fly it as an FPV drone: a pilot, goggles, a video feed. In the rescue system it is meant
-            to be the first thing on scene — find the injured person, hold position, and hand a
-            location to the arm. Right now only the flying is real.
-          </p>
-          <p class="col">
-            The recognition and spatial-positioning layer is the next build, not a feature I can
-            claim. When it works there will be a second video on this page; until then this section
-            stays deliberately short.
-          </p>
+          <ul class="joints mono">
+            <li><span>J1</span> base yaw <b>±120°</b></li>
+            <li><span>J2</span> shoulder <b>0–150°</b></li>
+            <li><span>J3</span> upper arm <b>±135°</b></li>
+            <li><span>J4</span> elbow <b>0–140°</b></li>
+            <li><span>J5</span> wrist <b>±180°</b></li>
+          </ul>
+
+          <p class="drag-note mono" id="drag-note">⟨ drag to orbit ⟩</p>
         </div>
-
-        <ol class="pipeline" aria-label="Drone role in the system, in order of build status">
-          <li class="pipeline-step is-built">
-            <p class="mono pipeline-idx">01</p>
-            <h3>Fly</h3>
-            <p>Airframe, motors, FPV video link. Flown by a pilot.</p>
-            <p class="pipeline-status mono">Built</p>
-          </li>
-          <li class="pipeline-step is-todo">
-            <p class="mono pipeline-idx">02</p>
-            <h3>Recognise</h3>
-            <p>Find a person in the video feed. No model trained yet.</p>
-            <p class="pipeline-status mono">Not built</p>
-          </li>
-          <li class="pipeline-step is-todo">
-            <p class="mono pipeline-idx">03</p>
-            <h3>Fix</h3>
-            <p>Turn a detection into a position a robot can use.</p>
-            <p class="pipeline-status mono">Not built</p>
-          </li>
-          <li class="pipeline-step is-todo">
-            <p class="mono pipeline-idx">04</p>
-            <h3>Hand off</h3>
-            <p>Pass the position to the arm as a reach target.</p>
-            <p class="pipeline-status mono">Not built</p>
-          </li>
-        </ol>
       </section>
 
-      <!-- ========================================================== STATUS -->
-      <section class="sec sec--status" id="status" aria-labelledby="status-h">
-        <header class="sec-head">
-          <p class="sec-index mono"><span>04</span> Status</p>
-          <h2 class="sec-title" id="status-h">What exists, what is being built, and what is next.</h2>
-        </header>
-
-        <div class="status-grid">
-          <div class="status-col">
-            <h3 class="mono status-h">Built</h3>
-            <ul>
-              <li>Arm CAD finalised — <em>EPQ 3.1 Design FINAL</em>, Shapr3D</li>
-              <li>Five joints printed, assembled and moving</li>
-              <li>Real-geometry articulation in three.js (this page, HAVK)</li>
-              <li>Drone flying as FPV — pilot and video link only</li>
-            </ul>
+      <!-- ============================================================ SCAN -->
+      <section class="act act--scan" id="act-scan" data-stop="scan" data-ghost="REAL" data-index="4">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>03 / Scan</p>
+            <h2 class="act-title">
+              This half is real.<br />
+              <span class="dim-line">The drone half <em>isn’t built yet.</em></span>
+            </h2>
           </div>
-          <div class="status-col">
-            <h3 class="mono status-h">In build</h3>
-            <ul>
-              <li>Arm firmware on the STM32F407</li>
-              <li>RS485 / Modbus-RTU joint control</li>
-              <li>Payload work toward the 500 g target</li>
-            </ul>
-          </div>
-          <div class="status-col status-col--next">
-            <h3 class="mono status-h">Next</h3>
-            <ul>
-              <li>Drone: person recognition in the video feed</li>
-              <li>Drone: a usable position fix</li>
-              <li>System: the handoff from fix to arm</li>
-            </ul>
-          </div>
+          <p class="act-note mono">Point cloud — sampled from the EPQ CAD, not a photo</p>
         </div>
-
-        <p class="status-foot mono">Last updated — October 2026 · corrections welcome</p>
       </section>
 
       <!-- ========================================================= CONTACT -->
-      <section class="sec sec--contact" id="contact" aria-labelledby="contact-h">
-        <header class="sec-head">
-          <p class="sec-index mono"><span>05</span> Contact</p>
-          <h2 class="sec-title" id="contact-h">
-            If you build things too — or you’re a rescue team who wants to explain why this won’t
-            work in the field — I’d like to hear it.
-          </h2>
-        </header>
+      <section class="act act--contact" id="act-contact" data-stop="outro" data-ghost="HI" data-index="5">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>04 / Contact</p>
+          </div>
 
-        <div class="contact-rows">
-          <div class="contact-row">
-            <p class="mono contact-label">Email</p>
-            <p class="contact-value">
-              <a href="mailto:ethan.li.1@outlook.com">ethan.li.1@outlook.com</a>
-            </p>
-            <button type="button" class="copy mono" id="copy-email" data-email="ethan.li.1@outlook.com">
-              Copy
-            </button>
+          <h2 class="act-title contact-title">Let’s talk.</h2>
+
+          <a class="email" href="mailto:ethan.li.1@outlook.com">ethan.li.1@outlook.com</a>
+
+          <div class="links">
+            <a href="https://github.com/EthanAntoineLi" target="_blank" rel="noopener">GitHub ↗</a>
+            <a href="https://ethanantoineli.github.io/HAVK/" target="_blank" rel="noopener">Arm demo ↗</a>
           </div>
-          <div class="contact-row">
-            <p class="mono contact-label">GitHub</p>
-            <p class="contact-value">
-              <a href="https://github.com/EthanAntoineLi" target="_blank" rel="noopener"
-                >github.com/EthanAntoineLi</a
-              >
-            </p>
-          </div>
-          <div class="contact-row">
-            <p class="mono contact-label">Arm demo</p>
-            <p class="contact-value">
-              <a href="https://ethanantoineli.github.io/HAVK/" target="_blank" rel="noopener"
-                >ethanantoineli.github.io/HAVK</a
-              >
-            </p>
-          </div>
+
+          <p class="colophon mono">Built by hand · no tracking · no cookies</p>
         </div>
       </section>
     </main>
-
-    <!-- ========================================================== FOOTER -->
-    <footer class="footer">
-      <div class="titleblock">
-        <div><p class="mono">Project</p><p>Rescue robotics</p></div>
-        <div><p class="mono">Subject</p><p>Ethan Antoine Li</p></div>
-        <div><p class="mono">Sheet</p><p>01 of 01</p></div>
-        <div><p class="mono">Scale</p><p>1 : 1</p></div>
-        <div><p class="mono">Rev</p><p>2026-10</p></div>
-        <div><p class="mono">Status</p><p>Prototype</p></div>
-      </div>
-      <div class="footer-line">
-        <p class="mono">Built by hand · no tracking · no cookies</p>
-        <a class="mono" href="#top">Back to top ↑</a>
-      </div>
-    </footer>
 
     <script type="module" src="./src/main.js"></script>
   </body>

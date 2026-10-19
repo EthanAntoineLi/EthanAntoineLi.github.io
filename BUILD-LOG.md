@@ -223,3 +223,25 @@ Design-only pass; no content, copy or JS behaviour changed.
   entrance, and a tightened reveal curve.
 - Verified: `npm run build` green; no console errors; no horizontal overflow at 1440/390.
 - Reference board and design rationale: `../review-v3/DESIGN-NOTES.md`.
+
+## 2026-10-19 — v4 "scan film" (branch `design/v4`)
+
+Full rewrite of the shell. v3 was a document; v4 is a product film: one fixed canvas,
+five 100vh acts, ~171 words on the whole page (v2 had ~1,100).
+
+- New `src/arm-scene.js`: the real `arm-opt.glb` on a transparent stage with five camera
+  stops (`hero / joints / profile / scan / outro`), damped blending, drag orbit, pointer
+  parallax, and a 90k-point cloud sampled from the same CAD (`mesh` / `points` / `xray`).
+  60 fps on Metal at 1440x900 DPR2, 20 draw calls, 290k tris.
+- New `index.html` / `src/style.css` / `src/main.js`: fixed chrome (frame counter, GMT+8
+  clock, progress, index overlay), scan-counter loader, custom crosshair cursor, per-act
+  ghost type, scroll-scrubbed stops, scroll cross-fade between acts, masked line reveals.
+- Type: Inter Tight 300/400 self-hosted + Instrument Serif italic for the single pull
+  quote. Paper `#f6f6f4`, ink `#101214`, rust `#b23e22`.
+- Copy cut to: name + one 3-line line, one pull quote, 3 spec figures, 5 joint ranges,
+  two honest lines about the drone half, contact.
+- Added `lenis` dependency; `dev/scene-test.html` fixture for tuning stops in isolation.
+- Reference: https://drone.riotters.com/ (Awwwards) + a six-site mechanisms survey at
+  `../review-v4/ref/awwwards/MECHANISMS.md`. Design notes: `../review-v4/DESIGN-NOTES.md`.
+- Verified: build green, no console errors at 1440x900, scene fallback image when WebGL
+  fails, reduced-motion path, resize re-fit.
