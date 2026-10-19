@@ -37,6 +37,7 @@
       <p class="loader-label mono">Scanning</p>
       <p class="loader-count" id="loader-count">000</p>
       <div class="loader-bar"><span id="loader-bar"></span></div>
+      <p class="loader-ascii mono" id="loader-ascii">----------</p>
       <p class="mono loader-foot">EPQ 3.1 · 5-axis arm · CAD</p>
     </div>
 
@@ -55,6 +56,7 @@
     <div class="stage" aria-hidden="true">
       <canvas id="arm-canvas"></canvas>
       <img class="stage-fallback" id="stage-fallback" src="./img/arm-plate.png" alt="" />
+      <span class="scan-sweep" id="scan-sweep" aria-hidden="true"></span>
     </div>
 
     <!-- ------------------------------------------------------------ chrome -->
@@ -106,7 +108,7 @@
     <!-- ------------------------------------------------------------ main -->
     <main id="main">
       <!-- =========================================================== HERO -->
-      <section class="act act--hero" id="top" data-stop="hero" data-ghost="SCAN" data-index="1">
+      <section class="act act--hero" id="top" data-stop="hero" data-ghost="SCAN" data-index="1" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
             <p class="eyebrow mono"><span class="dot"></span>Rescue robotics</p>
@@ -132,7 +134,7 @@
       </section>
 
       <!-- =========================================================== ARM -->
-      <section class="act act--arm" id="act-arm" data-stop="joints" data-ghost="ARM" data-index="2">
+      <section class="act act--arm" id="act-arm" data-stop="joints" data-ghost="ARM" data-index="2" data-ent="rise" data-ex="swing">
         <div class="act-inner">
           <div class="act-top">
             <p class="eyebrow mono"><span class="dot"></span>01 / Payload</p>
@@ -166,7 +168,7 @@
       </section>
 
       <!-- ======================================================== GEOMETRY -->
-      <section class="act act--geometry" id="act-geometry" data-stop="profile" data-ghost="AXIS" data-index="3">
+      <section class="act act--geometry" id="act-geometry" data-stop="profile" data-ghost="AXIS" data-index="3" data-ent="swing" data-ex="curtain">
         <div class="act-inner">
           <div class="act-top">
             <p class="eyebrow mono"><span class="dot"></span>02 / Geometry</p>
@@ -189,7 +191,7 @@
       </section>
 
       <!-- ============================================================ SCAN -->
-      <section class="act act--scan" id="act-scan" data-stop="scan" data-ghost="REAL" data-index="4">
+      <section class="act act--scan" id="act-scan" data-stop="scan" data-ghost="REAL" data-index="4" data-ent="curtain" data-ex="dolly">
         <div class="act-inner">
           <div class="act-top">
             <p class="eyebrow mono"><span class="dot"></span>03 / Scan</p>
@@ -203,7 +205,7 @@
       </section>
 
       <!-- ========================================================= CONTACT -->
-      <section class="act act--contact" id="act-contact" data-stop="outro" data-ghost="HI" data-index="5">
+      <section class="act act--contact" id="act-contact" data-stop="outro" data-ghost="HI" data-index="5" data-ent="dolly">
         <div class="act-inner">
           <div class="act-top">
             <p class="eyebrow mono"><span class="dot"></span>04 / Contact</p>

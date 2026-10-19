@@ -16,6 +16,7 @@ const body = document.body
 function initLoader(onDone) {
   const countEl = document.getElementById('loader-count')
   const barEl = document.getElementById('loader-bar')
+  const asciiEl = document.getElementById('loader-ascii')
   const finish = () => {
     body.classList.remove('is-loading')
     body.classList.add('loaded')
@@ -25,6 +26,7 @@ function initLoader(onDone) {
   if (!countEl || !barEl || reducedMotion) {
     if (countEl) countEl.textContent = '100'
     if (barEl) barEl.style.width = '100%'
+    if (asciiEl) asciiEl.textContent = '=========='
     setTimeout(finish, 120)
     return
   }
@@ -41,6 +43,10 @@ function initLoader(onDone) {
     const n = Math.round(eased * 100)
     countEl.textContent = String(n).padStart(3, '0')
     barEl.style.width = `${eased * 100}%`
+    if (asciiEl) {
+      const filled = Math.round(eased * 10)
+      asciiEl.textContent = '='.repeat(filled) + '-'.repeat(10 - filled)
+    }
     if (t < 1) requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
@@ -142,6 +148,74 @@ function setProgress(i) {
   progressTicks.forEach((li, n) => li.classList.toggle('on', n === i))
 }
 
+/* ------------------------------------------------------- motion transitions */
+const stageEl = document.querySelector('.stage')
+const rootStyle = document.documentElement.style
+// Each boundary uses a different motion family (see CSS): rise, split,
+// slide, dolly. Pure movement, single palette — no colour wipes.
+let vel = 0
+let lastY = window.scrollY
+let specsCounted = false
+
+function countSpecs() {
+  if (specsCounted || reducedMotion) return
+  specsCounted = true
+  const nums = [...document.querySelectorAll('.spec-num')]
+  if (!nums.length) return
+  const targets = nums.map((el) => Number(el.textContent) || 0)
+  const start = performance.now()
+  const tick = (now) => {
+    const t = Math.min(1, (now - start) / 900)
+    const e = 1 - Math.pow(1 - t, 3)
+    nums.forEach((el, n) => {
+      el.textContent = String(Math.round(targets[n] * e))
+    })
+    if (t < 1) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+
+function updateStage(y, vh) {
+  if (!stageEl || reducedMotion) return
+  let fam = 'none'
+  let bump = 0
+  let sweep = 0
+  for (let n = 0; n < ACTS.length - 1; n++) {
+    const centre = ACTS[n + 1].el.offsetTop - vh * 0.5
+    const span = vh * 0.36
+    const p = (y - (centre - span)) / (span * 2)
+    if (p > 0 && p < 1) {
+      fam = ACTS[n + 1].el.dataset.ent || 'none'
+      bump = Math.sin(Math.PI * p)
+      sweep = p
+    }
+  }
+  stageEl.dataset.fam = fam
+  rootStyle.setProperty('--bump', bump.toFixed(3))
+  rootStyle.setProperty('--sweep', sweep.toFixed(3))
+}
+
+function updateTransitions(y, vh) {
+  if (reducedMotion) return
+  updateStage(y, vh)
+  for (const a of ACTS) {
+    const top = a.el.offsetTop
+    const enter = Math.min(1, Math.max(0, (y - (top - vh * 0.8)) / (vh * 0.8)))
+    const exit = Math.min(1, Math.max(0, (y - (top + vh * 0.2)) / (vh * 0.6)))
+    a.el.style.setProperty('--enter', enter.toFixed(3))
+    a.el.style.setProperty('--exit', exit.toFixed(3))
+  }
+}
+
+function updateVelocity(y) {
+  if (reducedMotion) return
+  const raw = (y - lastY) / 220
+  lastY = y
+  const target = Math.max(-1, Math.min(1, raw))
+  vel += (target - vel) * 0.12
+  document.documentElement.style.setProperty('--vel', vel.toFixed(3))
+}
+
 /* -------------------------------------------------------------- scroll map */
 function measure() {
   const y = window.scrollY
@@ -154,6 +228,8 @@ function measure() {
     const f = Math.min(1, Math.max(0.04, 1 - Math.abs(top) / (vh * 0.82)))
     a.el.style.setProperty('--f', f.toFixed(3))
   }
+  updateTransitions(y, vh)
+  updateVelocity(y)
 
   // Stops sit at the top of each 100vh act. Scroll progress between two act
   // tops is the blend t; the act whose top is closest to the fold owns the
@@ -176,6 +252,7 @@ function measure() {
     setProgress(shown)
     body.classList.toggle('at-end', shown === ACTS.length - 1)
     if (!userMode) setMode(shown === 3 ? 'points' : 'mesh', false)
+    if (shown === 1) countSpecs()
   }
   applyStop(i, t)
 }

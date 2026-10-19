@@ -197,6 +197,12 @@ button {
   bottom: 32px;
   color: var(--dim);
 }
+.loader-ascii {
+  color: var(--dim);
+  letter-spacing: 0.3em;
+  font-size: 13px;
+  white-space: pre;
+}
 body.loaded .loader {
   opacity: 0;
   visibility: hidden;
@@ -987,5 +993,131 @@ main {
   }
   .email {
     font-size: clamp(18px, 5vw, 24px);
+  }
+}
+
+/* ------------------------------------------------ chapter transitions (motion) */
+/* One palette. Four boundaries, four different motion languages:
+   rise   — copy lifts out, next copy rises in
+   swing  — copy swings away on an axis, next swings in from the other side
+   curtain— a feathered mask lifts over the next section
+   dolly  — copy scales away with a blur, next settles back from a close-up */
+.act {
+  --enter: 1;
+  --exit: 0;
+  will-change: transform, opacity, clip-path, mask-image;
+}
+
+/* entrance */
+.act[data-ent="rise"] {
+  transform: translateY(calc((1 - var(--enter)) * 10vh));
+  opacity: calc(0.06 + var(--enter) * 0.94);
+}
+.act[data-ent="swing"] {
+  transform: translate3d(calc((1 - var(--enter)) * 11vw), calc((1 - var(--enter)) * 4vh), 0)
+    rotate(calc((1 - var(--enter)) * 1.8deg));
+  transform-origin: 15% 60%;
+  opacity: calc(0.06 + var(--enter) * 0.94);
+}
+.act[data-ent="curtain"] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(var(--enter) * 108%),
+    transparent calc(var(--enter) * 108% + 7%)
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(var(--enter) * 108%),
+    transparent calc(var(--enter) * 108% + 7%)
+  );
+}
+.act[data-ent="dolly"] {
+  transform: scale(calc(1.08 - var(--enter) * 0.08));
+  filter: blur(calc((1 - var(--enter)) * 4px));
+}
+
+/* exit */
+.act[data-ex="rise"] .act-inner {
+  transform: translateY(calc(var(--exit) * -10vh));
+  opacity: calc(1 - var(--exit) * 0.9);
+}
+.act[data-ex="swing"] .act-inner {
+  transform: translate3d(calc(var(--exit) * -11vw), calc(var(--exit) * 4vh), 0)
+    rotate(calc(var(--exit) * -1.8deg));
+  transform-origin: 85% 40%;
+  opacity: calc(1 - var(--exit) * 0.9);
+}
+.act[data-ex="curtain"] .act-inner {
+  clip-path: inset(0 0 calc(var(--exit) * 100%) 0);
+}
+.act[data-ex="dolly"] .act-inner {
+  transform: scale(calc(1 - var(--exit) * 0.09));
+  filter: blur(calc(var(--exit) * 4px));
+  opacity: calc(1 - var(--exit) * 0.92);
+}
+
+/* the object itself changes state per boundary, so the transition is not just
+   edge copy moving: the stage lifts / swings / scans / dollies with it */
+.stage {
+  transform: translate3d(0, calc(var(--vel, 0) * -10px), 0) scale(1.015);
+  transform-origin: 50% 50%;
+}
+.stage canvas {
+  transition: none;
+  transform-origin: 50% 50%;
+}
+.stage[data-fam="rise"] canvas {
+  transform: translateY(calc(var(--bump, 0) * -3.4vh)) scale(calc(1 + var(--bump, 0) * 0.04));
+}
+.stage[data-fam="swing"] canvas {
+  transform: rotate(calc(var(--bump, 0) * -3.2deg)) translateX(calc(var(--bump, 0) * 4vw))
+    scale(calc(1 + var(--bump, 0) * 0.07));
+}
+.stage[data-fam="curtain"] canvas {
+  filter: blur(calc(var(--bump, 0) * 3px));
+  transform: scale(calc(1 + var(--bump, 0) * 0.03));
+}
+.stage[data-fam="dolly"] canvas {
+  transform: scale(calc(1 + var(--bump, 0) * 0.14));
+  filter: blur(calc(var(--bump, 0) * 2px));
+}
+
+/* the scan pass: a LiDAR-style band that sweeps the object on one boundary */
+.scan-sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 26vh;
+  top: calc(var(--sweep, 0) * 126vh - 26vh);
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--accent) 14%, transparent) 46%,
+    color-mix(in srgb, var(--accent) 34%, transparent) 50%,
+    color-mix(in srgb, var(--accent) 14%, transparent) 54%,
+    transparent 100%
+  );
+}
+.stage[data-fam="curtain"] .scan-sweep {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .act[data-ent] {
+    transform: none !important;
+    opacity: 1 !important;
+    clip-path: none !important;
+    filter: none !important;
+  }
+  .act[data-ex] .act-inner {
+    transform: none !important;
+    opacity: 1 !important;
+    clip-path: none !important;
+    filter: none !important;
+  }
+  .stage canvas {
+    transform: none;
   }
 }
