@@ -117,10 +117,10 @@ const STOP_DEFS = {
     screenY: 0
   },
   joints: {
-    az: -0.3, // low, only slightly three-quarter: keeps the close-up narrow
-    el: -0.05,
+    az: -1.05, // swung around to a true side three-quarter
+    el: -0.04,
     fov: 33,
-    fillX: 0.74,
+    fillX: 0.66,
     fillY: 0.58, // close, but never the whole viewport: the copy column stays clear
     focus: 'elbow',
     focusAmount: 0.34,
@@ -135,10 +135,11 @@ const STOP_DEFS = {
     screenY: 0.26
   },
   profile: {
-    // Three-quarter from above: looking down onto the linkage instead of a
-    // flat side elevation. Short lens so the perspective is visible.
-    az: 2.42,
-    el: 0.58,
+    // Front three-quarter from above: looking down onto the linkage from the
+    // front-left, so the face of the assembly reads. Short lens keeps the
+    // perspective visible.
+    az: 0.95,
+    el: 0.6,
     fov: 26,
     fillX: 0.8,
     fillY: 0.74,
@@ -169,8 +170,8 @@ const STOP_DEFS = {
     az: 0.82,
     el: 0.26,
     fov: 34,
-    fillX: 0.5,
-    fillY: 0.52,
+    fillX: 0.64,
+    fillY: 0.66,
     focus: null,
     focusAmount: 0,
     pose: [0, 96, 0, 0, 0],
