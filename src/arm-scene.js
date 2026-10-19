@@ -102,16 +102,18 @@ const MIN_DIST = 0.12
 // ---------------------------------------------------------------------------
 const STOP_DEFS = {
   hero: {
-    az: 0.55, // ~31° off the front, 3/4
-    el: 0.1, // ~6° above the horizon
-    fov: 34,
+    az: 0.62, // 3/4 from the front right
+    el: 0.12,
+    fov: 32,
     fillX: 0.78,
-    fillY: 0.72, // the brief: hero fills ~72 % of viewport height
+    fillY: 0.7, // hangs vertically, so it can be taller
     focus: null,
     focusAmount: 0,
-    pose: [0, 26, 0, 40, -6],
+    // All joints at zero: the "powered down, hanging vertical" state.
+    pose: [0, 0, 0, 0, 0],
+    // sit right of the name column
+    screenX: 0.36,
     pointSize: 1,
-    screenX: 0,
     screenY: 0
   },
   joints: {
@@ -119,10 +121,12 @@ const STOP_DEFS = {
     el: -0.05,
     fov: 33,
     fillX: 0.74,
-    fillY: 0.62, // close, but never the whole viewport: the copy column stays clear
+    fillY: 0.58, // close, but never the whole viewport: the copy column stays clear
     focus: 'elbow',
     focusAmount: 0.34,
-    pose: [0, 58, 12, 72, 20],
+    // A display pose: base turned a little, shoulder up, elbow folded ~95°,
+    // wrist cocked. Reads as a deliberate product pose, not a random bend.
+    pose: [18, 52, 0, 96, 24],
     pointSize: 1.12,
     // Push the close-up into the right third so the left ~third of the page's
     // "Built to hold 500 grams" copy stays legible underneath.
@@ -131,14 +135,16 @@ const STOP_DEFS = {
     screenY: 0.26
   },
   profile: {
-    az: 1.52, // ~87°: side elevation
-    el: 0.04,
-    fov: 13, // long lens => near-orthographic
-    fillX: 0.82,
-    fillY: 0.84,
+    // Three-quarter from above: looking down onto the linkage instead of a
+    // flat side elevation. Short lens so the perspective is visible.
+    az: 2.42,
+    el: 0.58,
+    fov: 26,
+    fillX: 0.8,
+    fillY: 0.74,
     focus: null,
     focusAmount: 0,
-    pose: [0, 8, 0, 14, 0],
+    pose: [0, 14, 0, 26, 0],
     pointSize: 0.92,
     screenX: 0,
     screenY: 0
@@ -158,14 +164,16 @@ const STOP_DEFS = {
     screenY: -0.02
   },
   outro: {
-    az: 1.0,
-    el: -0.32, // low, looking up: the object withdraws
-    fov: 36,
-    fillX: 0.46, // ~40 % of viewport width on a 16:10 page (measured 40.5 %)
-    fillY: 0.5,
+    // A full reach: shoulder up to horizontal, elbow straight, wrist neutral.
+    // Deliberately unlike the folded payload pose.
+    az: 0.82,
+    el: 0.26,
+    fov: 34,
+    fillX: 0.5,
+    fillY: 0.52,
     focus: null,
     focusAmount: 0,
-    pose: [-6, 82, 0, 138, -8],
+    pose: [0, 96, 0, 0, 0],
     pointSize: 0.82,
     // Composition: sit the arm in the lower-right third, below and right of the
     // centred contact copy ("Let's talk." / email / links) so all of it stays
@@ -389,18 +397,37 @@ function installMaterials(meshes) {
 // X-ray edges: one LineSegments per primitive, parented to the same node, so
 // the wireframe follows the joint animation exactly like the mesh does.
 // ---------------------------------------------------------------------------
+// Dense parts (motor cans, gear teeth) get a coarser angle threshold and a
+// fainter line, so the x-ray reads as a drawing instead of a scribble. Simple
+// box-like parts keep their crisp edges.
+const EDGE_STYLE = {
+  printed: { threshold: 30, opacity: 0.9 },
+  motor: { threshold: 52, opacity: 0.34 },
+  silver: { threshold: 38, opacity: 0.7 },
+  steel: { threshold: 38, opacity: 0.7 }
+}
+const EDGE_FALLBACK = { threshold: 34, opacity: 0.75 }
+
 function buildEdges(arm) {
-  const material = new THREE.LineBasicMaterial({
-    color: 0x0c0f12,
-    transparent: true,
-    opacity: 0,
-    depthTest: true,
-    depthWrite: false
-  })
+  const materials = new Map()
   const objects = []
   for (const mesh of arm.meshes) {
     if (!mesh.geometry || !mesh.geometry.attributes.position) continue
-    const edges = new THREE.EdgesGeometry(mesh.geometry, 32)
+    const name = (mesh.material && mesh.material.name) || 'printed'
+    const style = EDGE_STYLE[name] || EDGE_FALLBACK
+    let material = materials.get(name)
+    if (!material) {
+      material = new THREE.LineBasicMaterial({
+        color: 0x0c0f12,
+        transparent: true,
+        opacity: 0,
+        depthTest: true,
+        depthWrite: false
+      })
+      material.userData.baseOpacity = style.opacity
+      materials.set(name, material)
+    }
+    const edges = new THREE.EdgesGeometry(mesh.geometry, style.threshold)
     const lines = new THREE.LineSegments(edges, material)
     lines.renderOrder = 3
     lines.visible = false
@@ -408,7 +435,7 @@ function buildEdges(arm) {
     mesh.add(lines)
     objects.push(lines)
   }
-  return { material, objects }
+  return { materials: [...materials.values()], objects }
 }
 
 // ---------------------------------------------------------------------------
@@ -594,7 +621,7 @@ export async function createArmScene(canvas, opts = {}) {
     pointsMaterial: null,
     pointsTexture: null,
     pointsObjects: [],
-    edgeMaterial: null,
+    edgeMaterials: [],
     edgeObjects: [],
     // close-up camera override: aim at a named anchor by `amount` (0..1)
     closeup: { anchor: 'elbow', amount: 0, live: 0 },
@@ -1185,10 +1212,12 @@ export async function createArmScene(canvas, opts = {}) {
       for (const mesh of state.arm.meshes) mesh.visible = false
       lastMeshOpacity = -1
     }
-    // X-ray edges
-    if (state.edgeMaterial) {
+    // X-ray edges (per-material base opacity: motors stay faint)
+    if (state.edgeMaterials.length) {
       if (Math.abs(clampedLines - lastLinesOpacity) > 0.0015) {
-        state.edgeMaterial.opacity = clampedLines
+        for (const material of state.edgeMaterials) {
+          material.opacity = clampedLines * (material.userData.baseOpacity || 0.8)
+        }
         lastLinesOpacity = clampedLines
       }
       const showLines = clampedLines > 0.004
@@ -1402,10 +1431,8 @@ export async function createArmScene(canvas, opts = {}) {
       state.pointsTexture.dispose()
       state.pointsTexture = null
     }
-    if (state.edgeMaterial) {
-      state.edgeMaterial.dispose()
-      state.edgeMaterial = null
-    }
+    for (const material of state.edgeMaterials) material.dispose()
+    state.edgeMaterials = []
     for (const object of state.edgeObjects) {
       if (object.geometry) object.geometry.dispose()
     }
@@ -1484,12 +1511,12 @@ export async function createArmScene(canvas, opts = {}) {
         }
       }
     }
-    if (state.edgeMaterial) {
-      const current = state.edgeMaterial.clippingPlanes
+    for (const material of state.edgeMaterials) {
+      const current = material.clippingPlanes
       const count = current ? current.length : 0
       if (count !== (planes ? planes.length : 0)) {
-        state.edgeMaterial.clippingPlanes = planes
-        state.edgeMaterial.needsUpdate = true
+        material.clippingPlanes = planes
+        material.needsUpdate = true
       }
     }
   }
@@ -1733,7 +1760,7 @@ export async function createArmScene(canvas, opts = {}) {
       state.arm = arm
       state.materials = installMaterials(arm.meshes)
       const edges = buildEdges(arm)
-      state.edgeMaterial = edges.material
+      state.edgeMaterials = edges.materials
       state.edgeObjects = edges.objects
       state.scene.add(arm.root)
       // scan slice: a clip plane plus a thin line around the model at the slice
