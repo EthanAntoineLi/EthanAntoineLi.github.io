@@ -1,6 +1,13 @@
 # SPEC — Ethan's Personal Page
 
-**What I want.** This is my complete spec for the personal-page project. Hand this to any designer, developer, or (future) me to rebuild, extend, or finish the site. It is written in my voice as instructions.
+**v2 — 2026-10-19.** This supersedes the v1 "scroll-story" spec (one cinematic Three.js scene over
+three placeholder Meshy models). v2 keeps the content facts and the mission, and changes the form:
+a **drafting-sheet portfolio** with the real CAD arm as the only 3D object. Why v1 was replaced is
+recorded in `BUILD-LOG.md`; the short version is that the placeholder meshes could not carry the
+story (71 MB, 660–883k tris, one merged mesh each, no rig), the white-clay look was unreadable, and
+the production build shipped without the models at all.
+
+Written in my voice, as instructions to any designer, developer, or future me.
 
 ---
 
@@ -8,134 +15,161 @@
 
 This page is my **engineering portfolio**. It exists for two overlapping audiences:
 
-1. **Universities** — I'm an A-level student applying to **Oxford Engineering Science / Mechanical Engineering**. The page is a portfolio artifact that shows I build real hardware, not just talk about it.
+1. **Universities** — I'm an A-level student applying for engineering. The page is a portfolio
+   artifact that shows I build real hardware, not just talk about it.
 2. **Peers & future employers** — anyone who wants to see what I'm building and why.
 
 The page has to do three jobs:
 
 - **Show the mission** — the "why" behind everything: mountain-rescue robotics.
-- **Show the builds** — my two real prototypes, honestly framed as prototypes (no invented achievements).
-- **Give a way to reach me** — GitHub + email.
+- **Show the builds** — my two real prototypes, honestly framed as prototypes (no invented
+  achievements).
+- **Give a way to reach me** — email + GitHub + the full arm visualiser.
 
-Tone: builder's logbook. Mission-driven, honest about the prototype stage, **zero hype**. If something isn't built yet, the page says so.
+Tone: builder's logbook. Mission-driven, honest about the prototype stage, **zero hype**. If
+something isn't built yet, the page says so.
 
 ---
 
-## 2. Page structure (section by section)
+## 2. Page structure
 
-The page is a **single page** that tells a story as you scroll. It is NOT a flat list of sections. The scroll drives a 3D camera through a scene.
+Single page, normal document scroll. Sections in order:
 
-Order of beats:
-
-1. **Hero (first viewport)** — my name, one mission line, one button, and a dot-matrix stats strip.
-2. **The scene (scroll story)** — a single Three.js 3D scene. Scrolling moves the camera through four keyframes: wide scene → the arm → close on the arm → the drone.
-3. **Tail (after the story)** — three compact blocks: Toolbox, In progress, Contact — plus a footer.
-
-Details per section are in **§3 Content notes** below.
+1. **Hero** — name, mission question, short lede, facts strip; the arm still render (`FIG. 01`) on
+   the right. No 3D in the first viewport: the hero must paint instantly.
+2. **01 — Mission** — the accident I keep seeing, and the intended system as a line diagram
+   (`FIG. 02`): drone finds → position fix → handoff → arm reaches.
+3. **02 — The arm** — the EPQ artefact. Copy, two spec tables, and the **live CAD viewer** in a
+   sticky right column: real geometry, drag to orbit, iso/profile/front/top presets, play/pause,
+   live joint-angle readout. Link out to the full visualiser (HAVK).
+4. **03 — The drone** — what flies today vs. the recognition/fix/handoff layer that does not exist.
+5. **04 — Status** — Built / In build / Next, plainly.
+6. **05 — Contact** — email (with copy button), GitHub, arm demo.
+7. **Footer** — engineering title block (project / subject / sheet / scale / rev / status) and a
+   "built by hand · no tracking · no cookies" line.
 
 ---
 
 ## 3. Content notes per section (FACTS ONLY)
 
-Keep everything factual. Do **not** invent achievements, stats, dates, or skills I never stated. Where the page is a placeholder, label it as such.
+Keep everything factual. Do **not** invent achievements, stats, dates, or skills I never stated.
+Where the page is a placeholder, label it as such.
 
 ### 3.1 Hero
 
 - **Name:** Ethan Antoine Li.
-- **Mission line (the hook):** *"Why send more people into the same dangerous ground to save someone — why not robots?"*
-- **One button:** "See the system" → scrolls into the story.
-- **Dot-matrix stats strip:** `2 PROTOTYPES · 5 DOF · 1 RESCUE MISSION · ∞ QUESTIONS` — honest mini-metrics, no fake "trusted by" numbers.
+- **Mission line:** *"Why send more people into the same dangerous ground to save someone — why
+  not robots?"*
+- **Lede:** A-level student; designs, prints and programs the pieces of a mountain-rescue system;
+  a five-axis robotic arm and an FPV drone; both prototypes; the page says where things aren't
+  built.
+- **Facts strip:** Discipline (A-level: Maths, Further Maths, Physics, Chemistry) · Toolchain
+  (Shapr3D, Bambu Lab H2S, STM32F407, three.js) · State (prototype, in build).
+- **Plate:** `FIG. 01 — EPQ 3.1 arm`, caption `5 DOF built · 6 DOF designed`.
 
-### 3.2 The scene (scroll story)
+### 3.2 Mission
 
-The story is the two builds framed as one rescue system:
-
-- **Beat 1 — wide:** an injured person lying on a clay slope, the robot kneeling beside them, the drone hovering overhead. (Ski-rescue framing — scattered skis/poles.)
-- **Beat 2 — the arm:** camera pushes in on the robot's mechanical arm. Caption: **"01 / The arm — This is what I designed — a 5-DOF robotic arm."**
-- **Beat 3 — the drone:** camera pulls out to the drone, which fills about half the frame, person + robot small in the depth below. Caption: **"02 / The drone — Visual recognition + spatial recognition, feeding the robot."**
+- **What I've seen:** I ski; every winter the same shape of accident — a person down on a line that
+  is difficult, exposed or both, and a team that has to commit people to that ground.
+- **The system:** two machines and a handoff. Drone finds the person and stays overhead; arm does
+  the reaching and the lifting. Each half is a prototype; the handoff does not exist.
+- **Diagram:** `FIG. 02 — system intent`, labelled "not a simulation". Drone = flying as FPV; arm =
+  bench prototype; position fix and handoff explicitly marked **not built**; subject position
+  unknown.
 
 ### 3.3 The arm (5-DOF robotic arm)
 
-- **What it is:** my rescue robot's first piece — a **5-DOF robotic arm**.
-- **How it's built:** designed in **Shapr3D**, 3D-printed on a **Bambu Lab H2S**.
-- **Status:** **prototype, in progress** — it is my EPQ.
-- **Source of truth:** my EPQ document (the arm case-study facts come from there; nothing beyond it).
-
-> **Note to self — CONFIRM DOF count.** The page copy uses **5-DOF**; my EPQ framing has been written as **6-DOF**. Pick one number and use it consistently across hero, captions, and this spec. (The arm grows in degrees of freedom as the design matures — I'll confirm the final number when the EPQ is finalised.)
+- **What it is:** my rescue robot's first piece — the EPQ artefact. Designed in **Shapr3D**, printed
+  on a **Bambu Lab H2S**.
+- **DOF:** **6 designed, 5 built** — the budget stopped at five motors. This phrasing resolves the
+  old 5-vs-6 ambiguity and must stay consistent everywhere.
+- **Architecture (from the EPQ):**
+  - Actuators: UMIR57 ×2 (J1, J2), UMIR42 ×3 (J3–J5) steppers.
+  - Reductions: 25:1 planetary on the base; self-locking 50:1 worm on the shoulder.
+  - Torque: 19 N·m base, 5.4 N·m shoulder.
+  - Controller: STM32F407; bus: RS485 / Modbus-RTU.
+  - Payload **target**: 500 g.
+- **Joint travel:** J1 ±120°, J2 0–150°, J3 ±135°, J4 0–140°, J5 ±180° (J2/J4 ranges from the EPQ
+  report, FR-03; others are design values).
+- **Viewer copy:** the arm on the page is the real CAD assembly (same file as the EPQ model),
+  exported with five articulated joint nodes and posed at runtime — no stand-in geometry, no video.
+- **Full visualiser:** link to `https://ethanantoineli.github.io/HAVK/`.
 
 ### 3.4 The drone (FPV drone)
 
-- **What it is:** an **FPV drone** — the future *eyes* of the system.
-- **Role in the mission:** locate the injured person and give visual feedback to the robot.
-- **Status:** **prototype** — currently flown as FPV. The vision system (visual + spatial recognition) is **not built yet** and is the next step. Say this openly; do not imply the vision works.
+- **What it is:** an FPV drone — pilot, goggles, video feed. Flown today as FPV only.
+- **Role in the mission:** find the injured person, hold position, hand a location to the arm.
+- **Status pipeline:** Fly = built · Recognise = not built · Fix = not built · Hand off = not built.
+- Say openly that the recognition/positioning layer is the next build and that this section stays
+  short until there is something real to show.
 
-### 3.5 The mission (why)
+### 3.5 Status
 
-- I'm a skier. Every year I see mountain injuries, and the same question keeps coming back: **why send more people into dangerous ground to rescue someone, when robots could do it?**
-- The vision is one system: **a drone finds the person and watches over them; a robot does the rescue.** Early prototypes today — that's the direction.
+- **Built:** arm CAD finalised (EPQ 3.1 Design FINAL); five joints printed, assembled and moving;
+  real-geometry articulation in three.js; drone flying as FPV (pilot + video link only).
+- **In build:** arm firmware on the STM32F407; RS485/Modbus-RTU joint control; payload work toward
+  the 500 g target.
+- **Next:** drone person-recognition; a usable position fix; the handoff from fix to arm.
+- Footnote: "Last updated — October 2026 · corrections welcome."
 
-### 3.6 Toolbox
+### 3.6 Contact
 
-Only what I actually use — nothing invented:
-
-- **3D printing:** Bambu Lab H2S
-- **3D modelling:** Shapr3D
-
-### 3.7 In progress / next
-
-- **Arm:** my EPQ, ongoing.
-- **Drone:** vision module next.
-- (ESAT exam: Oct 12 — only mention publicly if I decide to.)
-
-### 3.8 Contact
-
-- **GitHub:** [EthanAntoineLi](https://github.com/EthanAntoineLi)
-- **Email:** ethan.li.1@outlook.com
-
-> **Note:** the page previously showed email only (my GitHub was empty). Now that the repo is public, the contact section should include the GitHub link too.
+- **Email:** ethan.li.1@outlook.com (professional address; copy button).
+- **GitHub:** [EthanAntoineLi](https://github.com/EthanAntoineLi).
+- **Arm demo:** `https://ethanantoineli.github.io/HAVK`.
 
 ---
 
-## 4. Design language
+## 4. Design language (v2)
 
-Two interlocking ideas:
+### 4.1 The sheet
 
-### 4.1 Scroll-story (scrollytelling)
+The page is a technical sheet, not a landing page:
 
-One cinematic scroll through a 3D scene — SpaceX / Tesla / Apple-style camera moves, not a flat page. The **scene itself is the hero background** (no video file needed): the 3D world drifts behind the text.
+- **Paper** `#EEF2F7` background with a fine grid (`#D3DDE8`, 32 px) that fades at the edges, a
+  fixed hairline sheet border (12 px inset), and a fixed topbar with the name/nav/status.
+- **Structure** carried by hairline rules and a left index column (`01 MISSION` …), never by
+  rounded cards or shadows. Section headers are asymmetric: mono index left, serif statement right.
+- **Colour** is restrained: ink `#0B1B2F` for text, muted `#4A5B70` for prose, signal orange
+  `#C2410C` only for meaning (missing links in the diagram, "not built" notes, current section,
+  accent marks). No gradients as decoration; no dark mode.
+- **Type:** Instrument Serif (400, roman + italic) for the name, section statements and mission
+  lines; system sans for body prose; system mono (uppercase, letterspaced) for labels, tables,
+  annotations, fig captions and status.
+- **Furniture:** figure captions (`FIG. 01 — …`), table headers (`TABLE 01 — ARCHITECTURE`),
+  corner ticks on image plates, engineering title block in the footer, `SHEET 01 OF 01`.
 
-### 4.2 3D scene + choreography
+### 4.2 The one 3D object
 
-From `ARCHITECTURE.md` (the module contract — this is authoritative):
+- The arm viewer in section 02 is the only 3D in the page (sticky in the right column), sized
+  `clamp(420px, 61vh, 640px)` tall on desktop, static below 1040 px.
+- Transparent canvas over the paper grid; no floor, no rings, no in-canvas UI; the model floats.
+- Materials: printed `#1B222C`, motors `#11151C`, silver `#99A1AC`, steel `#AAB1BB`, with HAVK's
+  environment/light rig so metal reads correctly. A small accent tip marks the end effector.
+- Camera presets from HAVK (iso / profile / front / top), 700 ms eased; drag orbits (touch: only
+  horizontal drags orbit, so vertical page scroll is never blocked); **no wheel zoom** on the page.
+- Gentle showcase motion, pausable; disabled under `prefers-reduced-motion`, with the still plate as
+  the no-WebGL fallback.
+- The hero plate is a 2× render from this same viewer, so the still and the live model agree.
 
-- **Stack:** Vite + Three.js (vanilla, no framework, no GSAP — plain scroll listener).
-- **Clay look:** every mesh shares a `MeshStandardMaterial({ color: 0xd8d8d8, roughness: 0.95, metalness: 0 })`. Monochrome, near-white, matte — a "Blender preview stage" aesthetic. **This is a placeholder look**, not the final art direction.
-- **Color-reveal plan (locked):** clay = concept/vision; **color = my real designs**. The person, robot, and terrain stay clay. My real arm and drone models drop in (via `models/`) in their true colors later.
-- **Lighting:** soft monochrome studio — HemisphereLight + key DirectionalLight + rim DirectionalLight + AmbientLight.
-- **Terrain:** tilted plane slope + 3–4 low mounds (scaled spheres), all clay.
-- **Normalization:** scale so the **largest dimension** = 1.9 (robot, person) / 1.6 (drone); center X/Z; feet at y=0.
-- **Poses:** person lying (rotation.z ≈ π/2), robot leaning/kneeling toward the person, drone hovering (y ≈ 3.2).
-- **Camera choreography (4 keyframes):**
-  1. wide `[0,2.2,8.5] → [0,0.8,0]`
-  2. arm-push `[1.5,1.5,2.6] → [1.2,1.0,0.1]`
-  3. arm-close `[1.1,1.2,1.4] → [1.1,1.05,-0.1]`
-  4. drone `[0.4,3.6,2.2] → [0.2,3.0,-0.8]`
-  - (Round-6 refinement locked the drone keyframe to pos `(0.6,5.6,-1.0)` targeting the drone `(0.2,3.5,-0.8)` so the pair stays in the lower frame.)
-  - `#story` scroll → progress 0..1, smoothstep-lerp camera position + lookAt.
-- **Captions:** `#cap1` active 0.32–0.55, `#cap2` active 0.68–0.92 (fade opacity).
-- **Dim overlay:** `#dim` opacity 0.72 at top → 0 mid-story (0.05–0.9) → back at the tail.
-- **Typography:** mix of **Playfair Display** (serif, editorial headline) + **DotGothic16** (dot-matrix retro for kickers/strip/footer). Both open-source Google Fonts.
-- **Palette:** pure black background, near-white clay world, gray accents. Dark mode, responsive `clamp()` type, `prefers-reduced-motion` respected.
+### 4.3 Rules
+
+- No trackers, no analytics, no cookies, no external requests (fonts and assets self-hosted).
+- Initial payload budget: **< 200 KB** before the 3D section is approached. 3D chunk and GLB must
+  stay lazy.
+- Content is static HTML — it must read fine with JavaScript disabled.
+- Respect `prefers-reduced-motion`.
+- Everything must be true. Do not reintroduce the v1 placeholder meshes.
 
 ---
 
 ## 5. Tech stack
 
-- **Vite** (build/dev tooling) — `npm run dev`, `npm run build`, `npm run preview`.
-- **Three.js** (^0.170.0) — the 3D scene + camera choreography.
-- **Vanilla JS ES modules** — no framework, no UI library.
-- **No backend, no database, no tracking.**
-- Fonts loaded from Google Fonts (Playfair Display + DotGothic16).
+- **Vite 5** for dev/build; `base: './'` so the build works at any Pages path.
+- **three.js 0.170** for the arm viewer only (dynamically imported).
+- **Vanilla JS ES modules**, no framework, no UI library, no CSS framework.
+- **No backend, no database, no tracking.** Fonts and GLB are static assets in `public/`.
+- Node 18+; dev port 5178, preview port 4178 (pinned in `vite.config.js`).
 
 ---
 
@@ -143,51 +177,53 @@ From `ARCHITECTURE.md` (the module contract — this is authoritative):
 
 ```
 personal-page/
-  SPEC.md               # this spec (what I want)
-  README.md             # how to run + what this is
-  ARCHITECTURE.md       # module contracts (scene/choreography/UI/integration)
-  BUILD-LOG.md          # build history, decisions, review rounds
-  index.html            # page markup: hero + story + tail (all required IDs)
-  package.json          # deps: three, vite
-  package-lock.json
-  vite.config.js        # base './', dev port 5173
-  .gitignore            # node_modules/, *.log
-  src/
-    main.js             # integration: bootstrap, render loop, resize, CTA, loading
-    scene.js            # createScene(canvas) → {scene, camera, renderer, refs, idle}
-    choreography.js     # createChoreography({camera, refs}) → scroll camera + captions + dim
-    style.css           # all styling (monochrome, serif + dot fonts)
-  models/
-    robot.glb           # robot (rescue backpack + antenna)
-    person.glb          # human (ski helmet, winter gear)
-    drone.glb           # quadcopter drone (PLACEHOLDER until my real drone arrives)
-  dist/                 # production build output (vite build)
+  index.html                  # content + inline SVG system diagram
+  src/style.css               # design tokens, layout, responsive, reduced motion
+  src/main.js                 # reveals, nav state, lazy viewer, copy-email
+  src/arm-viewer.js           # three.js viewer (standalone, contract in ARCHITECTURE.md)
+  public/models/arm-opt.glb   # articulated CAD arm, 1.6 MB, 290k tris
+  public/img/arm-plate.*      # 2× still render (WebP + PNG fallback)
+  public/fonts/*.woff2        # Instrument Serif, latin subset
+  public/favicon.svg
+  vite.config.js
+  package.json
+  SPEC.md / ARCHITECTURE.md / BUILD-LOG.md / README.md
+  .github/workflows/deploy.yml
 ```
 
-**Module ownership (from ARCHITECTURE.md):** `scene.js` + `choreography.js` are the "3D child"; `index.html` + `style.css` are the "UI child"; `main.js` is the lead's integration; `models/`, `package.json`, `vite.config.js`, `BUILD-LOG.md` are untouchable by feature work.
+---
+
+## 7. Deployment
+
+- GitHub Pages, deployed from GitHub Actions on push to `master` (build `dist/`).
+- **The repository is private.** Pages on the free plan needs a public repo (or a Pro plan) — decide
+  this before the first deploy.
+- `base: './'` means no path changes are needed for `EthanAntoineLi.github.io/personal-page/`.
+- Custom domain is optional and not configured.
 
 ---
 
-## 7. Future plans (what's still to finish)
+## 8. Open items (confirm before/after deploy)
 
-From `BUILD-LOG.md`, in priority order:
-
-1. **Real models.** Replace the placeholder GLBs with my real arm + drone files (drop-in via `models/`). This also fixes the one residual visual issue — the drone doesn't read crisply as a quadcopter because the placeholder model is monochrome white-on-white. The real colored drone model resolves it; no amount of camera framing will.
-2. **Decimate the models for web.** Current Meshy GLBs are 658k–883k tris / 20–29 MB each — far too heavy. Decimate to well under ~100k tris/model and add real materials in Blender before shipping.
-3. **Rigging.** The person/robot poses are rough transforms, not rigged. Real rigging (and the arm/drone models) come later.
-4. **GitHub Pages deployment.** Target URL: `EthanAntoineLi.github.io` (or `EthanAntoineLi.github.io/personal-page`). Deploy the `dist/` build. Not yet done — deploy only with my explicit OK.
-5. **Contact section** — add the GitHub link (now that the repo is public).
-6. **Confirm the DOF number** (5 vs 6) and use it consistently.
-7. **Content pass.** Arm case-study detail from my EPQ document once finalised.
-
----
-
-## 8. Done vs. not done (honest status)
-
-**Done (v1 build):** full scroll-story page — hero, 4-keyframe 3D scene, captions, dim overlay, toolbox/in-progress/contact tail. Beats 1 (wide) and 2 (arm) PASS visual review; beat 3 (drone) composition PASS with a placeholder-model readability residual (deferred to the real drone model).
-
-**Not done:** real models, web decimation, rigging, GitHub Pages deploy, GitHub link in contact, DOF-number confirmation, final content pass.
+1. **Status list** — the "Built / In build / Next" items are drafted from the EPQ notes; confirm each
+   is still true (especially firmware/RS485 progress and the payload work).
+2. **500 g payload** — page calls it a *target*, not a result. Confirm wording.
+3. **A-level subject list** in the hero facts strip — confirm it should be public.
+4. **Date** — "Last updated — October 2026". Update when the page changes.
+5. **Drone copy** — recognises only "FPV flying" as built. If the airframe/parts differ from that
+   wording, correct it.
+6. **Repo visibility / Pages** — make public or use Pro; then enable Pages (source: GitHub Actions).
 
 ---
 
-*This spec is the source of truth for "what Ethan wants." When it and the code disagree, update the code to match — or fix this spec and note the change in BUILD-LOG.md.*
+## 9. Done vs. not done
+
+**Done (v2):** drafting-sheet layout (hero, mission + diagram, arm + live CAD viewer + spec tables,
+drone pipeline, status, contact, title-block footer); real articulated CAD arm viewer with presets,
+drag orbit, live joint readout, reduced-motion and no-WebGL fallbacks; self-hosted fonts; responsive
+down to 360 px; production build verified (models are in `dist/`, unlike v1); performance budget met;
+GitHub Actions deploy workflow prepared.
+
+**Not done:** deploy / Pages enablement (needs the visibility decision); real photographs of the
+printed arm and the drone; drone vision video (doesn't exist yet); custom domain; optional link to
+the EPQ report once finalised.

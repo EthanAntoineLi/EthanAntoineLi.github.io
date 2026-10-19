@@ -1,14 +1,6 @@
-# Dependencies
 node_modules/
-
-# Logs
+dist/
+dev/
 *.log
-*.err.log
-
-# OS
 .DS_Store
-Thumbs.db
-
-# Env / secrets
-.env
-.env.*
+.vite/

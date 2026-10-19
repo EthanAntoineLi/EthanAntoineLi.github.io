@@ -1,4 +1,83 @@
-# Build Log — Ethan's Personal Page (Scroll Story)
+# Build Log — Ethan's Personal Page
+
+## 2026-10-19 — v2 rebuild: drafting sheet + the real CAD arm (current)
+
+### Why v1 was replaced
+
+**Verdict:** the v1 scroll-story was not salvageable, not fixable with polish. Ethan's call was "大改".
+Diagnosis from reading the code and running it (evidence, not taste):
+
+1. **The production build had no models.** `models/*.glb` sat at the repo root; Vite only copies
+   `public/` into `dist/`, so `/models/robot.glb` 404'd. Opening the build showed a black page with
+   `failed to load models — check console`. In other words the page that would have been deployed
+   could not have worked at all. (Old build: 71 MB of GLBs, 3.2 MB dist → new build: 3.2 MB total
+   incl. assets, verified.)
+2. **The assets were unusable for the concept.** `robot.glb` 658k tris, `person.glb` 685k, `drone.glb`
+   883k — 21–29 MB each, one merged mesh per file, no skeleton, no named parts, one material, no
+   textures (Meshy / text-to-3D output). The story demanded an arm close-up and a rigged pose
+   ("kneeling, hand on chest"); no amount of transforms can deliver that from a single blob. The
+   "clay monochrome" treatment then turned white-on-white geometry into a whiteout, and the 0.72 dim
+   overlay hid what little read.
+3. **71 MB of downloads for a one-page portfolio** on a page whose hero is text.
+4. **No mobile pass, no deploy, no tests.** The repo had one commit, no build verification, no QA.
+
+### Decision
+
+Replace the form, keep the facts. New direction: a **drafting-sheet portfolio** (paper, hairlines,
+mono annotations, one signal colour) whose single 3D object is **Ethan's real arm CAD** — the
+articulated mesh already validated in his HAVK EPQ visualiser (290k tris, meshopt-compressed to
+1.6 MB, five real joints). Reuse HAVK's palette (`#EEF2F7` paper, `#0B1B2F` ink, `#C2410C` accent)
+so the portfolio and the EPQ artefact read as one body of work.
+
+### Built
+
+- **Page:** hero (name, mission, `FIG. 01` arm still, facts strip) → 01 mission (why + inline SVG
+  system diagram with the missing position-fix/handoff links drawn as missing) → 02 arm (real CAD
+  viewer, architecture + joint-travel tables, "reading the model" note, HAVK link) → 03 drone
+  (Fly/Recognise/Fix/Hand off pipeline, only Fly built) → 04 status (Built/In build/Next) → 05
+  contact (email + copy, GitHub, arm demo) → engineering title-block footer.
+- **Arm viewer** (`src/arm-viewer.js`, new): real articulated GLB, transparent canvas over the paper
+  grid, camera fitted to measured bounds at any aspect, iso/profile/front/top presets, custom drag
+  orbit (never blocks page scroll on touch), play/pause showcase, live joint-angle readout, lazy
+  boot on approach, reduced-motion + no-WebGL fallbacks, dispose/context-loss handling.
+- **Design system:** Instrument Serif (self-hosted, latin subset) + system sans + system mono;
+  hairline grid, sheet frame, index column, fig/table furniture, `prefers-reduced-motion` support.
+- **Assets:** `arm-opt.glb` (1.6 MB) from the HAVK export pipeline into `public/models/`; hero and
+  fallback stills rendered from the page's own viewer at 2× and cropped (`arm-plate.webp` 46 KB /
+  `.png` 193 KB); fonts self-hosted, no CDN.
+- **Repo hygiene:** the 71 MB Meshy meshes archived outside the repo and removed from git (recoverable
+  from the v1 commit); stale `dist/` untracked; `models/` no longer at the root (that was the build
+  bug); GitHub Actions Pages workflow added.
+- **Docs:** README / SPEC / ARCHITECTURE rewritten for v2; this log prepended.
+
+### Verified
+
+- `npm run build` green; `dist/` contains `models/`, `img/`, `fonts/`; production preview
+  (`4178`) renders the page and loads the live arm — the exact failure mode of v1 is gone.
+- Dev + production screenshots at 1440×900 and 390×844: no horizontal overflow, no console errors,
+  fonts loaded, sticky viewer composited correctly, player/presets/readout exercised.
+- Interaction test on the real page: presets switch (`on` state + camera), play/pause toggles
+  `aria-pressed` and label, drag orbits, pose readout tracks the joints, copy-email → "Copied".
+- Payload: initial page ≈ 130 KB (HTML + CSS + main JS + fonts + hero WebP). 3D chunk 156 KB gzip +
+  1.6 MB GLB are lazy, requested only when section 02 approaches.
+
+### Known limits / next
+
+- 3D boot is intentional-lazy: in software-rendered headless Chrome it takes several seconds; on
+  real hardware it is ~1–2 s. The still plate covers the wait.
+- No real photographs of the printed arm or the drone yet; no real vision footage (it does not
+  exist). Add when they exist — both would strengthen the page more than any further styling.
+- Deploy pending: repo is private, Pages on the free plan needs public (or Pro). Needs Ethan's OK.
+- Status facts ("in build" firmware/bus, payload work) are drafted from the EPQ notes and flagged in
+  `SPEC.md §8` for confirmation.
+
+---
+
+## v1 archive — scroll story (2026-09-16 → 2026-09-25)
+
+> The build described below was replaced on 2026-10-19. Its source files (`scene.js`,
+> `choreography.js`, `models/*.glb`) no longer exist in the repo; this is kept as history only.
+
 
 Project: `C:\Users\Ethan\.openclaw\workspace-coder\personal-page\`
 Stack: Vite + Three.js (vanilla). Local preview only, no deploy.
