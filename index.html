@@ -29,6 +29,16 @@
     <script>
       document.documentElement.classList.add('js')
     </script>
+    <noscript>
+      <style>
+        #viewer-status,
+        .viewer-presets,
+        #play-toggle,
+        .viewer-foot {
+          display: none !important;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -303,9 +313,10 @@
               <div class="viewer-stage">
                 <canvas
                   id="arm-canvas"
-                  aria-label="Interactive 3D model of the 5-DOF robotic arm. Drag horizontally to orbit."
+                  role="img"
+                  aria-label="Interactive 3D render of the 5-DOF robotic arm. Use the camera preset buttons to change view; drag to orbit."
                 ></canvas>
-                <img class="viewer-fallback" id="arm-fallback" src="./img/arm-plate.png" alt="" />
+                <img class="viewer-fallback" id="arm-fallback" src="./img/arm-plate.png" alt="Rendered still of the 5-DOF arm CAD assembly; replaced by the interactive 3D view when it loads." />
                 <p class="viewer-status mono" id="viewer-status">Loading CAD…</p>
                 <span class="plate-tick plate-tick--tl" aria-hidden="true"></span>
                 <span class="plate-tick plate-tick--br" aria-hidden="true"></span>
