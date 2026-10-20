@@ -4,8 +4,8 @@
 // The arm film's chrome and act choreography, plus the 3D stage this page
 // owns: the indexing turret of parts on the hero (spin it by hand, click a
 // part to bring it round), the A1 mini that leaves it for step 01, and the
-// three motor types that hover on step 02. Steps 01 and 02 ride the scroll:
-// each object moves with its own act.
+// three motor types that hover on step 02. Every hand-off between them is
+// scrubbed by the scroll (syncTrack), so the 3D moves with the copy.
 // Scene: ./process-stage.js. Balloons: ./process-hud.js. Curtain: ./film-loader.js.
 // ============================================================================
 import { createProcessStage } from './process-stage.js'
@@ -154,7 +154,6 @@ function syncStage() {
 // Mouse: drag anywhere on the ring to spin it, click a part to bring it round.
 // Touch: a tap on a part brings it round; swipes stay the page's scroll.
 let turning = false
-let lastNudgeY = window.scrollY
 function initTurretHand() {
   if (reducedMotion) return
   let tap = null
@@ -285,9 +284,6 @@ function measure() {
   }
   syncTrack()
   syncStage()
-  // scrolling on the hero flicks the turret round before the printer leaves it
-  if (wantedStage === 'ring') scene?.nudge(y - lastNudgeY)
-  lastNudgeY = y
   // Runs last: transition state depends on the freshly updated activeAct.
   updateTransitions(y, vh)
 }

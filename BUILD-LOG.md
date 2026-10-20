@@ -772,3 +772,27 @@ empty for a beat, then the motors faded in as ghosts — none of it tied to the 
 
 Verified with scroll-scrubbed captures at 1440×900 and 390×844: 01 → 02, 02 → 03, 02 → 01,
 hero → 01, 01 → hero; final step-02 pose identical to before; build green.
+
+## 2026-10-20 — process: the turret → printer hand-off follows the scroll
+
+Ethan meant the hero → step 01 hand-off (the ring giving way to the printer). It was the old timed
+sequence: once a scroll threshold passed, the turret spun a forced turn and more on its own clock,
+balloons still up, and only then did the printer jump out — about two seconds after step 01's copy had
+already arrived. The scroll had no say in it.
+
+Now it is scrubbed by the scroll, like 01 → 02. One number, `hand` (0 → 1 while step 01's act climbs
+from 0.86 to 0.1 viewports below the top), drives every beat, overlapping so it never stalls:
+- the balloons and the name tag clear first;
+- the turret winds the printer round to the front (about one turn, so the speed lines and the lean
+  read), the printer growing steadily toward its step-01 size;
+- the motors fly into the printer, J1 first — "a printer first, everything else followed" — and the
+  step-02 motors wait on the scroll track below the fold from there;
+- the dial rewinds into the front station (rail, ticks, centre lines, mark), haze and shadow go with it;
+- the printer steps out to its step-01 framing as the eye swings round (camera blended by the scroll).
+
+Scroll back and it all plays in reverse; on the hero the turret picks up where it was found. The timed
+exit (spin rate, tweens, exit/return sequences) and the scroll "flick" are gone — the scroll now
+drives the hand-off instead. A deep link to a step snaps straight to that framing.
+
+Verified with scroll-scrubbed captures (even and eased scrolls) at 1440×900 and 390×844: hero → 01,
+01 → hero, 01 → 02 unchanged; drag / click on the turret unchanged; build green.

@@ -10,15 +10,17 @@
 //             moves — and presents whichever part reaches the front.
 //             Everything sits in real 3D, so the front items pass in front of
 //             the ones behind.
-//   printer — the ring spins to its preset angle, the printer leaves the ring
-//             and becomes the printer object for step 01 (the old printer scene).
+//   printer — step 01: the printer alone, in its own framing.
 //   motors  — step 02: three motor types (big / shoulder-lift / small) hover in
 //             the free half of the screen, each with its own orientation + depth.
 //
-// Steps 01 and 02 share the printer's camera and ride the page: each object
-// belongs to its act and moves with the scroll (setTrack), so the printer rises
-// out with step 01's copy while the motors come up with step 02's — in
-// parallax, turning into place — instead of cross-fading on a threshold.
+// Every hand-off is scrubbed by the scroll (setTrack), never run on a timer:
+//   hero → 01  the balloons clear, the turret winds the printer round to the
+//              front, the motors fly into the printer, the dial rewinds, and
+//              the printer steps out to its framing as the eye swings round.
+//   01 → 02    the printer rises out with step 01's copy while the motors come
+//              up with step 02's, in parallax, turning into place.
+// Scroll back and each one plays in reverse.
 //
 // PUBLIC API
 //   const stage = await createProcessStage(canvas, {
@@ -28,15 +30,14 @@
 //   stage.play()                    run the turret's spin-up (call when the
 //                                   curtain lifts; until then the hub is empty)
 //   stage.setStage('ring'|'printer'|'motors'|'off')
-//                                   the ring spin + printer exit are sequenced
-//                                   internally; safe to call any time
+//                                   which act owns the screen (bookkeeping only:
+//                                   the motion comes from setTrack)
 //   stage.setPointer(x, y)          pointer -1..1 for a little parallax
 //   stage.pick(x, y)                ring part id under a client point, or null
 //   stage.grab(x, y) / drag(x) / release()
 //                                   spin the turret by hand; release() returns
 //                                   the part id when it was a click, not a drag
 //   stage.present(id)               index the turret until that part is in front
-//   stage.nudge(dy)                 page scroll in px — a flick of the turret
 //   stage.setTrack(printer, motors) where each step's act sits, in viewports
 //                                   from the top of the screen (0 = its act at
 //                                   the top, 1 = scrolled a viewport past it)
@@ -59,8 +60,6 @@ const TAU = Math.PI * 2
 const TAN_HALF = Math.tan((FOV * Math.PI) / 360)
 const UP = new THREE.Vector3(0, 1, 0)
 
-const SPIN_RATE = 6.5 // rad/s while spinning to the preset
-
 // The turret: a spring drives the ring angle toward a target that is itself
 // eased from station to station, so each index starts smoothly and lands with
 // a small mechanical overshoot.
@@ -72,7 +71,22 @@ const TURRET = {
   dwellAfterHand: 4.2, // s of rest after the visitor has spun it
   friction: 1.5, // 1/s while coasting after a flick
   snapVel: 1.6, // rad/s below which a coasting turret picks its station
-  flick: 0.0042, // rad/s of spin per px of page scroll
+}
+
+// The hero → step 01 hand-off, scrubbed by the scroll: `hand` runs 0 → 1 while
+// step 01's act climbs from `from` to `to` viewports below the top of the
+// screen. Each beat is a slice of it, overlapping so the motion never stalls.
+const HANDOFF = {
+  from: -0.86,
+  to: -0.1,
+  balloons: [0, 0.16], // the balloons and the name tag clear first
+  spin: [0.02, 0.55], // the turret winds the printer round to the front (a turn and the rest)
+  absorb: [0.2, 0.66], // the motors fly into the printer, J1 first …
+  absorbStagger: 0.045, // … J5 last
+  undraw: [0.1, 0.62], // the dial rewinds into the front station
+  ring: [0.05, 0.75], // haze, shadow and speed lines go with it
+  out: [0.38, 1], // the printer steps out to its step-01 framing
+  camera: [0.3, 1], // and the eye swings round to the printer's view
 }
 
 // The printer's existing framings (az/el radians; fill = viewport share;
@@ -308,11 +322,14 @@ export async function createProcessStage(canvas, opts = {}) {
     dpr: 1,
     stage: 'ring',
     appliedStage: 'ring',
-    camGoal: 'ring',
+    hand: 0, // hero → step 01 progress, from the scroll
+    // the turret's angle while the hand-off owns it: from → from + delta
+    scrub: { active: false, from: 0, delta: 0 },
+    cameraSnap: false,
     ringAngle: 0,
+    // derived from the scroll every frame (kept on state for debug())
     ringAlpha: 1,
-    printerAlpha: 1,
-    motorsAlpha: 0,
+    motorsAlpha: 0, // 1 = the step-02 motors are on the scroll track
     out: 0,
     time: 0,
     hoverTime: 0,
@@ -332,16 +349,14 @@ export async function createProcessStage(canvas, opts = {}) {
     },
     // where steps 01/02 sit on the page (viewports past their act's top), as
     // reported by the page and as eased toward by the objects
-    track: { printer: 0, motors: -1, set: false },
-    trackLive: { printer: 0, motors: -1 },
+    track: { printer: -1, motors: -2, set: false },
+    trackLive: { printer: -1, motors: -2 },
     angVel: 0, // measured ring speed, whatever drove it (spring, hand, exit)
     lastAngle: 0,
     present: new Array(6).fill(0),
     itemFade: new Array(6).fill(1),
     printerFade: 1,
     textRects: [],
-    exit: null,
-    tweens: new Map(),
     camera: null,
     pointer: { x: 0, y: 0, liveX: 0, liveY: 0 },
     observers: [],
@@ -540,10 +555,15 @@ export async function createProcessStage(canvas, opts = {}) {
     const distX = size.x / 2 / (TAN_HALF * aspect * preset.fillX)
     return { az: preset.az, el: preset.el, dist: Math.max(distY, distX, 0.4), fov: FOV, tx: 0, ty: 0, tz: 0, preset }
   }
+  /** The eye follows the hand-off: the ring's view, the printer's, or between. */
   function goalCamera() {
-    if (state.camGoal === 'printer') return printerCamera()
-    if (state.camGoal === 'ring') return ringCamera()
-    return null
+    const k = easeInOut(smooth(HANDOFF.camera[0], HANDOFF.camera[1], state.hand))
+    if (k <= 0) return ringCamera()
+    if (k >= 1) return printerCamera()
+    const a = ringCamera()
+    const b = printerCamera()
+    const mix = (key) => a[key] + (b[key] - a[key]) * k
+    return { az: mix('az'), el: mix('el'), dist: mix('dist'), fov: mix('fov'), tx: 0, ty: 0, tz: 0 }
   }
 
   /* --------------------------------------------------------------- models */
@@ -912,31 +932,6 @@ export async function createProcessStage(canvas, opts = {}) {
     applyStage(p)
   }
 
-  /* --------------------------------------------------------------- tweens */
-  function tweenTo(key, to, dur, delay = 0, easing = easeInOut) {
-    const from = state[key]
-    if (settings.reducedMotion || dur <= 0.001) {
-      state[key] = to
-      state.tweens.delete(key)
-      return
-    }
-    if (Math.abs(to - from) < 0.0005) {
-      state[key] = to
-      state.tweens.delete(key)
-      return
-    }
-    state.tweens.set(key, { from, to, t: -delay, dur, easing })
-  }
-  function tickTweens(dt) {
-    for (const [key, tw] of [...state.tweens]) {
-      tw.t += dt
-      if (tw.t < 0) continue
-      const k = clamp(tw.t / tw.dur, 0, 1)
-      state[key] = tw.from + (tw.to - tw.from) * tw.easing(k)
-      if (k >= 1) state.tweens.delete(key)
-    }
-  }
-
   /* -------------------------------------------------------------- turret */
   /** Ease the spring's target to an absolute ring angle. */
   function indexTo(angle, dwell = TURRET.dwell) {
@@ -955,16 +950,45 @@ export async function createProcessStage(canvas, opts = {}) {
     state.lastAngle = angle
   }
 
-  function finishIntro() {
+  function finishIntro(keepAngle = false) {
     if (state.intro.done) return
     state.intro.done = true
     state.intro.playing = false
-    settleSpin(0)
+    settleSpin(keepAngle ? spin.angle : 0)
     spin.next = state.time + TURRET.dwell
   }
 
+  /** While the hero → 01 hand-off is under way, the scroll owns the turret. */
+  function syncScrub(hand) {
+    const sc = state.scrub
+    if (hand > 0.0005) {
+      if (!sc.active) {
+        // scrolled during the spin-up: finish it where it is
+        finishIntro(true)
+        sc.active = true
+        sc.from = spin.angle
+        // forward to the printer's station, wound up to about one turn
+        const forward = ((-spin.angle % TAU) + TAU) % TAU
+        sc.delta = settings.reducedMotion ? wrapPi(-spin.angle) : forward < Math.PI ? forward + TAU : forward
+      }
+      // set the angle directly (not settleSpin) so the measured speed still
+      // drives the lean and the speed lines while the scroll turns it
+      const angle = sc.from + sc.delta * easeInOut(smooth(HANDOFF.spin[0], HANDOFF.spin[1], hand))
+      spin.angle = spin.target = spin.from = spin.to = angle
+      spin.vel = 0
+      spin.moveT = 1
+      spin.mode = 'index'
+      spin.drag = null
+    } else if (sc.active) {
+      // back on the hero: the turret picks up where the hand-off found it
+      sc.active = false
+      settleSpin(sc.from)
+      indexTo(nearestStation(sc.from))
+    }
+  }
+
   function tickTurret(dt) {
-    if (state.exit) return
+    if (state.scrub.active) return
     if (!state.intro.done) {
       const it = state.intro
       if (it.playing) it.t += dt
@@ -974,7 +998,7 @@ export async function createProcessStage(canvas, opts = {}) {
       return
     }
     if (settings.reducedMotion) return
-    const active = state.stage === 'ring' && state.out < 0.02
+    const active = state.hand <= 0.0005
 
     if (spin.mode === 'drag') return // the pointer owns the angle
     if (spin.mode === 'free') {
@@ -1009,98 +1033,10 @@ export async function createProcessStage(canvas, opts = {}) {
   }
 
   /* ------------------------------------------------------- stage changes */
-  const presetAngle = () => Math.round(spin.angle / TAU) * TAU
-
-  function beginSpinExit() {
-    const mod = ((spin.angle % TAU) + TAU) % TAU
-    const forward = (TAU - mod) % TAU
-    const aligned = forward < 0.04 || forward > TAU - 0.04
-    if (aligned || settings.reducedMotion) {
-      settleSpin(presetAngle())
-      startExit()
-      return
-    }
-    const delta = TAU + forward // at least one full circle, then the preset
-    const dur = Math.max(0.9, delta / SPIN_RATE)
-    state.exit = { t: 0, dur, from: spin.angle, delta }
-    state.camGoal = 'ring'
-    tweenTo('ringAlpha', 1, 0.2)
-  }
-
-  function startExit() {
-    state.exit = null
-    settleSpin(presetAngle())
-    tweenTo('out', 1, 0.62, 0.06)
-    tweenTo('ringAlpha', 0, 0.22)
-    tweenTo('printerAlpha', 1, 0.12)
-    // once the ring has faded, the step-02 motors drop onto the scroll track
-    // (below the fold until step 02 scrolls in)
-    tweenTo('motorsAlpha', 1, 0.02, 0.4)
-    state.camGoal = 'printer'
-  }
-
-  function beginReturn() {
-    state.exit = null
-    settleSpin(presetAngle())
-    spin.next = state.time + 0.85 + TURRET.dwell
-    tweenTo('out', 0, 0.85)
-    tweenTo('ringAlpha', 1, 0.6, 0.3)
-    tweenTo('printerAlpha', 1, 0.15)
-    state.camGoal = 'ring'
-  }
-
   function applyStage(next) {
-    const prev = state.appliedStage
-    if (next === prev) return
+    // bookkeeping only: every hand-off is driven by the scroll (setTrack)
     state.appliedStage = next
     state.stage = next
-    // a deep link or a fast scroll past the hero skips the spin-up
-    if (next !== 'ring') {
-      finishIntro()
-      if (spin.mode !== 'index') {
-        spin.drag = null
-        spin.vel = 0
-        spin.target = spin.angle
-        spin.mode = 'index'
-      }
-    }
-
-    if (next === 'ring') {
-      if (state.out > 0.01) {
-        beginReturn()
-      } else {
-        state.exit = null
-        state.out = 0
-        tweenTo('ringAlpha', 1, 0.6, 0.15)
-        tweenTo('printerAlpha', 1, 0.15)
-        state.camGoal = 'ring'
-      }
-      // the step-02 motors leave the track and fly back up into the ring
-      tweenTo('motorsAlpha', 0, 0.9, 0.1)
-      return
-    }
-
-    // printer, motors and off share the printer's camera and the scroll track:
-    // from here on the objects move with their acts, nothing fades on a threshold
-    if (prev === 'ring' && next !== 'off') {
-      beginSpinExit()
-      return
-    }
-    state.exit = null
-    state.camGoal = 'printer'
-    if (prev === 'ring') {
-      // jumped straight past the steps: the ring fades where it is and the
-      // motors are parked on the track (off screen at this scroll)
-      tweenTo('ringAlpha', 0, 0.45)
-      tweenTo('printerAlpha', 0, 0.45)
-      tweenTo('motorsAlpha', 1, 0.02, 0.5)
-    } else if (state.out < 0.999 || state.printerAlpha < 0.999) {
-      // back from such a jump: the printer joins the track, off screen by now
-      state.out = 1
-      state.ringAlpha = 0
-      state.printerAlpha = 1
-      tweenTo('motorsAlpha', 1, 0.02)
-    }
   }
 
   /* --------------------------------------------------------------- update */
@@ -1187,15 +1123,6 @@ export async function createProcessStage(canvas, opts = {}) {
     state.pointer.liveX = ease(state.pointer.liveX, state.pointer.x, 3.2, dt)
     state.pointer.liveY = ease(state.pointer.liveY, state.pointer.y, 3.2, dt)
 
-    // the scripted spin-before-exit
-    if (state.exit) {
-      const ex = state.exit
-      ex.t += dt
-      const k = clamp(ex.t / ex.dur, 0, 1)
-      spin.angle = ex.from + ex.delta * easeInOut(k)
-      if (k >= 1) startExit()
-    }
-    tickTurret(dt)
     const tl = state.trackLive
     const tr = state.track
     if (settings.reducedMotion) {
@@ -1205,18 +1132,33 @@ export async function createProcessStage(canvas, opts = {}) {
       tl.printer = ease(tl.printer, tr.printer, TRACK.smooth, dt)
       tl.motors = ease(tl.motors, tr.motors, TRACK.smooth, dt)
     }
+    // hero → step 01: everything below is a function of this one number
+    const hand = smooth(HANDOFF.from, HANDOFF.to, tl.printer)
+    state.hand = hand
+    syncScrub(hand)
+    tickTurret(dt)
     // measured speed drives the lean and the speed lines, whatever moved it
     const measured = dt > 0 ? (spin.angle - state.lastAngle) / dt : 0
     state.angVel = ease(state.angVel, measured, 18, dt)
     state.lastAngle = spin.angle
     const speed = Math.abs(state.angVel)
 
-    tickTweens(dt)
+    const outK = easeInOut(smooth(HANDOFF.out[0], HANDOFF.out[1], hand))
+    const ringVis = 1 - smooth(HANDOFF.ring[0], HANDOFF.ring[1], hand)
+    const dialK = 1 - smooth(HANDOFF.undraw[0], HANDOFF.undraw[1], hand)
+    state.out = outK
+    state.ringAlpha = ringVis
+    // the step-02 motors join the scroll track once they are inside the printer
+    state.motorsAlpha = hand >= 0.999 ? 1 : 0
 
-    // camera eases toward the framing this stage wants
+    // camera eases toward the framing the hand-off wants (tighter mid-scrub)
     const wantCam = goalCamera()
-    if (wantCam) {
-      const rate = settings.reducedMotion ? 1000 : 3.1
+    if (state.cameraSnap) {
+      Object.assign(state.camera, wantCam)
+      state.cameraSnap = false
+    }
+    {
+      const rate = settings.reducedMotion ? 1000 : hand > 0 && hand < 1 ? 7 : 3.1
       state.camera.az = ease(state.camera.az, wantCam.az, rate, dt)
       state.camera.el = ease(state.camera.el, wantCam.el, rate, dt)
       state.camera.dist = ease(state.camera.dist, wantCam.dist, rate, dt)
@@ -1251,21 +1193,21 @@ export async function createProcessStage(canvas, opts = {}) {
     // parts ride the platter but only take half its tilt, so they stay upright
     _halfQuat.copy(IDENTITY).slerp(_dialQuat, 0.5)
 
-    const ringVis = state.ringAlpha
     const collapse = 0.82 + 0.18 * ringVis
     dial.position.copy(ringCenter)
     dial.quaternion.copy(_dialQuat)
     dial.scale.setScalar(ringRadius * collapse)
     dial.visible = ringVis > 0.004
 
-    // dial drawing: rail draws itself, ticks sweep in, lines and mark follow
-    const railK = intro.done ? 1 : easeOutCubic(clamp(introT / INTRO.rail, 0, 1))
-    const tickK = intro.done ? 1 : clamp((introT - INTRO.ticks[0]) / (INTRO.ticks[1] - INTRO.ticks[0]), 0, 1)
+    // dial drawing: rail draws itself, ticks sweep in, lines and mark follow —
+    // and on the way to step 01 it all rewinds into the front station
+    const railK = (intro.done ? 1 : easeOutCubic(clamp(introT / INTRO.rail, 0, 1))) * easeInOut(dialK)
+    const tickK = (intro.done ? 1 : clamp((introT - INTRO.ticks[0]) / (INTRO.ticks[1] - INTRO.ticks[0]), 0, 1)) * dialK
     const segs = Math.floor(railK * RAIL_SEGMENTS)
     dialParts.rail.geometry.setDrawRange(0, Math.min(railIndexCount, segs * RAIL_SIDES * 6))
     dialParts.ticks.count = Math.floor(easeOutCubic(tickK) * TICKS)
-    const lineK = intro.done ? 1 : smooth(0.5, 1.6, introT)
-    const markK = intro.done ? 1 : smooth(1.4, 2.0, introT)
+    const lineK = (intro.done ? 1 : smooth(0.5, 1.6, introT)) * dialK
+    const markK = (intro.done ? 1 : smooth(1.4, 2.0, introT)) * dialK
     dialParts.rail.material.opacity = dialParts.rail.userData.base * ringVis
     dialParts.ticks.material.opacity = dialParts.ticks.userData.base * ringVis
     dialParts.lines.material.opacity = dialParts.lines.userData.base * ringVis * lineK
@@ -1276,14 +1218,14 @@ export async function createProcessStage(canvas, opts = {}) {
 
     // lock-in: arm on a real move, fire when the turret comes to rest on a station
     if (speed > 1.2) rippleState.armed = true
-    if (rippleState.armed && speed < 0.35 && intro.done && !state.exit) {
+    if (rippleState.armed && speed < 0.35 && intro.done && hand <= 0.0005) {
       rippleState.armed = false
       rippleState.t = 0
     }
     rippleState.t += dt
     const rk = clamp(rippleState.t / 1.1, 0, 1)
     const ripple = dialParts.ripple
-    ripple.visible = rk < 1 && !settings.reducedMotion && ringVis > 0.05
+    ripple.visible = rk < 1 && !settings.reducedMotion && hand <= 0.0005
     if (ripple.visible) {
       ripple.scale.setScalar(0.06 + 0.34 * easeOutCubic(rk))
       ripple.material.opacity = 0.55 * (1 - rk) * (1 - rk) * ringVis
@@ -1291,14 +1233,14 @@ export async function createProcessStage(canvas, opts = {}) {
 
     // paper haze over the far half of the turret (off once the ring leaves)
     const camToRing = camera.position.distanceTo(ringCenter)
-    const haze = ringVis * (1 - state.out)
+    const haze = ringVis
     scene.fog.near = haze > 0.01 ? camToRing - ringRadius * 0.15 : 100
     scene.fog.far = haze > 0.01 ? camToRing + ringRadius * (2.6 + 6 * (1 - haze)) : 101
 
     if (shadowCatcher) {
       // the soft shadow is a hero-ring device; step 02 floats free of it
       shadowCatcher.position.y = ringCenter.y - ringRadius * 0.62
-      shadowCatcher.material.opacity = 0.1 * state.ringAlpha
+      shadowCatcher.material.opacity = 0.1 * ringVis
       shadowCatcher.visible = !settings.phone && shadowCatcher.material.opacity > 0.004
     }
 
@@ -1307,7 +1249,7 @@ export async function createProcessStage(canvas, opts = {}) {
     const printerBasis = makeBasis(goalPrinter)
     const preset = goalPrinter.preset
     // the printer only rides the track once its act is reached: before that the
-    // ring exit carries it in
+    // hand-off carries it in
     const printerShift = clamp(tl.printer, 0, TRACK.hideBeyond)
     const stagePos = pointOn(printerBasis, preset.x + px * 0.5, -(preset.y || 0) + py * 0.5 + printerShift * TRACK.printerTravel, 0)
 
@@ -1315,10 +1257,10 @@ export async function createProcessStage(canvas, opts = {}) {
     const lean = settings.reducedMotion ? 0 : 0.2 * smooth(0.3, 4.2, speed)
     const lag = settings.reducedMotion ? 0 : clamp(-state.angVel * 0.045, -0.2, 0.2)
     const trailLen = clamp(state.angVel * 0.4, -1.4, 1.4)
-    const trailAlpha = settings.reducedMotion ? 0 : smooth(0.45, 2.2, speed) * ringVis * (1 - state.out)
+    const trailAlpha = settings.reducedMotion ? 0 : smooth(0.45, 2.2, speed) * ringVis
 
     hudFrame.alpha = intro.done ? 1 : smooth(INTRO.hud[0], INTRO.hud[0] + INTRO.hud[1], introT)
-    hudFrame.alpha *= ringVis * (1 - smooth(0.02, 0.3, state.out))
+    hudFrame.alpha *= 1 - smooth(HANDOFF.balloons[0], HANDOFF.balloons[1], hand)
     hudFrame.time = state.time
     hudFrame.front = RING_ORDER[frontIndex(spin.angle)]
     hudFrame.settled = intro.done ? 1 - smooth(0.25, 1.1, speed) : 0
@@ -1335,9 +1277,15 @@ export async function createProcessStage(canvas, opts = {}) {
       const partK = intro.done ? 1 : clamp((introT - INTRO.partsAt - order * INTRO.partStagger) / INTRO.partDur, 0, 1)
       const reach = intro.done ? 1 : easeOutCubic(partK)
       const grow = intro.done ? 1 : Math.max(0, easeOutBack(partK))
+      // hand-off: the motors fly into the printer, J1 first
+      const a0 = HANDOFF.absorb[0] + HANDOFF.absorbStagger * (order - 1)
+      const absorb = id === 'printer' ? 0 : easeInOut(smooth(a0, a0 + HANDOFF.absorb[1] - HANDOFF.absorb[0], hand))
 
       // the part at the front station is presented: bigger, lifted, turned
-      const presentTarget = 1 - smooth(0.0, STEP * 0.62, Math.abs(rel))
+      let presentTarget = 1 - smooth(0.0, STEP * 0.62, Math.abs(rel))
+      // through the hand-off the printer keeps growing toward its step-01 size,
+      // even while the wind-up whirls it past the front
+      if (id === 'printer') presentTarget = Math.max(presentTarget, smooth(HANDOFF.spin[0], HANDOFF.spin[0] + 0.12, hand))
       state.present[index] = settings.reducedMotion ? presentTarget : ease(state.present[index], presentTarget, 9, dt)
       const pres = state.present[index] * (intro.done ? 1 : smooth(1.2, 2.4, introT))
 
@@ -1372,7 +1320,7 @@ export async function createProcessStage(canvas, opts = {}) {
       item.debugRect = screenRect ? [Math.round(screenRect.l), Math.round(screenRect.t), Math.round(screenRect.r), Math.round(screenRect.b)] : null
       let fadeTarget = 1
       if (state.textRects.length && screenRect) {
-        if (id === 'printer' ? state.out < 0.12 : state.ringAlpha > 0.03) {
+        if (id === 'printer' ? outK < 0.12 : ringVis > 0.03) {
           // fade only where the object genuinely sits over type, not for a marginal brush
           const hit = textOverlap(screenRect)
           if (hit > 0.02) fadeTarget = 1 - 0.86 * Math.min(1, hit / 0.22)
@@ -1395,7 +1343,8 @@ export async function createProcessStage(canvas, opts = {}) {
       tu.uLift.value = 0.05 * pres
       tu.uGap.value = ((ringScale * item.maxDim) / Math.max(1e-4, ringRadius)) * 0.24
       tu.uWidth.value = 0.0058
-      tu.uAlpha.value = trailAlpha * fade * (0.55 + 0.45 * (1 - (1 - Math.cos(rel)) / 2))
+      tu.uAlpha.value =
+        trailAlpha * fade * (1 - absorb) * (id === 'printer' ? 1 - outK : 1) * (0.55 + 0.45 * (1 - (1 - Math.cos(rel)) / 2))
       trail.visible = tu.uAlpha.value > 0.003
 
       // screen data for the part balloons
@@ -1408,12 +1357,12 @@ export async function createProcessStage(canvas, opts = {}) {
         hud.depth = (1 - Math.cos(rel)) / 2
         hud.present = pres
         hud.order = order
-        hud.alpha = fade * Math.min(1, grow)
+        hud.alpha = fade * Math.min(1, grow) * (1 - absorb)
         hudFrame.items.push(hud)
       }
 
       if (id === 'printer') {
-        const k = easeInOut(clamp(state.out, 0, 1))
+        const k = outK
         const sway = settings.reducedMotion
           ? 0
           : Math.sin(state.time * 0.22) * 0.035 + state.pointer.liveX * 0.03
@@ -1427,32 +1376,33 @@ export async function createProcessStage(canvas, opts = {}) {
         printerPivot.quaternion.copy(ringQuat).slerp(stageQuat, k)
         printerPivot.scale.setScalar(Math.max(1e-5, ringScale + (1 - ringScale) * k))
         const printerGone = k > 0.98 && printerShift * TRACK.printerTravel >= TRACK.hideBeyond - 0.05
-        setAlpha(printer.pivot, printerGone ? 0 : state.printerAlpha * state.printerFade * (k > 0.02 ? 1 : Math.min(1, grow * 4)))
+        setAlpha(printer.pivot, printerGone ? 0 : state.printerFade * (k > 0.02 ? 1 : Math.min(1, grow * 4)))
         continue
       }
 
       const pivot = item.pivot
       const cfg = HOVER_TYPES.has(id) ? HOVER_ITEMS[mode()].find((h) => h.node === id) : null
-      const mix = cfg ? clamp(state.motorsAlpha, 0, 1) : 0
       let pos = ringPos
       let quat = ringQuat
       let scale = ringScale
       let gone = false
-      if (cfg && mix > 0.0005) {
+      if (cfg && state.motorsAlpha > 0) {
+        // on the scroll track, waiting for (or riding) step 02
         const hp = hoverPose(cfg, basis)
-        pos = ringPos.clone().lerp(hp.position, mix)
-        quat = ringQuat.clone().slerp(hp.quaternion, mix)
-        scale = ringScale + (hp.scale - ringScale) * mix
-        gone = mix > 0.999 && hp.gone
-      }
-      // shrink the ring away while it fades during the printer exit
-      if (state.out > 0.01 && state.motorsAlpha < 0.2) {
-        scale *= 0.65 + 0.35 * state.ringAlpha
+        pos = hp.position
+        quat = hp.quaternion
+        scale = hp.scale
+        gone = hp.gone
+      } else if (absorb > 0) {
+        // into the printer: drawn toward it, shrinking, gone as it arrives
+        pos = ringPos.lerp(printerPivot.position, absorb)
+        scale *= Math.pow(1 - absorb, 1.4)
+        gone = absorb > 0.985
       }
       pivot.position.copy(pos)
       pivot.quaternion.copy(quat)
       pivot.scale.setScalar(Math.max(1e-5, scale))
-      setAlpha(pivot, gone ? 0 : (cfg ? Math.max(state.ringAlpha, state.motorsAlpha) : state.ringAlpha) * fade * Math.min(1, grow * 4))
+      setAlpha(pivot, gone ? 0 : fade * Math.min(1, grow * 4))
     }
   }
 
@@ -1469,7 +1419,7 @@ export async function createProcessStage(canvas, opts = {}) {
   renderer.setAnimationLoop(frame)
 
   /* ------------------------------------------------------------ by hand */
-  const handReady = () => state.loaded && state.intro.done && state.stage === 'ring' && state.out < 0.02 && !state.exit && !settings.reducedMotion
+  const handReady = () => state.loaded && state.intro.done && state.hand <= 0.0005 && !settings.reducedMotion
 
   function pickAt(x, y) {
     // front-most part whose (slightly tightened) screen box holds the point
@@ -1578,12 +1528,8 @@ export async function createProcessStage(canvas, opts = {}) {
         tr.set = true
         state.trackLive.printer = tr.printer
         state.trackLive.motors = tr.motors
+        state.cameraSnap = true
       }
-    },
-    nudge(dy) {
-      if (!handReady() || spin.mode === 'drag' || !dy) return
-      spin.vel = clamp(spin.vel + dy * TURRET.flick, -10, 10)
-      if (spin.mode === 'index') spin.mode = 'free'
     },
     setStage(name) {
       if (!['ring', 'printer', 'motors', 'off'].includes(name)) return false
@@ -1634,7 +1580,7 @@ export async function createProcessStage(canvas, opts = {}) {
         frames: state.frames,
         stage: state.stage,
         appliedStage: state.appliedStage,
-        camGoal: state.camGoal,
+        hand: +state.hand.toFixed(3),
         ringAngle: spin.angle,
         spinMode: spin.mode,
         angVel: +state.angVel.toFixed(3),
@@ -1642,7 +1588,6 @@ export async function createProcessStage(canvas, opts = {}) {
         front: RING_ORDER[frontIndex(spin.angle)],
         out: state.out,
         ringAlpha: state.ringAlpha,
-        printerAlpha: state.printerAlpha,
         motorsAlpha: state.motorsAlpha,
         track: { printer: +state.trackLive.printer.toFixed(3), motors: +state.trackLive.motors.toFixed(3) },
         camera: state.camera
