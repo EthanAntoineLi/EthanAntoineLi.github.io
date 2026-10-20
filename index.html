@@ -88,8 +88,9 @@
       <ol>
         <li><a href="#act-arm"><span class="mono">01</span>Payload</a></li>
         <li><a href="#act-geometry"><span class="mono">02</span>Geometry</a></li>
-        <li><a href="#act-scan"><span class="mono">03</span>Scan</a></li>
-        <li><a href="#act-contact"><span class="mono">04</span>Contact</a></li>
+        <li><a href="#act-free"><span class="mono">03</span>Free view</a></li>
+        <li><a href="#act-scan"><span class="mono">04</span>Scan</a></li>
+        <li><a href="#act-contact"><span class="mono">05</span>Contact</a></li>
       </ol>
       <p class="index-foot mono">ethan.li.1@outlook.com</p>
     </nav>
@@ -99,6 +100,7 @@
       <p class="progress-num" id="progress-num">01</p>
       <ol class="progress-ticks" id="progress-ticks">
         <li class="on"></li>
+        <li></li>
         <li></li>
         <li></li>
         <li></li>
@@ -191,11 +193,41 @@
         </div>
       </section>
 
-      <!-- ============================================================ SCAN -->
-      <section class="act act--scan" id="act-scan" data-stop="scan" data-ghost="REAL" data-index="4" data-ent="curtain" data-ex="dolly">
+
+      <!-- ======================================================== FREE VIEW -->
+      <section class="act act--free" id="act-free" data-stop="free" data-ghost="MOVE" data-index="4" data-ent="curtain" data-ex="swing">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>03 / Scan</p>
+            <p class="eyebrow mono"><span class="dot"></span>03 / Free view</p>
+            <h2 class="act-title">
+              Your turn.<br />
+              <em>Move it.</em>
+            </h2>
+          </div>
+
+          <div class="free-hud">
+            <p class="act-note mono">Drag to orbit · click a part for details</p>
+            <div class="free-controls" role="group" aria-label="Model view controls">
+              <button type="button" class="free-btn" data-zoom="in" aria-label="Zoom in">+</button>
+              <button type="button" class="free-btn" data-zoom="out" aria-label="Zoom out">−</button>
+              <button type="button" class="free-btn free-btn--text" data-free-reset>Reset view</button>
+            </div>
+          </div>
+
+          <div class="detail" id="detail-card" role="dialog" aria-modal="false" aria-labelledby="detail-title" hidden>
+            <button type="button" class="detail-close mono" id="detail-close" aria-label="Close details">Close ✕</button>
+            <p class="detail-id mono" id="detail-id"></p>
+            <h3 class="detail-title" id="detail-title"></h3>
+            <dl class="detail-rows" id="detail-rows"></dl>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ SCAN -->
+      <section class="act act--scan" id="act-scan" data-stop="scan" data-ghost="REAL" data-index="5" data-ent="swing" data-ex="dolly">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>04 / Scan</p>
             <h2 class="act-title">
               This half is real.<br />
               <span class="dim-line">The drone half <em>isn’t built yet.</em></span>
@@ -206,10 +238,10 @@
       </section>
 
       <!-- ========================================================= CONTACT -->
-      <section class="act act--contact" id="act-contact" data-stop="outro" data-ghost="HI" data-index="5" data-ent="dolly">
+      <section class="act act--contact" id="act-contact" data-stop="outro" data-ghost="HI" data-index="6" data-ent="dolly">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>04 / Contact</p>
+            <p class="eyebrow mono"><span class="dot"></span>05 / Contact</p>
           </div>
 
           <h2 class="act-title contact-title">Let’s talk.</h2>

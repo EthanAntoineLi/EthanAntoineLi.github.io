@@ -81,6 +81,76 @@ const ACTS = [...document.querySelectorAll('.act')].map((el) => ({
   index: el.dataset.index || '',
 }))
 
+const SCAN_INDEX = ACTS.findIndex((a) => a.stop === 'scan')
+const FREE_INDEX = ACTS.findIndex((a) => a.stop === 'free')
+const SCAN_BOUNDARY = SCAN_INDEX - 1
+const isFree = () => activeAct === FREE_INDEX
+
+// Copy for the click-through details in the Free view. Facts only — the same
+// numbers the tables and the EPQ report use.
+const PART_INFO = {
+  j1: {
+    id: 'J1',
+    title: 'Base yaw',
+    rows: [
+      ['Travel', '±120°'],
+      ['Actuator', 'UMIR57 stepper'],
+      ['Reduction', '25 : 1 planetary'],
+      ['Torque', '19 N·m'],
+    ],
+  },
+  j2: {
+    id: 'J2',
+    title: 'Shoulder pitch',
+    rows: [
+      ['Travel', '0–150°'],
+      ['Actuator', 'UMIR57 stepper'],
+      ['Reduction', '50 : 1 worm · self-locking'],
+      ['Torque', '5.4 N·m'],
+    ],
+  },
+  j3: {
+    id: 'J3',
+    title: 'Upper-arm roll',
+    rows: [
+      ['Travel', '±135°'],
+      ['Actuator', 'UMIR42 stepper'],
+      ['Role', 'rolls the upper arm'],
+    ],
+  },
+  j4: {
+    id: 'J4',
+    title: 'Elbow pitch',
+    rows: [
+      ['Travel', '0–140°'],
+      ['Actuator', 'UMIR42 stepper'],
+      ['Role', 'folds the forearm'],
+    ],
+  },
+  j5: {
+    id: 'J5',
+    title: 'Wrist roll',
+    rows: [
+      ['Travel', '±180°'],
+      ['Actuator', 'UMIR42 stepper'],
+      ['Role', 'orients the end effector'],
+    ],
+  },
+  chassis: {
+    id: 'BASE',
+    title: 'Chassis + controller',
+    rows: [
+      ['Controller', 'STM32F407'],
+      ['Bus', 'RS485 / Modbus-RTU'],
+      ['Payload target', '500 g'],
+      ['Printed on', 'Bambu Lab H2S'],
+    ],
+  },
+}
+
+let hoverPartId = null
+let hideDetailCard = null
+
 let scene = null
 let activeAct = 0
 
@@ -102,6 +172,7 @@ function startScene() {
         phone,
       })
       await scene.ready
+      window.__scene = scene // dev/QA handle (harmless)
       body.classList.add('scene-ready')
       applyStop(activeAct, 1)
       return scene
@@ -116,6 +187,13 @@ function applyStop(i, t = 1) {
   const act = ACTS[i]
   if (!act || !scene) return
   try {
+    if (act.stop === 'free') {
+      // Free view: the visitor owns orbit + zoom, the page stops steering.
+      scene.setStop('free', 1)
+      scene.setControlMode('free')
+      return
+    }
+    scene.setControlMode('scroll')
     // The scene blends between an arrived stop and a destination stop:
     // pin the current one, then blend towards the next by its local progress.
     scene.setStop(act.stop, 1)
@@ -179,7 +257,7 @@ function countSpecs() {
 
 // Which named joint a transition dives into. Boundary 3 (geometry -> scan) is
 // the scan itself, so it has no close-up.
-const CLOSEUP_BY_BOUNDARY = ['shoulder', 'elbow', null, null]
+const CLOSEUP_BY_BOUNDARY = ['shoulder', 'elbow', null, null, null]
 
 function updateStage(y, vh) {
   if (!stageEl || reducedMotion) return
@@ -194,7 +272,7 @@ function updateStage(y, vh) {
     if (p > 0 && p < 1) {
       fam = ACTS[n + 1].el.dataset.ent || 'none'
       bump = Math.sin(Math.PI * p)
-      if (n === 2) scanP = p
+      if (n === SCAN_BOUNDARY) scanP = p
       else closeAnchor = CLOSEUP_BY_BOUNDARY[n]
     }
   }
@@ -210,7 +288,7 @@ function updateStage(y, vh) {
   } else {
     scene.setScan(null)
   }
-  if (!userMode) setMode(scanP !== null || activeAct === 3 ? 'xray' : 'mesh', false)
+  if (!userMode) setMode(scanP !== null || activeAct === SCAN_INDEX ? 'xray' : 'mesh', false)
 
   if (scanLine) {
     if (scanP !== null && scene.scanScreenY) {
@@ -283,6 +361,7 @@ function measure() {
     setProgress(shown)
     body.classList.toggle('at-end', shown === ACTS.length - 1)
     if (shown === 1) countSpecs()
+    if (shown !== FREE_INDEX && hideDetailCard) hideDetailCard()
   }
   applyStop(i, t)
   // Runs last: the stage/scan/close-up state depends on the freshly updated
@@ -350,7 +429,9 @@ function initCursor() {
         label.textContent = target?.dataset.cursor
           ? target.dataset.cursor.toUpperCase()
           : overCanvas
-            ? 'DRAG'
+            ? isFree() && hoverPartId
+              ? 'CLICK'
+              : 'DRAG'
             : ''
       }
     },
@@ -451,6 +532,94 @@ function initMode() {
   })
 }
 
+/* -------------------------------------------------------------- free view */
+function initFreeView() {
+  const card = document.getElementById('detail-card')
+  if (!card) return
+  const closeBtn = document.getElementById('detail-close')
+  const idEl = document.getElementById('detail-id')
+  const titleEl = document.getElementById('detail-title')
+  const rowsEl = document.getElementById('detail-rows')
+
+  const hideCard = () => {
+    card.hidden = true
+    body.classList.remove('detail-open')
+    if (scene) scene.setHighlight?.(null)
+  }
+  hideDetailCard = hideCard
+
+  const showCard = (partId) => {
+    const info = PART_INFO[partId]
+    if (!info) return hideCard()
+    if (idEl) idEl.textContent = info.id
+    if (titleEl) titleEl.textContent = info.title
+    if (rowsEl) {
+      rowsEl.innerHTML = ''
+      for (const [label, value] of info.rows) {
+        const dt = document.createElement('dt')
+        dt.textContent = label
+        const dd = document.createElement('dd')
+        dd.textContent = value
+        rowsEl.append(dt, dd)
+      }
+    }
+    card.hidden = false
+    body.classList.add('detail-open')
+    if (scene) scene.setHighlight?.(partId)
+  }
+
+  closeBtn?.addEventListener('click', hideCard)
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideCard()
+  })
+
+  document.querySelectorAll('[data-zoom]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      scene?.zoomBy?.(btn.dataset.zoom === 'in' ? 0.85 : 1.18)
+    })
+  })
+  document.querySelector('[data-free-reset]')?.addEventListener('click', () => {
+    scene?.resetView?.()
+    hideCard()
+    hoverPartId = null
+    scene?.setHighlight?.(null)
+  })
+
+  // hover: highlight + cursor label (mouse only)
+  let lastHover = 0
+  canvas.addEventListener('pointermove', (e) => {
+    if (!isFree() || e.pointerType !== 'mouse') return
+    const now = performance.now()
+    if (now - lastHover < 60) return
+    lastHover = now
+    const hit = scene?.pick?.(e.clientX, e.clientY)
+    const nextId = hit?.id || null
+    if (nextId !== hoverPartId) {
+      hoverPartId = nextId
+      scene?.setHighlight?.(hoverPartId)
+    }
+  })
+  canvas.addEventListener('pointerleave', () => {
+    hoverPartId = null
+    if (isFree() && scene) scene.setHighlight?.(null)
+  })
+
+  // click (not a drag): open details for the part under the pointer
+  let downX = 0
+  let downY = 0
+  canvas.addEventListener('pointerdown', (e) => {
+    downX = e.clientX
+    downY = e.clientY
+  })
+  canvas.addEventListener('pointerup', (e) => {
+    if (!isFree()) return
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 7) return
+    const hit = scene?.pick?.(e.clientX, e.clientY)
+    if (hit?.id) showCard(hit.id)
+    else hideCard()
+  })
+}
+
 /* ------------------------------------------------------------- drag orbit */
 function initDrag() {
   if (!canvas) return
@@ -495,6 +664,7 @@ initFrameCounter()
 initIndex()
 initMode()
 initDrag()
+initFreeView()
 
 initScroll()
 measure()

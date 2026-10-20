@@ -150,6 +150,20 @@ const STOP_DEFS = {
     screenX: 0,
     screenY: 0
   },
+  free: {
+    // the "your turn" stop: a clean three-quarter the visitor takes over from
+    az: 0.72,
+    el: 0.16,
+    fov: 32,
+    fillX: 0.78,
+    fillY: 0.7,
+    focus: null,
+    focusAmount: 0,
+    pose: [10, 22, 0, 42, 12],
+    pointSize: 1,
+    screenX: 0,
+    screenY: 0
+  },
   scan: {
     az: -0.9, // wider top-ish three-quarter
     el: 0.68, // ~39° above
@@ -670,6 +684,14 @@ export async function createArmScene(canvas, opts = {}) {
     },
     // drag orbit (target + damped) and pointer parallax
     orbit: { az: 0, el: 0, liveAz: 0, liveEl: 0 },
+    // 'scroll' lets the page choreograph the camera; 'free' hands it to the
+    // visitor in the Free view act (full orbit + zoom, no stop changes)
+    control: 'scroll',
+    zoom: { target: 1, live: 1 },
+    idle: 0,
+    highlighted: null,
+    highlightMaterial: null,
+    partEdges: new Map(),
     pointer: { x: 0, y: 0, liveX: 0, liveY: 0 },
     // pose
     pose: STOP_DEFS.hero.poseRad.slice(),
@@ -1018,7 +1040,8 @@ export async function createArmScene(canvas, opts = {}) {
       state.live.lookTarget.addScaledVector(_right, -screenX * dist * tanH)
       state.live.lookTarget.addScaledVector(_up, -screenY * dist * tanV)
     }
-    return dist
+    // visitor zoom (free view) multiplies the fitted distance
+    return dist * state.zoom.live
   }
 
   const _closeAnchor = new THREE.Vector3()
@@ -1151,6 +1174,17 @@ export async function createArmScene(canvas, opts = {}) {
     const pointerRate = state.settings.reducedMotion ? 30 : 5.5
     state.pointer.liveX = damp(state.pointer.liveX, state.pointer.x, pointerRate, dt)
     state.pointer.liveY = damp(state.pointer.liveY, state.pointer.y, pointerRate, dt)
+
+    // ---- free view: zoom damping + gentle idle rotation ------------------
+    state.zoom.live = damp(state.zoom.live, state.zoom.target, 5, dt)
+    if (state.control === 'free') {
+      state.idle += dt
+      if (state.idle > 4 && !state.settings.reducedMotion) {
+        state.orbit.az = clamp(state.orbit.az + dt * 0.1, -Math.PI, Math.PI)
+      }
+    } else {
+      state.idle = 0
+    }
 
     // ---- distance + centring: exact fit to the live frame ----------------
     const az = state.live.az + state.orbit.liveAz + state.pointer.liveX * 0.035
@@ -1359,6 +1393,8 @@ export async function createArmScene(canvas, opts = {}) {
 
   // ----------------------------------------------------------------- public
   function setStop(name, t = 1) {
+    // In Free view the visitor owns the camera; the page must not steer it.
+    if (state.control === 'free') return false
     if (state.disposed) return false
     const key = STOP_DEFS[name] ? name : 'hero'
     const blend = Number(t)
@@ -1375,6 +1411,98 @@ export async function createArmScene(canvas, opts = {}) {
     return true
   }
 
+  // ------------------------------------------------------- part picking / x-ray
+  // One id per GLB mesh. The page owns the copy for each id.
+  const PART_BY_MESH = {
+    Static_mesh: 'chassis',
+    J1_mesh: 'j1',
+    J2_mesh: 'j2',
+    J3_mesh: 'j3',
+    J4_mesh: 'j4',
+    J5_mesh: 'j5'
+  }
+  const _ray = new THREE.Raycaster()
+  const _pickNdc = new THREE.Vector2()
+
+  function pick(clientX, clientY) {
+    if (!state.arm || !state.camera || state.disposed) return null
+    const rect = state.canvas.getBoundingClientRect()
+    if (!rect.width || !rect.height) return null
+    _pickNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1
+    _pickNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1
+    _ray.setFromCamera(_pickNdc, state.camera)
+    const hits = _ray.intersectObjects(state.arm.meshes, false)
+    if (!hits.length) return null
+    const id = PART_BY_MESH[hits[0].object.name] || null
+    return id ? { id } : null
+  }
+
+  function setHighlight(id) {
+    if (state.disposed) return false
+    if (state.highlighted === (id || null)) return true
+    for (const lines of state.partEdges.values()) lines.visible = false
+    state.highlighted = id || null
+    if (!id || !state.arm) return true
+    if (!state.highlightMaterial) {
+      state.highlightMaterial = new THREE.LineBasicMaterial({
+        color: 0x8f3a22,
+        transparent: true,
+        opacity: 0.55,
+        depthTest: false,
+        depthWrite: false
+      })
+    }
+    for (const mesh of state.arm.meshes) {
+      if (PART_BY_MESH[mesh.name] !== id) continue
+      let lines = state.partEdges.get(mesh)
+      if (!lines) {
+        const edges = new THREE.EdgesGeometry(mesh.geometry, 30)
+        lines = new THREE.LineSegments(edges, state.highlightMaterial)
+        lines.renderOrder = 7
+        lines.frustumCulled = false
+        mesh.add(lines)
+        state.partEdges.set(mesh, lines)
+      }
+      lines.visible = true
+    }
+    return true
+  }
+
+  function setControlMode(mode) {
+    if (state.disposed) return false
+    if (mode !== 'free' && mode !== 'scroll') return false
+    if (state.control === mode) return true
+    state.control = mode
+    if (mode === 'scroll') {
+      // hand the camera back to the page: undo the visitor's offset/zoom
+      state.zoom.target = 1
+      state.orbit.az = 0
+      state.orbit.el = 0
+      setHighlight(null)
+    } else {
+      state.idle = 0
+    }
+    return true
+  }
+
+  function zoomBy(factor) {
+    if (state.disposed) return false
+    const f = Number(factor)
+    if (!Number.isFinite(f) || f <= 0) return false
+    state.zoom.target = clamp(state.zoom.target * f, 0.62, 1.8)
+    state.idle = 0
+    return true
+  }
+
+  function resetView() {
+    if (state.disposed) return false
+    state.zoom.target = 1
+    state.orbit.az = 0
+    state.orbit.el = 0
+    state.idle = 0
+    return true
+  }
+
   function setMode(mode) {
     if (state.disposed) return false
     if (!MODE_TARGETS[mode]) return false
@@ -1386,8 +1514,12 @@ export async function createArmScene(canvas, opts = {}) {
     if (state.disposed) return false
     const x = Number(dx)
     const y = Number(dy)
-    if (Number.isFinite(x)) state.orbit.az = clamp(state.orbit.az + x, -0.9, 0.9)
-    if (Number.isFinite(y)) state.orbit.el = clamp(state.orbit.el + y, -0.45, 0.45)
+    const free = state.control === 'free'
+    const azLimit = free ? Math.PI : 0.9
+    const elLimit = free ? 1.3 : 0.45
+    if (Number.isFinite(x)) state.orbit.az = clamp(state.orbit.az + x, -azLimit, azLimit)
+    if (Number.isFinite(y)) state.orbit.el = clamp(state.orbit.el + y, -elLimit, elLimit)
+    state.idle = 0
     return true
   }
 
@@ -1444,6 +1576,12 @@ export async function createArmScene(canvas, opts = {}) {
     }
     for (const material of state.edgeMaterials) material.dispose()
     state.edgeMaterials = []
+    for (const lines of state.partEdges.values()) lines.geometry.dispose()
+    state.partEdges.clear()
+    if (state.highlightMaterial) {
+      state.highlightMaterial.dispose()
+      state.highlightMaterial = null
+    }
     for (const object of state.edgeObjects) {
       if (object.geometry) object.geometry.dispose()
     }
@@ -1580,6 +1718,11 @@ export async function createArmScene(canvas, opts = {}) {
     setScan,
     setCloseUp,
     scanScreenY,
+    setControlMode,
+    zoomBy,
+    resetView,
+    pick,
+    setHighlight,
     setOrbit,
     setPointer,
     projectAnchor,
