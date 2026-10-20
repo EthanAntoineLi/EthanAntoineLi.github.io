@@ -34,11 +34,13 @@
     </div>
 
     <header class="chrome">
-      <a class="brand" href="./" aria-label="Ethan Antoine Li — home">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span class="brand-name">ethan antoine li</span>
-        <span class="brand-tag mono">portfolio</span>
-      </a>
+      <div class="chrome-left">
+        <a class="brand" href="./" aria-label="Ethan Antoine Li — home">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">ethan antoine li</span>
+          <span class="brand-tag mono">portfolio</span>
+        </a>
+      </div>
 
       <p class="chrome-meta mono">Sheet 00 · rev 2026.10</p>
 
@@ -69,7 +71,7 @@
         <div class="hero-foot">
           <ul class="status-strip mono reveal" aria-label="Current state">
             <li><span class="sq sq--built" aria-hidden="true"></span>5-axis arm — built</li>
-            <li><span class="sq sq--flying" aria-hidden="true"></span>FPV drone — flying</li>
+            <li><span class="sq sq--missing" aria-hidden="true"></span>FPV drone — not flying</li>
             <li><span class="sq sq--missing" aria-hidden="true"></span>handoff — not built</li>
           </ul>
 
@@ -102,7 +104,10 @@
             <p class="sheet-tags mono">
               <span>Hardware</span><span>EPQ 2026</span><span class="state state--built">Built</span>
             </p>
-            <span class="sheet-open mono">Open sheet <span aria-hidden="true">↗</span></span>
+            <span class="sheet-open mono">
+              <span>Open sheet</span>
+              <span class="sheet-open-arrow" aria-hidden="true">↗</span>
+            </span>
           </div>
 
           <figure class="plate">
@@ -136,7 +141,10 @@
             <p class="sheet-tags mono">
               <span>Software</span><span>Personal AI</span><span class="state state--built">Running</span>
             </p>
-            <span class="sheet-open mono">Open sheet <span aria-hidden="true">↗</span></span>
+            <span class="sheet-open mono">
+              <span>Open sheet</span>
+              <span class="sheet-open-arrow" aria-hidden="true">↗</span>
+            </span>
           </div>
 
           <figure class="plate">
@@ -169,7 +177,7 @@
             <p class="register-line">Pilot, goggles, video. The half that should find the person.</p>
             <div class="register-meta mono">
               <span class="register-tags"><span>Hardware</span><span>2026</span></span>
-              <span class="state">Flying</span>
+              <span class="state">Not flying</span>
               <span class="register-note">Sheet in prep</span>
             </div>
           </li>
@@ -208,7 +216,7 @@
           <header class="section-head reveal">
             <div>
               <p class="eyebrow mono"><span class="dot"></span>02 / Mission</p>
-              <h2 class="section-title">Two machines.<br /><em>One handoff.</em></h2>
+              <h2 class="section-title">Two machines.<br /><em>One job.</em></h2>
             </div>
           </header>
 
@@ -218,10 +226,19 @@
               difficult, exposed, or both — and a team that has to commit people to that ground.
             </p>
             <p>
-              The intent is a drone that finds the person and stays overhead, and an arm that does
-              the reaching and lifting. Each half is a prototype.
-              <strong>The handoff between them does not exist yet.</strong>
+              The grand plan is one full robot that does the rescue job itself. Drones work further
+              out and alongside it — looking around, watching for dangers, helping it locate the
+              person. The robot will have its own visual detection; the drone is its larger eye,
+              more of the environment from further away.
             </p>
+            <p>
+              <strong>The two machines do not work together yet.</strong>
+            </p>
+
+            <a class="mission-cta mono" href="./plan/">
+              <span>The grand plan</span>
+              <span class="mission-cta-arrow" aria-hidden="true">↗</span>
+            </a>
           </div>
         </div>
 
@@ -229,12 +246,12 @@
           <div
             class="system-track"
             role="img"
-            aria-label="System intent: drone, position fix, handoff, arm. The drone flies as FPV, the arm is a bench prototype, and the two middle stages are not built."
+            aria-label="System intent: drone, position fix, handoff, arm. The drone's FPV video link works but it does not fly, the arm is a bench prototype, and the two middle stages are not built."
           >
             <div class="system-node is-built">
               <span class="system-mark" aria-hidden="true"></span>
               <p class="system-name mono">Drone</p>
-              <p class="system-state">FPV · flying</p>
+              <p class="system-state">FPV · not flying</p>
             </div>
             <span class="system-link is-missing" aria-hidden="true"></span>
             <div class="system-node is-missing">
@@ -276,7 +293,7 @@
               <li>Arm CAD finalised — EPQ 3.1</li>
               <li>Five joints printed, assembled and moving</li>
               <li>Real-geometry articulation in the browser</li>
-              <li>Drone flying as FPV — pilot, goggles, video</li>
+              <li>Drone airframe and FPV video link — goggles show the feed</li>
             </ul>
           </article>
 
@@ -286,6 +303,7 @@
               <li>Arm firmware on the STM32F407</li>
               <li>RS485 / Modbus-RTU joint control</li>
               <li>Payload work toward the 500 g target</li>
+              <li>Drone flight — no stable hover yet</li>
             </ul>
           </article>
 

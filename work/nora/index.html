@@ -29,21 +29,32 @@
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
+    <!-- ---------------------------------------------------------- loader -->
+    <div class="loader" id="loader" aria-hidden="true">
+      <p class="loader-label mono">Scanning</p>
+      <p class="loader-count" id="loader-count">000</p>
+      <div class="loader-bar"><span id="loader-bar"></span></div>
+      <p class="loader-ascii mono" id="loader-ascii">----------</p>
+      <p class="mono loader-foot">Nora · personal AI · desk cat</p>
+    </div>
+
     <div class="ghost-wrap" aria-hidden="true">
       <span class="ghost" id="ghost">NOR</span>
     </div>
 
     <header class="chrome">
-      <a class="brand" href="../../" aria-label="Ethan Antoine Li — home">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span class="brand-name">ethan antoine li</span>
-        <span class="brand-tag mono">portfolio</span>
-      </a>
+      <div class="chrome-left">
+        <a class="brand" href="../../" aria-label="Ethan Antoine Li — home">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">ethan antoine li</span>
+          <span class="brand-tag mono">portfolio</span>
+        </a>
+        <a class="sheet-back mono" href="../../" aria-label="Back to the sheet index">← sheet 00</a>
+      </div>
 
       <p class="chrome-meta mono">Sheet 02 / 05 · rev 2026.10</p>
 
       <nav class="nav mono" aria-label="Sheet sections">
-        <a href="../../">← index</a>
         <a href="#what" data-nav>Assistant</a>
         <a href="#build" data-nav>Build</a>
         <a href="#cat" data-nav>Cat</a>
@@ -331,6 +342,7 @@
       <p class="colophon mono">Designed by me, built with Nora · no tracking · no cookies</p>
     </footer>
 
+    <script type="module" src="/src/nora-loader.js"></script>
     <script type="module" src="/src/scroll.js"></script>
     <script type="module" src="/src/nora-sheet.js"></script>
   </body>

@@ -23,7 +23,7 @@
 //                                   ~2.2 s from load.
 //   scene.playEntry()              start / restart the entry reveal (no-op under
 //                                   reduced motion, or until the model exists)
-//   scene.setStop(name, t = 1)     name: 'hero' | 'joints' | 'profile' | 'scan' | 'outro'
+//   scene.setStop(name, t = 1)     name: 'hero' | 'joints' | 'profile' | 'free' | 'scan'
 //   scene.setMode(mode)            'mesh' | 'points' | 'xray'
 //                                  xray = translucent shell + crisp black edges
 //   scene.setScan(0..1 | null)     clip-plane wipe revealing the x-ray model
@@ -184,24 +184,6 @@ const STOP_DEFS = {
     // Nudge the cloud right of the copy column so the scan read stays clear.
     screenX: 0.08,
     screenY: -0.02
-  },
-  outro: {
-    // A full reach: shoulder up to horizontal, elbow straight, wrist neutral.
-    // Deliberately unlike the folded payload pose.
-    az: 0.82,
-    el: 0.26,
-    fov: 34,
-    fillX: 0.64,
-    fillY: 0.66,
-    focus: null,
-    focusAmount: 0,
-    pose: [0, 96, 0, 0, 0],
-    pointSize: 0.82,
-    // Composition: sit the arm in the lower-right third, below and right of the
-    // centred contact copy ("Let's talk." / email / links) so all of it stays
-    // legible and clickable.
-    screenX: 0.53,
-    screenY: -0.46
   }
 }
 const STOP_NAMES = Object.keys(STOP_DEFS)

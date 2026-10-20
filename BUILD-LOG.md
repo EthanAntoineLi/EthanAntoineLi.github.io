@@ -434,3 +434,282 @@ captures, QA report and an independent critique are in `../review-v12/`.
   to the final URL (HUB-PLAN §8.2/§8.3) — the sheet is signed off *pre-deploy*. A "What's next" block
   needs one honest sentence from Ethan; Q8 (must-say / never-say) is still "add later". The arm page
   also still carries the pre-split absolute `og:url`/`og:image` — site-wide leftover, not touched here.
+
+## 2026-10-20 — one shell for every page (loading curtain + top bar)
+
+The arm and Nora were running two different pieces of page furniture (Nora had no loading screen
+at all, and her bar shared nothing with the film's console bar). Ethan's call: the same loading
+page for both, and one shell for the top bars — identical grid, height and type, with each page
+keeping its own controls on the right.
+
+- **New `src/shell.css`** — the shared fixed furniture, imported first by `style.css` (film) and
+  `hub.css` (sheets): the loading curtain (loader markup, type, animation, `body.is-loading` scroll
+  lock, no-JS hide) and the top chrome (grid `1fr auto 1fr`, 54 px / 48 px on phones, brand + back
+  link on the left, meta centred, a flex right cluster in one mono scale — 10 px / 500 / 0.15 em).
+  The duplicated chrome and loader blocks left both stylesheets, so the bar can no longer drift
+  page to page.
+- **Same loader on Nora.** `work/nora/index.html` now gets the film's curtain (same markup, same
+  `SCANNING` label and counter) with a page foot `NORA · PERSONAL AI · DESK CAT`.
+  `src/nora-loader.js` gives it a real promise: `document.fonts.ready`, the eight monitor frames
+  decoded, and the demo iframe's document loaded — then two rAFs for the hero projection and the
+  first cat room. `film-loader.js` is unchanged; the arm and process pages keep their own
+  first-frame / transfer-progress behaviour.
+- **Same nav shell on Nora.** Brand + `← sheet 00` + meta centre + section links now sit in
+  exactly the arm's slot order; the links stay the sheet's own (Assistant / Build / Cat / Status).
+  The small `← index` link moved out of the link list into the shared back-link slot. The hub got
+  the same `.chrome-left` wrapper, so all four pages render one component.
+- **Brand tag unified** to `portfolio` on the arm and process pages (was `rescue robotics`); the
+  film's identity already lives in the eyebrow and the centre meta line.
+- **One token set at the bar:** `--gutter` is `clamp(22px, 3.6vw, 56px)` in `style.css` too (was
+  24 / 3.4vw / 52), and phones use the 48 px chrome + 20 px gutter on every page (`tokens.css`
+  gained the same override the film already had). The brand mark/name land on the same x/y
+  everywhere; right clusters share a 20 px gap (14 px ≤ 860, 11 px ≤ 560).
+- **Mobile fixed.** Nora's 390 px bar used to overlap itself (brand + `← index` + four links). With
+  the back link in its own slot, the ≤ 700 px rule hides it and the four links get the room.
+- **Verified** — dev (5178) and production preview (4178): zero console errors / failed requests;
+  bar geometry identical on all four pages at 1440 (chrome h 54, brand x 51.83, right edge
+  1388.17); no bar overlap and no horizontal body overflow at 390 / 480 / 560 / 600 / 700 / 701 /
+  720 / 768 / 860 / 861 / 900 / 1024 / 1200 / 1440 (the film's 58–177 px document overflow is its
+  own act entrance transforms, clipped by `overflow-x: hidden` — pre-existing, unchanged); Nora
+  curtain lifts ~1.6 s warm and ~0.38 s under reduced motion; no-JS hides the curtain and shows the
+  still hero; the arm's INDEX overlay still opens/closes (chrome z 60 above panel z 45); Nora's
+  nav active state and back link work; build green (five entries).
+- **Not done.** No deploy/push (per rule). The hub intentionally has no curtain — it has nothing
+  heavy to wait for.
+
+## 2026-10-20 — the hub sets its CTA: "Open sheet" becomes a button
+
+Ethan's call: the text-only `OPEN SHEET ↗` under each published sheet was not obvious enough. He
+asked for a button — rust by default, black on hover — which is already the site's CTA language on
+the film's process slide (`.process-cta`), so the hub inherits the same component instead of
+inventing a second one.
+
+- **Markup** (`index.html`, both published rows): the label and arrow are now their own spans
+  (`.sheet-open` / `.sheet-open-arrow`) so the arrow can animate independently of the text.
+- **Style** (`src/hub.css`): `.sheet-open` is a filled button — `--accent` (`#b23e22`) ground,
+  `--paper` type, 11 px mono uppercase at 0.18 em, 13/18/12 px padding, 2 px radius — matching the
+  film's `.process-cta` exactly. Row hover / `:focus-visible` turns it `--ink` (`#101214`); the
+  arrow nudges 2 px up-right on the same 0.25 s beat. Hovering anywhere on the row fills it, since
+  the whole row is the link; the old gap-widening transition is gone.
+- **Verified** — dev (5178) and production preview (4178), `dev/qa-sheet-open.mjs` (12/12 pass,
+  evidence in `../review-v16/`): default `rgb(178,62,34)` / paper text, hover `rgb(16,18,20)` / paper
+  text; contrast 5.38:1 default, 17.35:1 hover; two CTAs 140.6 × 41.5 px, no horizontal overflow at
+  390 / 560 / 700 / 860 / 1024 / 1440; keyboard focus still lands on the row with the rust focus
+  ring; zero console errors or failed requests; build green.
+- **Not done.** No deploy/push (per rule) — the live GitHub Pages site still shows the old label.
+
+## 2026-10-20 — sheet 01 ends on the scan: the contact act is gone
+
+Ethan's call: the last act of the arm film ("Let's talk." / email / GitHub / arm demo) repeats the
+hub's contact section on sheet 00. Removed the act rather than reword it.
+
+- **The film is now five stops**: hero → arm → process → free view → scan. The scan act is the last
+  one, so the film closes on *"This half is real. The drone half isn't built yet."* with the X-ray
+  read and the `REAL` ghost word; the persistent `← sheet 00` in the chrome is the way back.
+- **`work/arm/index.html`** — contact section deleted, the index overlay drops `05 Contact` (now
+  01 Payload / 02 Process / 03 Free view / 04 Scan) and the progress list counts 5.
+- **`src/main.js`** — the end-of-film `body.at-end` toggle removed: it existed to hide the still
+  plate behind the centred contact copy, and with the scan act last it would have hidden the fallback
+  on a WebGL-less browser. `CLOSEUP_BY_BOUNDARY` trimmed to the four remaining boundaries.
+- **`src/arm-scene.js`** — the `outro` keyframe (the full-reach pose composed for the centred contact
+  copy) is gone, since no page can reach that stop now; the scene-test harness lists the four live
+  stops. Shared contact CSS (`.act--contact`, `.contact-title`, `.email`, `.links`, `.colophon`)
+  stays: the process page's closing "back to the arm" act uses the same rules and is untouched — it
+  is navigation back to sheet 01, not a second contact pitch.
+- **Verified** — dev (5178) and production preview (4178), `dev/qa-arm-ending.mjs`, 38/38 pass,
+  evidence in `../review-v17/`: five acts with the scan last; no contact node or copy; five ticks;
+  four index entries, all anchors resolve; end state = progress `05`, ghost `REAL`, scene stop
+  `scan`, X-ray on, no `body.at-end`; phone 390, reduced motion, no-JS, and no-WebGL (the still plate
+  stays visible on the final act) all clean; process page smoke (6 acts, back act, mailto link) and
+  zero console errors / failed requests; `npm run build` green.
+- **Not done.** No deploy/push (per rule). The arm page no longer carries the colophon
+  (`Built by hand · no tracking · no cookies`) — it went with the contact act.
+
+## 2026-10-20 — sheet 01's hero takes the project name: HAVK
+
+Ethan's call: the film's hero should carry the project, not his full name — the arm's project name
+is HAVK. The hero's whole identity changes, so the type was recomposed for a single word rather
+than swapped in place.
+
+- **`work/arm/index.html`** — the h1 is now a single-line `HAVK` wordmark
+  (`hero-name hero-name--project`) instead of `Ethan` / `Antoine Li`. Title and `og:title` follow the
+  other sheets' pattern — `Sheet 01 — HAVK · Ethan Antoine Li` (Sheet 02 is
+  `Sheet 02 — Nora · Ethan Antoine Li`). The author meta, the chrome brand (`ethan antoine li`) and
+  the rest of the site keep his name: the wordmark is the sheet's identity, the chrome is the site's.
+- **`src/style.css`** — `.hero-name--project` sets a display size for the four-letter wordmark,
+  `clamp(88px, 10.4vw, 172px)` at -0.06em tracking (the two-line name was 8.6vw / -0.055em); the
+  ≤820px `.hero-name` clamp still wins on phones, so HAVK is 52px at 390 like the name was.
+- **Verified** — dev (5178) and production preview (4178), `dev/qa-arm-hero.mjs`, 25/25 pass, evidence
+  in `../review-v18/`: h1 `HAVK` at 149.76px/1440 with the reveal complete, no "Ethan Antoine Li"
+  text left in `main`, title/og:title match, wordmark fits at 1440 / 1024 / 860 / 700 / 560 / 390 with
+  no layout overflow once the film's own entrance transforms are neutralised (the raw 1615px document
+  width is the pre-existing stage/act transform overflow, clipped by `body { overflow-x: hidden }`),
+  the scene still lands on the `hero` stop, the hub hero is unchanged, the process page is unchanged,
+  zero console errors / failed requests, build green.
+- **Not done.** No deploy/push (per rule). The HAVK live-demo link left with the contact act — the
+  hub's contact section still links it as `Live model ↗`.
+
+## 2026-10-20 — the grand plan gets its place: `/plan/`, skeleton only
+
+Ethan's next area is the long-range rescue system: a rescue robot and a locating drone working in
+parallel toward one job. He asked for **the place first** — a basic framework consistent with the
+rest of the site (same chrome, same colours), with the content to be dictated later. So this is a
+structure, not a page draft: shared furniture, working section titles, and every copy/figure slot
+explicitly marked "to come". Nothing was invented.
+
+- **New route `/plan/`** — sixth Vite entry (`plan/index.html`). It loads `src/hub.css` (tokens,
+  reset, chrome via `shell.css`, section heads, title block, reveal states) plus its own
+  `src/plan.css`, exactly the way Sheet 02 layers `sheet.css` over `hub.css`. No loader: nothing
+  heavy to wait for.
+- **Chrome, same as every page** — brand + `← sheet 00`, centre meta `THE GRAND PLAN · DRAFT`,
+  nav `ROBOT / DRONE / PARALLEL`; phone back-link hidden ≤700 px like the sheets. Footer is the
+  shared five-cell title block (Project / Area / Rev / State / Status = "structure only — content
+  to come") + the colophon.
+- **Skeleton** — hero "The grand plan." with a one-line copy slot; `01 / The robot` and
+  `02 / The drone`, each a copy slot + a 16:10 `figure — to come` frame (mirrored on 02);
+  `03 / In parallel` as a full-width `system figure — to come` frame. Six dashed, opaque
+  paper-tint slots with mono "— to come" labels and skeleton rules; the ghost words `PLAN` /
+  `ROBOT` / `DRONE` / `ONE` do not read through them.
+- **`src/plan.css`** — page-only layout: section rhythm, `.plan-grid` (and its mirrored variant),
+  slot/figure frames, responsive collapse. Nothing in it invents content.
+- **Small shared fix** — at ≤560 px the -11 px active-nav dot sat flush against the previous label
+  (11 px gaps); `shell.css` now puts it at -8 px. That also un-crowds the hub's and Nora's bars.
+- **Verified** — `dev/qa-plan-page.mjs`, 36/36, dev (5178) + production preview (4178), evidence in
+  `../review-v19/`: chrome geometry identical to the hub (54 px bar, brand x 51.83, same background
+  and type), same tokens (paper `#f6f6f4` / ink `#101214` / rust `#b23e22`), four `[data-ghost]`
+  sections and three nav anchors all resolving, six dashed labelled slots, headings exactly the
+  skeleton, five-cell title block, no layout overflow at 1440 / 1024 / 860 / 700 / 560 / 390 (fixed a
+  grid `min-width: auto` overflow caused by the 16:6 frame), reveals / nav active state / ghost
+  switching behave, no-JS and reduced-motion render everything, zero console errors / failed
+  requests, build green (six entries). Also smoke-checked the hub and Nora after the shell change.
+- **Open / not done** — the page is **not linked from the hub** yet (no nav item, no mission link):
+  Ethan to say where it hangs. The three section headings and the slot count are a proposal; he
+  dictates the copy and can reshape the sections. No deploy/push (per rule).
+
+## 2026-10-20 — fix: the hero reveal was clipping descenders
+
+Ethan caught it on the new hero: the **g** in "The grand" was missing its descender (and the **p** in
+"plan." was cut at the bottom). Not a font or glyph problem — the reveal's final state was the bug.
+
+- **Cause** — `.is-ready .hero-name .line` kept `clip-path: inset(-10% -6% -10% -6%)` after the
+  reveal. The display type is set at `line-height: 0.86`, so the glyph ink (descenders, and the
+  tightest ascenders) hangs outside the line box; -10 % only cleared the line box, not the ink.
+  The old hero ("Ethan / Antoine Li") has no descenders, so the hub never showed it.
+- **Fix** — `src/hub.css`: the final clip is now `inset(-26% -6% -26% -6%)` (line box + the font's ink
+  overflow) with a comment. The reveal animation is untouched; the hub hero is visually unchanged.
+- **Verified** — `/plan/` and `/` heroes at 1440 and 390: the g/p descenders render fully (element
+  screenshots clipped vs unclipped), the plan page QA stays green (36/36), build green, no console
+  errors.
+
+## 2026-10-20 — the grand plan: the intro is written (Ethan's brief)
+
+Ethan dictated the intro for `/plan/` and asked for it before any section copy. It replaces the
+hero's "Copy — to come" slot; the three section slots are untouched.
+
+**The copy, as shipped:**
+
+> The grand plan is one full robot that does the rescue job itself. Drones work further out and
+> alongside it — looking around, watching for dangers, helping it locate the person. The robot will
+> have its own visual detection; the drone is its larger eye, more of the environment from further
+> away.
+
+**Content boundaries he gave, honoured:**
+- Everything above is his plan, stated as a plan. Nothing claims it is built.
+- **Left out on purpose** (he said "don't write this"): the lack of electronics experience / limited
+  time, the drone not flying, and "this could technically be saved through AI". If a "current state"
+  section ever gets written, those are his call to include — not the hero's.
+- No new facts were added: no dates, specs, ranges, autonomy levels or capabilities beyond the two
+  sentences-worth he gave (robot does the job; drones look around / watch for danger / help locate
+  the person / are the larger eye; the robot has its own visual detection).
+
+- **`plan/index.html`** — `.plan-lede` paragraph in the hero; meta description / `og:description`
+  updated to match ("…draft page — intro only, more to come").
+- **`src/plan.css`** — `.plan-lede` (54ch measure, hub hero-line type scale, ink-soft); the now
+  unused `.slot--line` rule removed.
+- **Verified** — `dev/qa-plan-page.mjs`, 37/37, dev + preview: intro text present (no "to come" in
+  the hero), 5 slots left (all dashed and labelled), everything else unchanged; 1440 / 390
+  screenshots in `../review-v19/`; build green. Hero reveal descenders still intact (the earlier
+  clip fix).
+- **Not done** — hub entry still not wired. Mission stays (Ethan's call); the natural entry is a
+  "The grand plan ↗" link at the end of the hub's Mission section (which already sits after The set),
+  optionally plus a `Plan` item in the hub nav. Waiting on his word. No deploy/push.
+
+## 2026-10-20 — the hub's Mission carries the plan, and a button into it
+
+Ethan: change the hub's Mission part so it matches the new plan page, add a button to the page in
+the same orange→black button style he likes, and leave `/plan/` white/black.
+
+- **Mission copy** (`index.html`) — the band now tells the plan, not the old handoff. Title
+  `Two machines. One job.` (was `One handoff.`); the second paragraph is the same intro copy as
+  `/plan/` (one full robot does the rescue job; drones alongside as its larger eye); the ski
+  paragraph and the honest state line stay — now `<strong>The two machines do not work together
+  yet.</strong>`. The system diagram (drone → position fix → handoff → arm) is kept unchanged: it is
+  still the honest decomposition of the intent.
+- **The button** — `<a class="mission-cta mono" href="./plan/">The grand plan ↗</a>` under the copy.
+  It is the site's one filled-button component, now shared in `src/hub.css` by `.sheet-open` (sheet
+  rows) and `.mission-cta` (this band): rust `#b23e22` by default, ink `#101214` on hover, paper
+  text, 11px mono uppercase / 0.18em, 2px radius, arrow nudges 2px up-right.
+- **Hover on the ink band** — an ink fill would vanish into the Mission background, so the
+  `.mission-cta` ink hover keeps a 22% paper hairline (inset 1px). Colour states are still exactly
+  rust → ink; the hairline is the only addition, and it can be dropped if Ethan prefers.
+- **`/plan/` untouched** — still paper `#f6f6f4` / ink `#101214`; after clicking the button from the
+  hub the target page's palette and intro are identical to before.
+- **Verified** — dev/5178 + production preview/4178, `dev/qa-hub-plan.mjs` 33/33, evidence in
+  `../review-v20/`: title/copy/CTA (href, colours, size, tap target, keyboard), hover (ink + hairline
+  + arrow), click-through to `/plan/` (paper/ink intact, intro intact), sheet-row CTAs unchanged,
+  no overflow at 1440/1024/860/700/560/390, no-JS visible, zero console errors / failed requests,
+  plan-page QA still 37/37, build green.
+- **Not done** — hub top nav still has no `Plan` item (the Mission button is the only entry); no
+  deploy/push (per rule).
+
+## 2026-10-20 — hub: the drone is not flying (correction)
+
+Ethan's account of the drone (20:10): the goggles receive the video feed, but the quad never flew
+under control — test flight 1 broke the antenna, test 2 "just went directly forward". The live hub
+claimed `Flying` in five places. Corrected, text only, no layout change:
+
+- hero strip: `FPV drone — flying` → `FPV drone — not flying` (filled ink square → hollow muted square)
+- register row 03: state `Flying` → `Not flying`
+- mission diagram: `FPV · flying` → `FPV · not flying`; the figure's aria-label now says the video
+  link works but it does not fly
+- status / Built: `Drone flying as FPV — pilot, goggles, video` → `Drone airframe and FPV video
+  link — goggles show the feed`
+- status / In build: new line `Drone flight — no stable hover yet`
+
+Verified on dev 5178: read-back of all five strings, element captures at 1440 in
+`../review-v20/` (`drone-status-strip/row03/system/status.png`), zero console errors. **Pending
+Ethan's word** on the label (`not flying` / `on the bench` / `in build`) and on the In-build line
+(if the drone is parked, it moves). No deploy. The dictated parts list and the sheet brief live
+outside the repo in `../_intake/drone-sheet-brief.md`.
+
+## 2026-10-20 — Sheet 03: the FPV drone sheet is designed (figures pending)
+
+Ethan: start designing the page, make it look like the other pages — the airframe model and photographs
+come later. So the sheet is fully written and laid out, and its two figures are honest dashed slots.
+
+**Route `/work/drone/`** — seventh Vite entry, a case-study sheet in the Sheet 02 family (not a film,
+no loader, no 3D yet). Loads `hub.css` + `sheet.css` + the new `src/drone.css`; its only script is
+`scroll.js`. **Not linked from the hub yet**: the register row 03 still says `Sheet in prep` until the
+figures land.
+
+**Structure** — hero (two-line `FPV / drone`, serif sub, lede + meta table); `01 The build` (Fig. 01
+airframe slot, parts table: six parts with no CAD model, the airframe as the only one); `02 The system`
+(Fig. 02, five-stage chain: video link works → flight not solved → recognition / position fix / hand
+off not built); `03 The tests` (flight log — antenna broke; straight forward) + Fig. 03 photo slot;
+`04 What I'd do differently` (design the system; five-step order, frame last); `05 Status` (`Not
+flying`). Ghost words `LIFT / BUILD / CHAIN / TEST / DESIGN / NOW`; nav Build / System / Tests / Status.
+
+**Copy rules honoured** — only what he dictated: the goggles receive the video feed; test 1 broke the
+antenna; test 2 went directly forward; ~3-inch props, 4S 75C battery, flight controller / video
+transmitter / camera / four motors / an unidentified ESP board; nothing but the frame has a model. No
+model numbers yet (he offered them), no claim about *why* it failed, no claim that the vision layer
+exists. The two figures are dashed "to come" frames in the same language as `/plan/`, so the page says
+what is missing instead of faking it.
+
+**Verified** — `dev/qa-drone.mjs`, **54/54** on dev (5178) and on production preview (4178): chrome
+geometry identical to the hub (54 px bar, brand x 51.83), same tokens (paper `#f6f6f4` / ink `#101214`
+/ rust `#b23e22`), one h1, nav anchors resolve and mark the active section, ghost words follow the
+sections, no horizontal overflow at 1440 / 1024 / 860 / 700 / 560 / 390, all reveals fire, no-JS
+renders every section, reduced motion static, zero console errors / failed requests; build green with
+seven entries (sheet CSS 6.7 kB raw). Evidence in `../review-v21/` (`qa-drone.json`, hero + section
+captures at 1440 and 390).

@@ -1,0 +1,504 @@
+/* ==========================================================================
+   Sheet 03 — FPV drone.
+   Loaded after src/hub.css and src/sheet.css, which supply the shell, section
+   heads, sheet meta/lede, status band, title block and reveal states. Only the
+   drone's own layout lives here: the airframe/photo slots, the parts table, the
+   five-stage chain and the flight log.
+   ========================================================================== */
+
+/* -------------------------------------------------------------------- hero */
+/* Title set as a drawing header — two lines, the second indented — then the
+   lede and the sheet-meta table on the same baseline as the hub hero. */
+.drone-hero .sheet-name {
+  font-size: clamp(66px, 10.6vw, 150px);
+}
+
+.drone-hero .sheet-name .line {
+  display: block;
+}
+
+.drone-hero .sheet-name .line--indent {
+  padding-left: clamp(0px, 6.5vw, 104px);
+}
+
+.drone-hero .sheet-sub {
+  max-width: 46ch;
+  margin-top: clamp(14px, 2vh, 22px);
+  font-size: clamp(19px, 1.9vw, 28px);
+}
+
+.drone-hero .hero-foot {
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 340px);
+  align-items: start;
+}
+
+.drone-hero .hero-line {
+  margin-top: 0;
+  max-width: 42ch;
+}
+
+.drone-hero .sheet-meta {
+  width: 100%;
+}
+
+/* ------------------------------------------------------- empty figure slots */
+/* Same drafting-placeholder language as /plan/: a dashed frame, paper tint, a
+   mono label and one honest line saying what will land there. */
+.figure-slot {
+  margin: clamp(34px, 5vh, 56px) 0 0;
+}
+
+.figure-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  aspect-ratio: 16 / 10;
+  padding: clamp(16px, 1.8vw, 26px);
+  border: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent);
+  /* opaque, so the fixed ghost word does not read through the empty frame */
+  background-color: color-mix(in srgb, var(--paper-2) 60%, var(--paper));
+}
+
+.figure-label {
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+}
+
+.figure-note {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+}
+
+.figure-mark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--ink) 20%, transparent);
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  pointer-events: none;
+}
+
+.figure-slot figcaption {
+  margin-top: 13px;
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+/* The photograph plate is an inset, not a second hero stage — the airframe
+   model above is the one full-width figure on the sheet. */
+.figure-slot--photo {
+  width: min(100%, 900px);
+}
+
+/* --------------------------------------------------------------- 01 build */
+.build-copy {
+  max-width: 62ch;
+  margin-top: clamp(30px, 4.4vh, 48px);
+  color: var(--body);
+  font-size: clamp(16px, 1.2vw, 18px);
+  line-height: 1.6;
+}
+
+.build-copy p + p {
+  margin-top: 1em;
+}
+
+.parts-table {
+  width: 100%;
+  margin: clamp(38px, 5.4vh, 64px) 0 0;
+  border-collapse: collapse;
+}
+
+.parts-table caption {
+  padding-bottom: 12px;
+  text-align: left;
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+
+.parts-table th,
+.parts-table td {
+  padding: 13px 22px 13px 0;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.parts-table thead th {
+  padding-top: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.parts-table tbody th {
+  width: 20%;
+  color: var(--ink);
+  font-weight: 400;
+  font-size: 15.5px;
+  letter-spacing: -0.005em;
+}
+
+.parts-table tbody td {
+  color: var(--body);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.parts-table .parts-cad {
+  width: 13%;
+  color: var(--muted);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-align: right;
+}
+
+.parts-table thead .parts-cad,
+.parts-table tbody td.parts-cad {
+  padding-right: 0;
+}
+
+.parts-table tr.parts-only th,
+.parts-table tr.parts-only td {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+}
+
+.parts-table tr.parts-only .parts-cad {
+  color: var(--accent);
+}
+
+/* -------------------------------------------------------------- 02 system */
+.lede {
+  max-width: 60ch;
+  color: var(--ink-soft);
+  font-size: clamp(16.5px, 1.25vw, 19px);
+  line-height: 1.55;
+}
+
+.chain {
+  margin: clamp(34px, 5vh, 56px) 0 0;
+}
+
+.chain-track {
+  display: flex;
+  align-items: flex-start;
+}
+
+.chain-node {
+  flex: none;
+  width: clamp(122px, 15.5vw, 196px);
+}
+
+.chain-mark {
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin: 2px 0 14px;
+  background: var(--ink);
+}
+
+.chain-node.is-works .chain-mark {
+  background: var(--accent);
+}
+
+.chain-node.is-failed .chain-mark {
+  background: transparent;
+  border: 1px dashed var(--accent);
+}
+
+.chain-node.is-missing .chain-mark {
+  background: transparent;
+  border: 1px dashed var(--muted);
+  opacity: 0.8;
+}
+
+.chain-name {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+
+.chain-state {
+  margin-top: 7px;
+  color: var(--ink-soft);
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.chain-node.is-failed .chain-state {
+  color: var(--accent);
+}
+
+.chain-node.is-missing .chain-state {
+  color: var(--muted);
+}
+
+.chain-note {
+  max-width: 26ch;
+  margin-top: 7px;
+  color: var(--body);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* the chain doesn't get past the failure */
+.chain-node.is-works + .chain-link {
+  background-image: repeating-linear-gradient(90deg, var(--accent) 0 2px, transparent 2px 7px);
+  opacity: 0.6;
+}
+
+.chain-link {
+  flex: 1;
+  height: 1px;
+  margin-top: 5px;
+  background-image: repeating-linear-gradient(90deg, var(--line) 0 2px, transparent 2px 7px);
+}
+
+.chain figcaption {
+  margin-top: 26px;
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+.chain-close,
+.tests-close {
+  max-width: 62ch;
+  margin-top: clamp(26px, 3.6vh, 38px);
+  color: var(--ink-soft);
+  font-size: clamp(16px, 1.2vw, 18px);
+  line-height: 1.55;
+}
+
+.chain-close a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.chain-close a:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+/* --------------------------------------------------------------- 03 tests */
+.log {
+  margin: clamp(30px, 4.6vh, 52px) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.log-row {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: clamp(16px, 2.4vw, 40px);
+  padding: clamp(22px, 3vw, 32px) 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.log-no {
+  color: var(--accent);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+}
+
+.log-title {
+  font-weight: 400;
+  font-size: clamp(21px, 2vw, 29px);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.log-line {
+  max-width: 52ch;
+  margin-top: 8px;
+  color: var(--body);
+  font-size: 15.5px;
+  line-height: 1.55;
+}
+
+.log-result {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------- 04 lesson */
+.lesson-copy {
+  max-width: 62ch;
+  color: var(--body);
+  font-size: clamp(16px, 1.2vw, 18px);
+  line-height: 1.6;
+}
+
+.lesson-copy p + p {
+  margin-top: 1em;
+}
+
+.order {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(28px, 5vw, 72px);
+  margin: clamp(30px, 4.4vh, 48px) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.order-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 14px;
+  padding: clamp(18px, 2.6vw, 26px) 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.order-no {
+  padding-top: 4px;
+  color: var(--accent);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+}
+
+.order-text {
+  max-width: 46ch;
+  color: var(--body);
+  font-size: 15.5px;
+  line-height: 1.55;
+}
+
+.order-text strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--ink);
+  font-weight: 400;
+  font-size: 17px;
+}
+
+.order-row--final {
+  grid-column: 1 / -1;
+}
+
+/* -------------------------------------------------------------- responsive */
+@media (max-width: 860px) {
+  .drone-hero .sheet-name .line--indent {
+    padding-left: 0;
+  }
+
+  .drone-hero .hero-foot {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 26px;
+  }
+
+  /* the five stages stack into a vertical chain */
+  .chain-track {
+    display: block;
+  }
+
+  .chain-node {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    column-gap: 14px;
+    width: auto;
+  }
+
+  .chain-mark {
+    grid-row: 1 / span 3;
+    margin: 6px 0 0;
+  }
+
+  .chain-name,
+  .chain-state,
+  .chain-note {
+    grid-column: 2;
+  }
+
+  .chain-note {
+    max-width: none;
+    margin-bottom: 16px;
+  }
+
+  .chain-link {
+    display: block;
+    width: 1px;
+    height: 26px;
+    margin: 0 0 0 3px;
+    background-image: repeating-linear-gradient(180deg, var(--line) 0 2px, transparent 2px 7px);
+  }
+
+  .chain-node.is-works + .chain-link {
+    background-image: repeating-linear-gradient(180deg, var(--accent) 0 2px, transparent 2px 7px);
+  }
+
+  .order {
+    grid-template-columns: 1fr;
+  }
+
+  .order-row--final {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .log-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .log-result {
+    order: 3;
+  }
+}
+
+@media (max-width: 560px) {
+  .drone-hero .sheet-name {
+    font-size: clamp(64px, 21vw, 118px);
+  }
+
+  .parts-table th,
+  .parts-table td {
+    padding-right: 12px;
+  }
+
+  .parts-table tbody th {
+    width: 30%;
+    font-size: 14.5px;
+  }
+
+  .parts-table tbody td {
+    font-size: 14px;
+  }
+
+  .parts-table .parts-cad {
+    width: 18%;
+    font-size: 8px;
+  }
+
+  /* 24 px minimum tap targets on phones. */
+  .nav a {
+    padding-block: 6px;
+  }
+
+  .chrome .sheet-back {
+    display: none;
+  }
+}

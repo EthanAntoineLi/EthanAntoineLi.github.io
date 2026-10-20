@@ -741,12 +741,8 @@ html:not(.js) .hero-cue {
 /* The back link is redundant on phones (the brand goes home), and hiding it
    gives the section links room for the active-state dot. */
 @media (max-width: 700px) {
-  .nav a[href='/'] {
+  .chrome .sheet-back {
     display: none;
-  }
-
-  .nav {
-    gap: 16px;
   }
 
   /* 24 px minimum tap targets on phones. */

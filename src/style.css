@@ -5,6 +5,10 @@
    Type: Inter Tight (display + text) · Instrument Serif italic (voice) · mono.
    ========================================================================== */
 
+/* The loading curtain and the top chrome are shared with every sheet; see
+   src/shell.css. Only the film's own chrome controls live below. */
+@import './shell.css';
+
 /* ------------------------------------------------------------------ fonts */
 @font-face {
   font-family: "Inter Tight";
@@ -52,7 +56,9 @@
   --serif: "Instrument Serif", "Iowan Old Style", Palatino, Georgia, serif;
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "IBM Plex Mono", monospace;
 
-  --gutter: clamp(24px, 3.4vw, 52px);
+  /* Same page furniture as src/tokens.css — the bar has to land on the same
+     left/right edges here as on the sheets. */
+  --gutter: clamp(22px, 3.6vw, 56px);
   --chrome-h: 54px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -79,10 +85,6 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
-}
-
-body.is-loading {
-  overflow: hidden;
 }
 
 img,
@@ -156,61 +158,6 @@ button {
 }
 .skip:focus {
   transform: none;
-}
-
-/* ----------------------------------------------------------------- loader */
-.loader {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: 18px;
-  background: var(--paper);
-  transition: opacity 0.6s var(--ease), visibility 0.6s;
-}
-.loader-label {
-  color: var(--dim);
-}
-.loader-count {
-  font-size: clamp(64px, 9vw, 128px);
-  font-weight: 300;
-  line-height: 1;
-  letter-spacing: -0.05em;
-  font-variant-numeric: tabular-nums;
-}
-.loader-bar {
-  width: 180px;
-  height: 1px;
-  background: var(--line);
-}
-.loader-bar span {
-  display: block;
-  height: 100%;
-  width: 0;
-  background: var(--ink);
-  transition: width 0.2s linear;
-}
-.loader-foot {
-  position: absolute;
-  bottom: 32px;
-  color: var(--dim);
-}
-.loader-ascii {
-  color: var(--dim);
-  letter-spacing: 0.3em;
-  font-size: 13px;
-  white-space: pre;
-}
-body.loaded .loader {
-  opacity: 0;
-  visibility: hidden;
-}
-/* Without JS nobody dismisses the loader — hide it outright so the still stage
-   plate and the copy underneath are readable (index.html adds `js` inline). */
-html:not(.js) .loader {
-  display: none;
 }
 
 /* ----------------------------------------------------------------- cursor */
@@ -332,82 +279,10 @@ body.at-end .stage-fallback {
   opacity: 0;
 }
 
-/* ----------------------------------------------------------------- chrome */
-.chrome {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  height: var(--chrome-h);
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 24px;
-  padding: 0 var(--gutter);
-  border-bottom: 1px solid var(--line-soft);
-  background: rgba(246, 246, 244, 0.86);
-  backdrop-filter: blur(6px);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  justify-self: start;
-}
-.brand-mark {
-  width: 14px;
-  height: 14px;
-  flex: none;
-  border: 1px solid var(--ink);
-  background: linear-gradient(90deg, var(--ink) 0 4px, transparent 4px),
-    linear-gradient(0deg, var(--accent) 0 4px, transparent 4px);
-}
-.brand-name {
-  font-size: 14.5px;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-}
-.brand-tag {
-  padding-left: 10px;
-  margin-left: 2px;
-  border-left: 1px solid var(--line);
-  font-size: 8.5px;
-}
-.chrome-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  justify-self: start;
-  min-width: 0;
-}
-
-.sheet-back {
-  color: var(--muted);
-  text-decoration: none;
-  white-space: nowrap;
-  padding-left: 16px;
-  border-left: 1px solid var(--line);
-  transition: color 0.2s;
-}
-
-.sheet-back:hover {
-  color: var(--ink);
-}
-
-.chrome-meta {
-  justify-self: center;
-  color: var(--dim);
-  white-space: nowrap;
-}
-.chrome-right {
-  justify-self: end;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
+/* ------------------------------------------------------------ film chrome */
+/* The bar itself — brand, back link, meta, right cluster — comes from
+   src/shell.css. These are the controls only the film carries, sitting in that
+   shared right cluster: frame counter, render modes, clock, index toggle. */
 .chrome-frame {
   color: var(--dim);
   font-variant-numeric: tabular-nums;
@@ -683,6 +558,13 @@ main {
 }
 .hero-name .line--indent {
   padding-left: clamp(0px, 7vw, 110px);
+}
+
+/* Sheet 01's hero carries the project, not the person. HAVK is a four-letter
+   wordmark, so it takes a larger display size than the two-line name did. */
+.hero-name--project {
+  font-size: clamp(88px, 10.4vw, 172px);
+  letter-spacing: -0.06em;
 }
 
 .hero-foot {
@@ -972,12 +854,6 @@ body.stage-off .stage canvas {
 
 /* ------------------------------------------------------------- responsive */
 @media (max-width: 1024px) {
-  .chrome {
-    grid-template-columns: 1fr auto;
-  }
-  .chrome-meta {
-    display: none;
-  }
   .hero-foot {
     grid-template-columns: 1fr auto;
   }
@@ -1041,25 +917,12 @@ body.stage-off .stage canvas {
     --gutter: 20px;
   }
 
-  .chrome {
-    grid-template-columns: 1fr auto;
-  }
-  .chrome-meta,
+  /* the bar keeps brand + back + index on phones; the film garnish goes */
   .chrome-clock,
   .chrome-frame,
   .mode,
   .progress {
     display: none;
-  }
-  .brand-name {
-    font-size: 14px;
-  }
-  .brand-tag {
-    display: none;
-  }
-  .chrome {
-    gap: 12px;
-    padding: 0 var(--gutter);
   }
   .index-toggle {
     padding: 7px 12px;

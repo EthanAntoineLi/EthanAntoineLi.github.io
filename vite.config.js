@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite'
 
-// Two HTML entries:
+// HTML entries:
 //   /            → Sheet 00, the hub (index)
 //   /work/arm/   → Sheet 01, the v6 film (unchanged behaviour)
 //   /work/arm/process/ → Sheet 01 / process, step 01 (type-only for now)
+//   /work/nora/  → Sheet 02, Nora
+//   /work/drone/ → Sheet 03, FPV drone (figures to come)
+//   /plan/       → the grand plan, structure only (draft)
 //
 // `base` is '/' because the site is meant to live at the GitHub user-site root
 // (https://ethanantoineli.github.io/). If it has to be built for a project path
@@ -33,6 +36,8 @@ export default defineConfig({
         process: 'work/arm/process/index.html',
         nora: 'work/nora/index.html',
         noraDemo: 'work/nora/demo/index.html',
+        drone: 'work/drone/index.html',
+        plan: 'plan/index.html',
       },
     },
   },

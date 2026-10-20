@@ -2,6 +2,9 @@
 
 A static site laid out like an engineering drawing set. **Sheet 00** is the index (`/`). Two sheets
 are published: **01** the arm film (`/work/arm/`) and **02** Nora, the personal AI (`/work/nora/`).
+**03 FPV drone** is written and designed locally at `/work/drone/` — its airframe model and photographs
+are still to come, so it is not linked from the hub yet. A new top-level area, **the grand plan**
+(`/plan/`), is being framed — intro written, sections to come.
 
 **Live:** <https://ethanantoineli.github.io/personal-page/> — deployed 2026-10-20 (GitHub Pages,
 project site). The direction and the open decisions live in [`HUB-PLAN.md`](HUB-PLAN.md).
@@ -12,14 +15,16 @@ project site). The direction and the open decisions live in [`HUB-PLAN.md`](HUB-
 
 | Route | Sheet | Content |
 | --- | --- | --- |
-| `/` | 00 — index | Name, one line, current state, works register (01 and 02 published, 03–05 in prep), mission band with the system diagram, built/in build/next, record, contact, title block. No 3D. The Nora plate is a live canvas: the cat alone on paper, idling through her movement bank. |
+| `/` | 00 — index | Name, one line, current state, works register (01 and 02 published, 03–05 in prep), mission band carrying **the grand plan copy + its `The grand plan ↗` button** (rust→ink, same component as the sheet CTAs), system diagram, built/in build/next, record, contact, title block. No 3D. The Nora plate is a live canvas: the cat alone on paper, idling through her movement bank. |
 | `/work/arm/` | 01 — the arm | The v6 **product film**: fixed 3D stage, six camera stops, the real articulated `arm-opt.glb`, mesh/points/x-ray modes, free view with part details. Unchanged except a back link to the index. |
 | `/work/arm/process/` | 01 — process | How the arm got made, in order. Step 01 (the Bambu Lab A1 mini) is a live 3D model; steps 02–04 (motors, design, assemble) are written and wait on their own models. Same film chrome as the arm sheet. |
-| `/work/nora/` | 02 — Nora | The personal AI that runs 24/7 on a Mac of her own, with an **interactive pixel-art desk cat** as its status window. Argument, state table, build diagram, and the live demo. |
+| `/work/nora/` | 02 — Nora | The personal AI that runs 24/7 on a Mac of her own, with an **interactive pixel-art desk cat** as its status window. Same loading curtain and top-bar shell as Sheet 01. Argument, state table, build diagram, and the live demo. |
 | `/work/nora/demo/` | — | The actual desk-cat page, copied into the site and permanently in demo mode (fake events, no server). Embedded on Sheet 02; `?full` opens the complete pet page. |
+| `/work/drone/` | 03 — FPV drone | The rescue system's eye, built and not flying. Hero, the build and its parts table (no part but the airframe has a CAD model), the five-stage chain (video link works; flight not solved; recognition / position fix / handoff not built), the two test flights, and the design lesson. **Figures pending**: the airframe model and photographs are marked "to come"; the sheet is not linked from the hub yet. |
+| `/plan/` | — (area) | **The grand plan** — the long-range rescue system: one full robot doing the rescue job, with drones working alongside it as its larger eye. **Intro written; sections to come**: the `01 Robot` / `02 Drone` / `03 Parallel` slots are still dashed "to come" frames for copy and figures. Entered from the hub's Mission band via its `The grand plan ↗` button. |
 
-Register rules: a sheet is only linked when it has real content. Sheets 03–05 (drone, AI interviewer,
-physics) are listed as `SHEET IN PREP` until each has a real visual and facts to show.
+Register rules: a sheet is only linked when it has real content. **03 FPV drone** is written but still
+`SHEET IN PREP` on the hub until its figures exist; 04–05 (AI interviewer, physics) are also in prep.
 
 Content rules: **nothing claims the drone vision system works**; **nothing from Nora's real activity
 log appears on the site** — the demo only ever shows a scripted fake week. Prototype/status labels
@@ -39,7 +44,7 @@ wherever they matter.
 
 ```bash
 npm install
-npm run dev       # http://localhost:5178/  (hub)  + /work/arm/, /work/arm/process/, /work/nora/, /work/nora/demo/
+npm run dev       # http://localhost:5178/  (hub)  + /plan/, /work/arm/, /work/arm/process/, /work/nora/, /work/nora/demo/, /work/drone/
 npm run build     # → dist/ (all entries)
 npm run preview   # http://localhost:4178/
 ```
@@ -106,15 +111,20 @@ personal-page/
   work/nora/index.html     # Sheet 02 — Nora
   work/nora/demo/          # the desk-cat page, demo-only (iframe target; ?full = full page)
     index.html nora.js style.css
+  work/drone/index.html    # Sheet 03 — FPV drone (figures pending)
   src/
     tokens.css             # shared design tokens + @font-face
-    hub.css                # hub + shared components (chrome, sections, plates, title block, reveal)
-    sheet.css              # sheet-specific layout (hero, demo, jobs, stack, states, status)
+    shell.css              # shared shell: loading curtain + top chrome (every page)
+    hub.css                # hub layout + shared components (sections, plates, title block, reveal)
+    sheet.css              # shared sheet layout (hero type, lede/meta, status band, next)
+    drone.css              # Sheet 03 only: figure slots, parts table, chain, flight log, order list
     scroll.js              # shared reveals / nav / ghost word
     hub.js                 # hub-only: copy-email + the cat plate (+ imports scroll.js)
     nora-cat.js            # the hub's living cat plate (idle movement bank, no room)
-    style.css              # film styles (mirrors the tokens)
+    nora-loader.js         # Nora's loading-curtain promise (fonts, frames, demo document)
+    style.css              # film styles (mirrors the tokens) + the film's chrome controls
     main.js                # film behaviour
+    film-loader.js         # shared curtain behaviour (arm, process, Nora)
     arm-scene.js           # film three.js scene
     arm-viewer.js          # standalone viewer (dev harness + plate renders)
   public/
@@ -128,4 +138,5 @@ personal-page/
 
 QA captures and the iteration record for the hub + Sheet 02 are in `../review-v10/` (hub, phase 1),
 `../review-v11/` (Nora sheet, demo states, first production pass) and `../review-v12/` (Sheet 02 final
-pass: fresh capture set, QA report, independent critic notes).
+pass: fresh capture set, QA report, independent critic notes). Sheet 03's captures and its 54-check
+QA report are in `../review-v21/` (`qa-drone.json`, dev + production preview).

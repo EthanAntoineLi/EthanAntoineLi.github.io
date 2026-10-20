@@ -251,9 +251,9 @@ function countSpecs() {
   requestAnimationFrame(tick)
 }
 
-// Which named joint a transition dives into. Boundary 3 (process -> scan) is
-// the scan itself, so it has no close-up.
-const CLOSEUP_BY_BOUNDARY = ['shoulder', 'elbow', null, null, null]
+// Which named joint a transition dives into. Boundary 3 (free view -> scan) is
+// the scan itself, so it has no close-up. The film now ends on the scan act.
+const CLOSEUP_BY_BOUNDARY = ['shoulder', 'elbow', null, null]
 
 function updateStage(y, vh) {
   if (!stageEl || reducedMotion) return
@@ -370,7 +370,6 @@ function measure() {
     const shownAct = ACTS[shown]
     setGhost(shownAct.ghost)
     setProgress(shown)
-    body.classList.toggle('at-end', shown === ACTS.length - 1)
     if (shown === 1) countSpecs()
     if (shown !== FREE_INDEX && hideDetailCard) hideDetailCard()
   }

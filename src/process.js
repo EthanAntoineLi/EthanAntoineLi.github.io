@@ -1,14 +1,16 @@
 // ============================================================================
 // process.js — Sheet 01 / process page.
 //
-// The arm film's chrome and act choreography, plus the one 3D object this page
-// owns: the A1 mini that started the build. Scene: ./printer-scene.js.
-// Curtain: ./film-loader.js (same promise-based loader as the arm film).
+// The arm film's chrome and act choreography, plus the 3D stage this page
+// owns: the motor ring that spins on the hero, the A1 mini that leaves it for
+// step 01, and the three motor types that hover on step 02.
+// Scene: ./process-stage.js. Curtain: ./film-loader.js.
 // ============================================================================
-import { createPrinterScene } from './printer-scene.js'
+import { createProcessStage } from './process-stage.js'
+import motorsUrl from './assets/process/arm-motors.glb?url'
 import { initFilmLoader, reportLoadProgress } from './film-loader.js'
 
-const MODEL_URL = import.meta.env.BASE_URL + 'models/printer-a1-mini.glb'
+const PRINTER_MODEL_URL = import.meta.env.BASE_URL + 'models/printer-a1-mini.glb'
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const body = document.body
@@ -46,9 +48,12 @@ const ACTS = [...document.querySelectorAll('.act')].map((el) => ({
   stage: el.dataset.stage || '',
   preset: el.dataset.preset || '',
 }))
-const PRINTER_STAGE = 'printer'
-
 let activeAct = 0
+
+/* Which stage the scroll position wants. The ring spins on the hero, the
+   printer takes over for 01, the motors hover for 02; 03+ are copy only. */
+let wantedStage = 'ring'
+let lastStageY = 0
 
 /* --------------------------------------------------------- the 3D printer */
 // Same contract as the arm film: probe WebGL before importing three.js, start
@@ -74,8 +79,9 @@ function startScene() {
   }
   sceneTask = (async () => {
     try {
-      scene = await createPrinterScene(canvas, {
-        modelUrl: MODEL_URL,
+      scene = await createProcessStage(canvas, {
+        printerUrl: PRINTER_MODEL_URL,
+        motorsUrl,
         reducedMotion,
         phone,
         onLoadProgress: reportLoadProgress,
@@ -83,8 +89,10 @@ function startScene() {
       if (!scene) return null
       await scene.ready
       window.__printer = scene // dev/QA handle (harmless)
+      window.__processStage = scene
       body.classList.add('scene-ready')
-      applyAct(activeAct)
+      syncStage()
+      scene.setStage(wantedStage) // honour a deep link / restored scroll position
       return scene
     } catch (err) {
       console.warn('[scene] unavailable, keeping still render:', err)
@@ -94,16 +102,22 @@ function startScene() {
   return sceneTask
 }
 
-// Only the acts marked data-stage="printer" show the printer; the rest are
-// deliberately empty until their own models arrive.
-function applyAct(i) {
-  const act = ACTS[i]
-  if (!act) return
-  const showStage = act.stage === PRINTER_STAGE
-  body.classList.toggle('stage-off', !showStage)
-  if (scene) {
-    scene.setVisible(showStage)
-    scene.setPreset(act.preset === 'hero' ? 'hero' : 'step')
+function syncStage() {
+  const y = window.scrollY
+  const vh = window.innerHeight
+  const dir = y >= lastStageY ? 1 : -1
+  lastStageY = y
+
+  // Walk the acts and take the last one whose approach threshold has passed.
+  let wanted = ACTS[0] ? ACTS[0].stage || 'off' : 'off'
+  for (let i = 1; i < ACTS.length; i++) {
+    const act = ACTS[i]
+    const trigger = act.el.offsetTop - vh * (dir > 0 ? 0.55 : 0.72)
+    if (y >= trigger) wanted = act.stage || 'off'
+  }
+  if (wanted !== wantedStage) {
+    wantedStage = wanted
+    scene?.setStage(wanted)
   }
 }
 
@@ -190,8 +204,8 @@ function measure() {
     setGhost(shownAct.ghost)
     setProgress(shown)
     body.classList.toggle('at-end', shown === ACTS.length - 1)
-    applyAct(shown)
   }
+  syncStage()
   // Runs last: transition state depends on the freshly updated activeAct.
   updateTransitions(y, vh)
 }

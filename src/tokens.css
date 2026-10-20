@@ -59,3 +59,12 @@
   --chrome-h: 54px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* Phones: one compact bar and gutter for every page (the film keeps the same
+   values in its own media query — see src/style.css). */
+@media (max-width: 820px) {
+  :root {
+    --chrome-h: 48px;
+    --gutter: 20px;
+  }
+}

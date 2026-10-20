@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f6f6f4" />
+    <title>Sheet 03 — FPV drone · Ethan Antoine Li</title>
+    <meta
+      name="description"
+      content="A three-inch FPV quad, hand-measured and hand-built. The video link works; the flight doesn't. Two attempts, two failures, and what the build taught me about designing a system."
+    />
+    <meta property="og:title" content="Sheet 03 — FPV drone · Ethan Antoine Li" />
+    <meta
+      property="og:description"
+      content="The eye of the rescue system: built, wired, and not flying yet — two attempts, two failures, and the case for designing the system before the frame."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="author" content="Ethan Antoine Li" />
+    <script>
+      document.documentElement.classList.add('js')
+    </script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/inter-tight-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/src/hub.css" />
+    <link rel="stylesheet" href="/src/sheet.css" />
+    <link rel="stylesheet" href="/src/drone.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <div class="ghost-wrap" aria-hidden="true">
+      <span class="ghost" id="ghost">LIFT</span>
+    </div>
+
+    <header class="chrome">
+      <div class="chrome-left">
+        <a class="brand" href="../../" aria-label="Ethan Antoine Li — home">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">ethan antoine li</span>
+          <span class="brand-tag mono">portfolio</span>
+        </a>
+        <a class="sheet-back mono" href="../../" aria-label="Back to the sheet index">← sheet 00</a>
+      </div>
+
+      <p class="chrome-meta mono">Sheet 03 / 05 · rev 2026.10</p>
+
+      <nav class="nav mono" aria-label="Sheet sections">
+        <a href="#build" data-nav>Build</a>
+        <a href="#system" data-nav>System</a>
+        <a href="#tests" data-nav>Tests</a>
+        <a href="#status" data-nav>Status</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <!-- ============================================================ HERO -->
+      <section class="hero drone-hero" id="top" data-ghost="LIFT">
+        <div class="hero-top">
+          <p class="eyebrow mono reveal"><span class="dot"></span>Hardware · FPV</p>
+          <h1 class="sheet-name reveal">
+            <span class="line">FPV</span>
+            <span class="line line--indent">drone</span>
+          </h1>
+          <p class="sheet-sub reveal">
+            A camera that can fly. The camera works; <em>the flying doesn't.</em>
+          </p>
+        </div>
+
+        <div class="hero-foot">
+          <p class="hero-line reveal">
+            A three-inch quad built as the eye of the rescue system. The video link reaches the
+            goggles; nothing past the pilot has been solved.
+          </p>
+
+          <dl class="sheet-meta reveal">
+            <div><dt>Status</dt><dd><span class="state">Not flying</span></dd></div>
+            <div><dt>Built</dt><dd>Airframe + video link</dd></div>
+            <div><dt>Attempts</dt><dd>Two, no controlled flight</dd></div>
+            <div><dt>Role</dt><dd>Design + build</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- ======================================================= 01 BUILD -->
+      <section class="section" id="build" data-ghost="BUILD">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>01 / The build</p>
+            <h2 class="section-title">What went <em>on it.</em></h2>
+          </div>
+          <p class="section-meta mono">My first build</p>
+        </header>
+
+        <!-- the airframe: the one model this build has -->
+        <figure class="figure-slot reveal">
+          <div class="figure-frame">
+            <p class="figure-label mono">Fig. 01 — the airframe</p>
+            <p class="figure-note mono">3D model + photographs to come</p>
+            <span class="figure-mark mono" aria-hidden="true">Airframe</span>
+          </div>
+          <figcaption class="mono">The only part of this build with a model.</figcaption>
+        </figure>
+
+        <div class="build-copy reveal">
+          <p>
+            Four motors on three-inch props, one 4S battery, a flight controller that holds the
+            attitude, and a video transmitter that feeds the goggles.
+          </p>
+          <p>
+            None of the parts came with a model. The airframe is the only thing here that exists as
+            CAD; the rest was measured by hand and drawn around, so nothing could be checked before
+            it was made.
+          </p>
+        </div>
+
+        <table class="parts-table reveal">
+          <caption class="mono">Table 01 — the parts, and whether any of them had a model.</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="mono">Part</th>
+              <th scope="col" class="mono">What it did</th>
+              <th scope="col" class="mono parts-cad">CAD</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Flight controller</th>
+              <td>Held the attitude — tilt left, the left motors take more power.</td>
+              <td class="mono parts-cad">None</td>
+            </tr>
+            <tr>
+              <th scope="row">Video transmitter</th>
+              <td>Carried the camera feed to the goggles, on its own antenna.</td>
+              <td class="mono parts-cad">None</td>
+            </tr>
+            <tr>
+              <th scope="row">Camera</th>
+              <td>The eye; fed the transmitter.</td>
+              <td class="mono parts-cad">None</td>
+            </tr>
+            <tr>
+              <th scope="row">Battery</th>
+              <td>4S LiPo — 15.2 V, 75C.</td>
+              <td class="mono parts-cad">None</td>
+            </tr>
+            <tr>
+              <th scope="row">Motors ×4</th>
+              <td>Three-inch props, one motor per arm.</td>
+              <td class="mono parts-cad">None</td>
+            </tr>
+            <tr>
+              <th scope="row">Unidentified board</th>
+              <td>Chip marked ESP. I never worked out what it did.</td>
+              <td class="mono parts-cad">None</td>
+            </tr>
+            <tr class="parts-only">
+              <th scope="row">Airframe</th>
+              <td>Designed around measurements of everything above.</td>
+              <td class="mono parts-cad">The only one</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ====================================================== 02 SYSTEM -->
+      <section class="section" id="system" data-ghost="CHAIN">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>02 / The system</p>
+            <h2 class="section-title">What works, <em>what's planned.</em></h2>
+          </div>
+          <p class="section-meta mono">Five stages</p>
+        </header>
+
+        <p class="lede reveal">
+          The mission asks this drone to find a person and hold a position above them. Only the
+          first stage exists: the goggles see what the camera sees.
+        </p>
+
+        <figure class="chain reveal">
+          <div class="chain-track">
+            <div class="chain-node is-works">
+              <span class="chain-mark" aria-hidden="true"></span>
+              <p class="chain-name mono">Video link</p>
+              <p class="chain-state">Works</p>
+              <p class="chain-note">Camera to transmitter to goggles.</p>
+            </div>
+            <span class="chain-link" aria-hidden="true"></span>
+            <div class="chain-node is-failed">
+              <span class="chain-mark" aria-hidden="true"></span>
+              <p class="chain-name mono">Flight</p>
+              <p class="chain-state">Not solved</p>
+              <p class="chain-note">Two attempts; no controlled flight.</p>
+            </div>
+            <span class="chain-link" aria-hidden="true"></span>
+            <div class="chain-node is-missing">
+              <span class="chain-mark" aria-hidden="true"></span>
+              <p class="chain-name mono">Recognition</p>
+              <p class="chain-state">Not built</p>
+              <p class="chain-note">Find the person in the feed.</p>
+            </div>
+            <span class="chain-link" aria-hidden="true"></span>
+            <div class="chain-node is-missing">
+              <span class="chain-mark" aria-hidden="true"></span>
+              <p class="chain-name mono">Position fix</p>
+              <p class="chain-state">Not built</p>
+              <p class="chain-note">Turn a detection into a place.</p>
+            </div>
+            <span class="chain-link" aria-hidden="true"></span>
+            <div class="chain-node is-missing">
+              <span class="chain-mark" aria-hidden="true"></span>
+              <p class="chain-name mono">Hand off</p>
+              <p class="chain-state">Not built</p>
+              <p class="chain-note">Give the arm a position to reach.</p>
+            </div>
+          </div>
+          <figcaption class="mono">Fig. 02 — the drone's half of the rescue chain, as it stands today.</figcaption>
+        </figure>
+
+        <p class="chain-close reveal">
+          The arm is the other half — <a href="../arm/">Sheet 01</a>. The handoff between them is
+          the part of <a href="../../plan/">the grand plan</a> that does not exist yet.
+        </p>
+      </section>
+
+      <!-- ======================================================= 03 TESTS -->
+      <section class="section" id="tests" data-ghost="TEST">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>03 / The tests</p>
+            <h2 class="section-title">Two attempts. <em>Two failures.</em></h2>
+          </div>
+          <p class="section-meta mono">The whole log</p>
+        </header>
+
+        <ol class="log">
+          <li class="log-row reveal">
+            <span class="log-no mono">Test 01</span>
+            <div class="log-body">
+              <h3 class="log-title">The antenna broke.</h3>
+              <p class="log-line">
+                The first attempt ended with the antenna broken. That was the end of the test.
+              </p>
+            </div>
+            <span class="log-result mono">Ended early</span>
+          </li>
+          <li class="log-row reveal">
+            <span class="log-no mono">Test 02</span>
+            <div class="log-body">
+              <h3 class="log-title">Straight forward.</h3>
+              <p class="log-line">
+                The second attempt did not fly under control — it went directly forward and that
+                was all it did.
+              </p>
+            </div>
+            <span class="log-result mono">No control</span>
+          </li>
+        </ol>
+
+        <p class="tests-close reveal">
+          Two attempts is the whole log. Nothing past the video link has been tested, because there
+          was never a flight stable enough to test it on.
+        </p>
+
+        <!-- photographs will land here -->
+        <figure class="figure-slot figure-slot--photo reveal">
+          <div class="figure-frame">
+            <p class="figure-label mono">Fig. 03 — the drone today</p>
+            <p class="figure-note mono">Photographs to come</p>
+            <span class="figure-mark mono" aria-hidden="true">Bench</span>
+          </div>
+          <figcaption class="mono">The build as it stands — because that is where it stands.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ====================================================== 04 LESSON -->
+      <section class="section" id="design" data-ghost="DESIGN">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>04 / What I'd do differently</p>
+            <h2 class="section-title">Design the <em>system.</em></h2>
+          </div>
+          <p class="section-meta mono">The order that matters</p>
+        </header>
+
+        <div class="lesson-copy reveal">
+          <p>
+            This was my first build, and I did it backwards: the frame first, the parts after.
+            Every dimension came off a component with a ruler and went straight into the airframe,
+            with no way to check the fit until it was physical. When something did not line up, the
+            drawing was already wrong.
+          </p>
+          <p>
+            If I built it again, the frame would be the last thing I designed — not the first. The
+            parts would be models before they were purchases, and the assembly would be checked on
+            screen before anything was made.
+          </p>
+        </div>
+
+        <ol class="order">
+          <li class="order-row reveal">
+            <span class="order-no mono">01</span>
+            <p class="order-text">
+              <strong>Model every part first.</strong> Boards, mounts, the camera cage, the battery
+              envelope — in CAD before the frame is drawn.
+            </p>
+          </li>
+          <li class="order-row reveal">
+            <span class="order-no mono">02</span>
+            <p class="order-text">
+              <strong>Fix the mounting geometry.</strong> Which part bolts to which, at what holes,
+              at what height.
+            </p>
+          </li>
+          <li class="order-row reveal">
+            <span class="order-no mono">03</span>
+            <p class="order-text">
+              <strong>Know the mass and the centre of gravity.</strong> So the frame does not decide
+              them for you.
+            </p>
+          </li>
+          <li class="order-row reveal">
+            <span class="order-no mono">04</span>
+            <p class="order-text">
+              <strong>Bench-test the stack.</strong> Video link, control link, motor order and
+              attitude — on the ground first.
+            </p>
+          </li>
+          <li class="order-row order-row--final reveal">
+            <span class="order-no mono">05</span>
+            <p class="order-text">
+              <strong>Design the frame last.</strong> Around the assembly, not around guesses.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ====================================================== 05 STATUS -->
+      <section class="section drone-status" id="status" data-ghost="NOW">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>05 / Status</p>
+            <h2 class="section-title"><em>Not flying.</em></h2>
+          </div>
+          <p class="section-meta mono">Last updated — October 2026</p>
+        </header>
+
+        <div class="status-band reveal">
+          <p class="status-state mono"><span class="sq sq--missing" aria-hidden="true"></span>Not flying</p>
+          <p class="status-copy">
+            The airframe is built and the video link works. The flight does not: two attempts, no
+            controlled flight, one broken antenna. Recognition, the position fix and the handoff to
+            the arm are not started. The frame is the only part of this build with a model — which
+            is the lesson this sheet exists to record.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========================================================== NEXT/FOOT -->
+    <nav class="sheet-next" aria-label="Sheet navigation">
+      <a class="mono" href="../../">← Sheet index</a>
+      <p class="mono">Next sheet — 04 AI interviewer · in prep</p>
+    </nav>
+
+    <footer class="title-block">
+      <div class="tb-grid mono">
+        <div class="tb-cell"><span class="tb-k">Project</span><span class="tb-v">FPV drone</span></div>
+        <div class="tb-cell"><span class="tb-k">Sheet</span><span class="tb-v">03 / 05</span></div>
+        <div class="tb-cell"><span class="tb-k">Rev</span><span class="tb-v">2026.10</span></div>
+        <div class="tb-cell"><span class="tb-k">Scale</span><span class="tb-v">1:1</span></div>
+        <div class="tb-cell"><span class="tb-k">Status</span><span class="tb-v">not flying</span></div>
+      </div>
+      <p class="colophon mono">Built by hand · no tracking · no cookies</p>
+    </footer>
+
+    <script type="module" src="/src/scroll.js"></script>
+  </body>
+</html>

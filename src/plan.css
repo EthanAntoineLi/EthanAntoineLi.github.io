@@ -1,0 +1,141 @@
+/* ==========================================================================
+   The grand plan — a top-level area for the long-range rescue system.
+   Loaded after src/hub.css, which supplies tokens, reset, chrome, section
+   heads, title block and the reveal states (same pattern as Sheet 02's
+   sheet.css). The hero intro is Ethan's copy; the section slots below it are
+   still deliberately empty frames, marked "to come", until he dictates them.
+   ========================================================================== */
+
+/* -------------------------------------------------------------------- hero */
+.plan-hero .hero-foot {
+  align-items: end;
+}
+
+/* The plan itself, in Ethan's words: one paragraph, same measure and voice as
+   the hub's hero line. */
+.plan-lede {
+  max-width: 54ch;
+  font-size: clamp(18px, 1.35vw, 22px);
+  line-height: 1.45;
+  letter-spacing: -0.012em;
+  color: var(--ink-soft);
+}
+
+/* ---------------------------------------------------------------- sections */
+.plan-section + .plan-section {
+  border-top: 1px solid var(--line);
+}
+
+.plan-section .section-head {
+  margin-bottom: clamp(24px, 4vh, 40px);
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(20px, 3.2vw, 48px);
+  align-items: start;
+}
+
+/* Grid items default to `min-width: auto`, and an aspect-ratio + min-height
+   figure then pushes its column past the viewport on phones. */
+.plan-grid > * {
+  min-width: 0;
+}
+
+.plan-grid--flip .slot--figure {
+  order: -1;
+}
+
+.plan-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ------------------------------------------------------------------- slots */
+/* Empty content frames, drawn as drafting placeholders: dashed rule, paper
+   tint, a mono label, skeleton lines. They read as "not written yet" on
+   purpose, so the page can ship as a structure before the words exist. */
+.slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  justify-content: space-between;
+  min-height: clamp(180px, 24vh, 260px);
+  padding: clamp(16px, 2.2vw, 26px);
+  border: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent);
+  /* opaque, so the fixed ghost word does not read through the empty frames */
+  background-color: color-mix(in srgb, var(--paper-2) 60%, var(--paper));
+}
+
+.slot-label {
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+}
+
+.slot-lines {
+  display: grid;
+  gap: 12px;
+}
+
+.slot-lines span {
+  display: block;
+  height: 1px;
+  background: var(--line);
+}
+
+.slot-lines span:nth-child(2) {
+  width: 84%;
+}
+
+.slot-lines span:nth-child(3) {
+  width: 56%;
+}
+
+.slot--figure {
+  aspect-ratio: 16 / 10;
+  min-height: 0;
+  max-width: 100%;
+  justify-content: flex-start;
+}
+
+.slot--wide {
+  aspect-ratio: 16 / 6;
+  min-height: clamp(240px, 34vh, 360px);
+}
+
+.slot-figure-mark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--ink) 24%, transparent);
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------- responsive */
+/* Same phone rule the sheets use: the back link gives its room to the nav. */
+@media (max-width: 700px) {
+  .chrome .sheet-back {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .plan-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .plan-grid--flip .slot--figure {
+    order: 0;
+  }
+
+  /* a 16:6 frame is too letterboxed once it is full-width on a phone */
+  .slot--wide {
+    aspect-ratio: auto;
+    min-height: clamp(200px, 26vh, 300px);
+  }
+}

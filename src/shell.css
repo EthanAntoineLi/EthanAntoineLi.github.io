@@ -1,0 +1,255 @@
+/* ==========================================================================
+   Site shell — the fixed furniture every page shares: the loading curtain and
+   the top chrome. Defined once so the film (style.css) and the sheets
+   (hub.css) cannot drift apart; imported first by both stylesheets.
+
+   The chrome is one component: brand + back link on the left, the sheet's
+   meta line in the centre, and each page's own controls on the right. The
+   right-hand contents differ by page (the arm carries render modes, clock and
+   the index overlay; the sheets carry section links) — the shell around them
+   does not.
+   ========================================================================== */
+
+/* ----------------------------------------------------------------- loader */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 18px;
+  background: var(--paper);
+  transition: opacity 0.6s var(--ease), visibility 0.6s;
+}
+.loader .mono {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+}
+.loader-label {
+  color: var(--dim);
+}
+.loader-count {
+  font-size: clamp(64px, 9vw, 128px);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+.loader-bar {
+  width: 180px;
+  height: 1px;
+  background: var(--line);
+}
+.loader-bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--ink);
+  transition: width 0.2s linear;
+}
+.loader-foot {
+  position: absolute;
+  bottom: 32px;
+  color: var(--dim);
+}
+.loader-ascii {
+  color: var(--dim);
+  letter-spacing: 0.3em;
+  font-size: 13px;
+  white-space: pre;
+}
+body.loaded .loader {
+  opacity: 0;
+  visibility: hidden;
+}
+/* Without JS nobody dismisses the loader — hide it outright so the still
+   stage/hero and the copy underneath are readable (each page adds `js`
+   inline in <head>). */
+html:not(.js) .loader {
+  display: none;
+}
+body.is-loading {
+  overflow: hidden;
+}
+
+/* ----------------------------------------------------------------- chrome */
+.chrome {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  height: var(--chrome-h);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  padding: 0 var(--gutter);
+  border-bottom: 1px solid var(--line-soft);
+  background: rgba(246, 246, 244, 0.86);
+  backdrop-filter: blur(6px);
+}
+
+/* One mono scale for every label in the bar, both families. */
+.chrome .mono {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  line-height: 1.5;
+}
+
+.chrome-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-self: start;
+  min-width: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  justify-self: start;
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 1px solid var(--ink);
+  background: linear-gradient(90deg, var(--ink) 0 4px, transparent 4px),
+    linear-gradient(0deg, var(--accent) 0 4px, transparent 4px);
+}
+
+.brand-name {
+  font-size: 14.5px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.chrome .brand-tag {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+
+.sheet-back {
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+  transition: color 0.2s;
+}
+.sheet-back:hover {
+  color: var(--ink);
+}
+
+/* Scoped to .chrome: the film defines its own `.mono` colour later in the
+   cascade, and the shared labels must not pick it up. */
+.chrome .chrome-meta,
+.chrome .sheet-back {
+  color: var(--muted);
+}
+.chrome .sheet-back:hover {
+  color: var(--ink);
+}
+
+.chrome-meta {
+  justify-self: center;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Right-hand cluster: the arm's render controls and the sheets' section
+   links sit in the same slot, at the same rhythm. */
+.chrome-right {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-self: end;
+}
+
+.nav a {
+  position: relative;
+  text-decoration: none;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color 0.25s var(--ease);
+}
+
+.nav a:hover,
+.nav a[aria-current='true'] {
+  color: var(--ink);
+}
+
+.nav a[aria-current='true']::before {
+  content: '';
+  position: absolute;
+  left: -11px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+
+/* ------------------------------------------------------------- responsive */
+/* One collapse order for both families: meta drops first, then the brand tag,
+   then the tight type and gaps. Pages may hide their own controls after that. */
+@media (max-width: 1024px) {
+  .chrome {
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+  }
+  .chrome-meta {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .chrome .brand-tag {
+    display: none;
+  }
+  .brand-name {
+    font-size: 14px;
+  }
+  .chrome {
+    gap: 14px;
+  }
+  .chrome-right,
+  .nav {
+    gap: 14px;
+  }
+  .nav a {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 560px) {
+  .chrome-right,
+  .nav {
+    gap: 11px;
+  }
+  .nav a {
+    font-size: 8.5px;
+    letter-spacing: 0.1em;
+  }
+  /* 11px gaps + the -11px active dot put the dot flush against the previous
+     label on phones; pull it into the gap. */
+  .nav a[aria-current='true']::before {
+    left: -8px;
+  }
+}
