@@ -347,6 +347,8 @@ html.embed-demo .room-card {
 
 html.embed-demo .room {
   height: 100vh;
+  /* Cover-fit on a wide glass crops top and bottom; keep the cat and floor. */
+  align-items: flex-end;
 }
 
 html.embed-demo #scene {
@@ -355,12 +357,12 @@ html.embed-demo #scene {
 
 /* the room is scaled up in the iframe, so the speech bubble scales with it */
 html.embed-demo .bubble {
-  max-width: min(50%, 560px);
+  max-width: min(31%, 430px);
   padding: 0.42em 0.7em;
   border-width: 0.16em;
   border-radius: 0.28em;
   box-shadow: 0.22em 0.22em 0 rgba(0, 0, 0, 0.28);
-  font-size: clamp(14px, 1.4vw, 26px);
+  font-size: clamp(16px, 1.7vw, 26px);
 }
 
 html.embed-demo .bubble::after {
@@ -368,6 +370,15 @@ html.embed-demo .bubble::after {
   height: 0.55em;
   bottom: -0.5em;
   border-width: 0.16em;
+}
+
+/* Small screens (the laptop on a phone): let the bubble use more of the frame
+   so the message is readable and not line-clamped. */
+@media (max-width: 620px) {
+  html.embed-demo .bubble {
+    max-width: min(66%, 430px);
+    font-size: clamp(12px, 3vw, 16px);
+  }
 }
 
 html.embed-demo .bubble.thought {

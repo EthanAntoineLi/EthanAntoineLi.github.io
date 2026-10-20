@@ -1090,8 +1090,10 @@
 
   function placeBubble() {
     if (bubbleEl.hidden) return;
-    let x = canvas.offsetLeft + anchor[0] * scale;
-    const y = canvas.offsetTop + anchor[1] * scale;
+    const cr = canvas.getBoundingClientRect();
+    const rr = roomEl.getBoundingClientRect();
+    let x = cr.left - rr.left + anchor[0] * scale;
+    const y = cr.top - rr.top + anchor[1] * scale;
     const maxX = roomEl.clientWidth - bubbleEl.offsetWidth - 6;
     if (x > maxX) x = Math.max(6, maxX);
     bubbleEl.style.left = `${x}px`;
@@ -1193,11 +1195,15 @@
   function fit() {
     const avail = roomEl.clientWidth;
     if (EMBED) {
-      // The iframe is 160:90, so a fractional scale fills it without distortion
-      // and keeps bubble positions (which use `scale`) lined up.
-      scale = avail / W;
-      canvas.style.width = `${avail}px`;
-      canvas.style.height = `${(avail * H) / W}px`;
+      // The glass is wider than the room (ultrawide), so cover it: scale up to
+      // the larger ratio and let the room's top/bottom crop. The crop is biased
+      // so the window top and the cat's feet both stay in frame.
+      const availH = roomEl.clientHeight || (avail * H) / W;
+      scale = Math.max(avail / W, availH / H);
+      canvas.style.width = `${W * scale}px`;
+      canvas.style.height = `${H * scale}px`;
+      const overflowY = Math.max(0, H * scale - availH);
+      canvas.style.transform = overflowY > 0 ? `translateY(${(-overflowY * 0.26).toFixed(2)}px)` : '';
       placeBubble();
       return;
     }
@@ -1367,6 +1373,8 @@
     const answer1 = 'Reminder set for 19:00 — physics past paper.';
     const ask2 = 'You: five questions on thermal physics, please';
     const answer2 = 'Five ready: specific heat, latent heat, gas laws, pressure, and a graph question.';
+    const ask3 = 'You: what have I got today?';
+    const answer3 = 'Three lessons today — timetable sent for 07:30.';
     const base = () => ({
       online: true,
       lastSignal: Date.now(),
@@ -1374,22 +1382,29 @@
       today: { messages: 2, tools: 4, runs: 2, errors: 0 },
     });
     // [state, duration, tool, bubble text, log entry]
+    // A message arrives, she works, she answers, she resets — on a loop, so the
+    // screen reads as a live assistant rather than an idle pet.
     const steps = [
-      ['idle', 6000, '', '', ['online', 'Agent is online']],
+      ['idle', 1400, '', '', ['online', 'Agent is online']],
       ['listening', 2600, '', ask1, ['in', ask1]],
-      ['thinking', 2200],
-      ['working', 3200, 'reminder', 'physics past paper · 19:00', ['tool', 'reminder · physics past paper · 19:00']],
+      ['thinking', 1900],
+      ['working', 3000, 'reminder', 'physics past paper · 19:00', ['tool', 'reminder · physics past paper · 19:00']],
       ['replying', 3000, '', answer1, ['out', `Replied: ${answer1}`]],
-      ['done', 3800, '', '', ['done', 'Finished in 4s']],
-      ['idle', 3500],
+      ['done', 2600],
+      ['idle', 2200],
       ['listening', 2600, '', ask2, ['in', ask2]],
-      ['thinking', 2200],
-      ['working', 3000, 'question_bank', 'thermal physics · 5 questions', ['tool', 'question_bank · thermal physics · 5 questions']],
-      ['working', 3600, 'question_maker', 'sub-agent · thermal physics', ['helper', 'Question-maker sub-agent started']],
-      ['replying', 3400, '', answer2, ['out', `Replied: ${answer2}`]],
-      ['done', 4200, '', '', ['done', 'Finished in 18s']],
-      ['idle', 16000],
-      ['offline', 6000, '', '', ['offline', 'Agent went offline']],
+      ['thinking', 2000],
+      ['working', 2800, 'question_bank', 'thermal physics · 5 questions', ['tool', 'question_bank · thermal physics · 5 questions']],
+      ['working', 3200, 'question_maker', 'sub-agent · thermal physics', ['helper', 'Question-maker sub-agent started']],
+      ['replying', 3200, '', answer2, ['out', `Replied: ${answer2}`]],
+      ['done', 2800],
+      ['idle', 2600],
+      ['listening', 2400, '', ask3, ['in', ask3]],
+      ['thinking', 1700],
+      ['working', 2800, 'timetable', 'today · 3 lessons', ['tool', 'timetable · today · 3 lessons']],
+      ['replying', 2800, '', answer3, ['out', `Replied: ${answer3}`]],
+      ['done', 2600],
+      ['idle', 7000],
     ];
     setLog([]);
     if (PIN || FORCE_ACT) {

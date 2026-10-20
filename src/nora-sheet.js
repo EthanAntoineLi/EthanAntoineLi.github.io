@@ -20,8 +20,6 @@ const device = hero?.querySelector('.device')
 const screenFrame = hero?.querySelector('.device-screen iframe')
 const copy = hero?.querySelector('.hero-copy')
 const cue = hero?.querySelector('.hero-cue')
-const base = hero?.querySelector('.device-base')
-const cam = hero?.querySelector('.device-cam')
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
 const smooth = (p) => p * p * (3 - 2 * p)
@@ -37,7 +35,7 @@ const zoomOn = () =>
 
 function clearZoom() {
   metrics = null
-  for (const el of [device, copy, base, cam, cue]) {
+  for (const el of [device, copy, cue]) {
     if (!el) continue
     el.style.transform = ''
     el.style.opacity = ''
@@ -99,9 +97,6 @@ function update() {
   copy.style.opacity = `${(1 - titleFade).toFixed(3)}`
   copy.style.transform = `translate3d(0, ${(-28 * titleFade).toFixed(1)}px, 0)`
 
-  const hardware = clamp01((zoom - 0.55) / 0.3)
-  if (base) base.style.opacity = `${(1 - hardware).toFixed(3)}`
-  if (cam) cam.style.opacity = `${(1 - hardware).toFixed(3)}`
   if (cue) cue.style.opacity = `${(1 - clamp01(scroll / 0.08)).toFixed(3)}`
 }
 

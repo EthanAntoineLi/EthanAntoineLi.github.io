@@ -62,28 +62,31 @@
           </div>
 
           <figure class="device" id="demo">
-            <div class="device-lid">
-              <span class="device-cam" aria-hidden="true"></span>
-              <div class="device-screen">
-                <iframe
-                  src="/work/nora/demo/"
-                  title="Nora, the pixel desk cat — interactive demo with fake events"
-                  loading="lazy"
-                ></iframe>
-                <picture class="demo-fallback">
-                  <source srcset="/img/plates/nora-16x10.webp" type="image/webp" />
-                  <img
-                    src="/img/plates/nora-16x10.png"
-                    width="1280"
-                    height="800"
-                    alt="Nora, a grey pixel cat, sitting at a tiny laptop in a dark room — the working state."
-                  />
-                </picture>
-              </div>
-            </div>
-            <div class="device-base" aria-hidden="true">
-              <span class="device-keyboard"></span>
-              <span class="device-trackpad"></span>
+            <picture class="device-shell">
+              <source srcset="/img/device/nora-monitor.webp" type="image/webp" />
+              <img
+                src="/img/device/nora-monitor.png"
+                width="1654"
+                height="966"
+                alt=""
+                decoding="async"
+              />
+            </picture>
+            <div class="device-screen">
+              <iframe
+                src="/work/nora/demo/"
+                title="Nora, the pixel desk cat — interactive demo with fake events"
+                loading="lazy"
+              ></iframe>
+              <picture class="demo-fallback">
+                <source srcset="/img/plates/nora-16x10.webp" type="image/webp" />
+                <img
+                  src="/img/plates/nora-16x10.png"
+                  width="1280"
+                  height="800"
+                  alt="Nora, a grey pixel cat, sitting at a tiny laptop in a dark room — the working state."
+                />
+              </picture>
             </div>
           </figure>
 
