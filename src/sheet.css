@@ -76,9 +76,6 @@
   font-size: clamp(20px, 2.2vw, 34px);
 }
 
-/* the monitor: a 3D render of the screen hardware, with the live demo laid
-   over the glass. The aspect ratio and screen rect come from dev/monitor/;
-   the PNG fallback is only for browsers without WebP. */
 /* the monitor: an angled 3D render of the screen hardware, with the live demo
    projected onto its glass. The screen quad geometry comes from dev/monitor/;
    src/nora-sheet.js maps the iframe onto it and animates it to full bleed. */
@@ -90,18 +87,31 @@
   margin-top: clamp(18px, 3vh, 34px);
 }
 
-.device-shell {
-  display: block;
+/* The monitor is a short 3D turn sequence (22° → 0°), rendered from the FBX
+   at /dev/monitor/render-seq.html. The frames are stacked; src/nora-sheet.js
+   crossfades them while the camera pushes in, so zoom and turn are the same
+   gesture. The live demo sits on the glass, mapped to the frame's screen quad. */
+.device-shells {
+  position: relative;
   width: 100%;
-  height: auto;
+  aspect-ratio: 1109 / 688;
   filter: drop-shadow(0 34px 46px rgba(16, 18, 20, 0.22));
-  transition: opacity 0.18s linear;
 }
 
-.device-shell img {
-  display: block;
+.device-shell {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: auto;
+  height: 100%;
+  opacity: 0;
+}
+
+.device-shell:first-child {
+  opacity: 1;
+}
+
+html:not(.js) .device-shell:not(:first-child) {
+  display: none;
 }
 
 .device-screen {
