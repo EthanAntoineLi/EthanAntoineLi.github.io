@@ -3,8 +3,8 @@
 A static site laid out like an engineering drawing set. **Sheet 00** is the index (`/`). Two sheets
 are published: **01** the arm film (`/work/arm/`) and **02** Nora, the personal AI (`/work/nora/`).
 
-**Status:** built and verified locally (2026-10-20). **Not deployed** yet — see *Deploy* below. The
-direction and the open decisions live in [`HUB-PLAN.md`](HUB-PLAN.md).
+**Live:** <https://ethanantoineli.github.io/personal-page/> — deployed 2026-10-20 (GitHub Pages,
+project site). The direction and the open decisions live in [`HUB-PLAN.md`](HUB-PLAN.md).
 
 ---
 
@@ -85,15 +85,16 @@ The cat canvas runs at 15 fps, pauses off-screen, and renders one static frame u
 
 ## Deploy
 
-`.github/workflows/deploy.yml` builds `dist/` and publishes it to GitHub Pages on push to `master`.
-Two things are still manual / unverified:
+Live: <https://ethanantoineli.github.io/personal-page/>. `.github/workflows/deploy.yml` builds `dist/`
+and publishes it to GitHub Pages on push to `master` (Pages enabled, source: GitHub Actions, repo
+public). To publish the current work: `git push origin hub:master`.
 
-1. The site is intended for the **user-site root** (`https://ethanantoineli.github.io/`), so the repo
-   should be renamed `EthanAntoineLi.github.io`. `vite.config.js` uses `base: '/'`; build with
-   `BASE=/personal-page/ npm run build` if it stays a project site.
-2. GitHub Pages on the free plan needs a **public** repository. Verify before relying on the workflow.
+Because the site lives on a **project path**, the workflow builds with `BASE=/personal-page/` and all
+internal navigation links are document-relative, so the same markup also works from a user-site root.
+If the repo is later renamed `EthanAntoineLi.github.io`, delete the `BASE` env from the workflow and
+the site moves to <https://ethanantoineli.github.io/> (OG/canonical then need the final URLs).
 
-`HUB-PLAN.md` §8–10 tracks the deploy/URL decision.
+`HUB-PLAN.md` §8–10 tracks the remaining deploy/URL decisions.
 
 ## Layout
 
