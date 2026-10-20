@@ -610,6 +610,7 @@ main {
 .js .act .spec-row,
 .js .act .act-note,
 .js .act .joints,
+.js .act .act-copy,
 .js .act .process-cta,
 .js .act .email,
 .js .act .links,
@@ -627,6 +628,7 @@ main {
 .js .act.is-in .spec-row,
 .js .act.is-in .act-note,
 .js .act.is-in .joints,
+.js .act.is-in .act-copy,
 .js .act.is-in .process-cta,
 .js .act.is-in .email,
 .js .act.is-in .links,
@@ -870,6 +872,23 @@ main {
   transform: translate(2px, -2px);
 }
 
+/* ------------------------------------------------------------ process page */
+/* Step 01 is type, not a model yet: the copy column widens where the printer
+   will eventually sit, and the stage slot stays empty. */
+.act--start .act-title {
+  max-width: 21ch;
+}
+.act-copy {
+  max-width: 54ch;
+  font-size: clamp(19px, 1.55vw, 25px);
+  line-height: 1.42;
+  letter-spacing: -0.012em;
+  color: var(--ink-soft);
+}
+.act--start .act-bottom {
+  max-width: 64ch;
+}
+
 /* ------------------------------------------------------------------- scan */
 .act--scan .act-title {
   max-width: 18ch;
@@ -987,6 +1006,7 @@ main {
   .js .act .spec-row,
   .js .act .act-note,
   .js .act .joints,
+  .js .act .act-copy,
   .js .act .process-cta,
   .js .act .email,
   .js .act .links,
@@ -1503,4 +1523,12 @@ main {
 
 body.detail-open .cursor {
   opacity: 0 !important;
+}
+
+@media (max-width: 820px) {
+  .act-copy {
+    max-width: none;
+    font-size: 17px;
+    line-height: 1.45;
+  }
 }

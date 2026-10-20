@@ -1,11 +1,12 @@
 # ARCHITECTURE.md — module contracts (v7 hub + sheets)
 
-Static portfolio site, four HTML entries. Stack: **Vite 5 (MPA) + three.js 0.170 + vanilla ES
+Static portfolio site, five HTML entries. Stack: **Vite 5 (MPA) + three.js 0.170 + vanilla ES
 modules**. No framework, no backend, no runtime data. Everything ships as static files.
 
 ```
 /                → index.html                 Sheet 00, the hub
 /work/arm/       → work/arm/index.html        Sheet 01, the v6 film
+/work/arm/process/ → work/arm/process/index.html  Sheet 01 / process, step 01 (type only; printer stage to come)
 /work/nora/      → work/nora/index.html       Sheet 02, Nora
 /work/nora/demo/ → work/nora/demo/index.html  the desk-cat demo (iframe target; ?full = full page)
 ```
@@ -16,6 +17,7 @@ modules**. No framework, no backend, no runtime data. Everything ships as static
 personal-page/
   index.html                  # hub: hero, works register, mission, status, record, contact, title block
   work/arm/index.html         # film: chrome, loader, fixed stage, six acts, contact, inline index panel
+  work/arm/process/index.html # process page: film chrome + acts, no 3D yet (stage slot reserved for the printer)
   work/nora/index.html        # Nora sheet: hero, iframe demo, jobs, build stack, states, status
   work/nora/demo/index.html   # desk-cat page: copied from the Nora project, demo-only
   work/nora/demo/nora.js      # its behaviour: canvas room, states, sounds, interactions, demo loop
@@ -30,6 +32,7 @@ personal-page/
     nora-sheet.js             # sheet-only: iframe `.is-focused` marker for the keyboard focus ring
     style.css                 # film styling + tokens mirror
     main.js                   # film behaviour (loader, Lenis, stop blending, ghost, cursor, copy)
+    process.js                # process page behaviour: film chrome + acts, no 3D (reveals, ghost, progress, index, clock)
     arm-scene.js              # film three.js scene (GLB, six stops, point cloud, free view)
     arm-viewer.js             # standalone arm viewer (dev harness, arm plate renders)
   public/                     # copied verbatim into dist/
@@ -42,7 +45,7 @@ personal-page/
     fonts/*.woff2             # Inter Tight 300/400, Instrument Serif italic (latin)
     favicon.svg
   dev/                        # local-only QA + plate tooling, git-ignored
-  vite.config.js              # base '/', appType 'mpa', four rollup inputs
+  vite.config.js              # base '/', appType 'mpa', five rollup inputs
   .github/workflows/deploy.yml
 ```
 
@@ -68,6 +71,7 @@ personal-page/
 | `src/nora-cat.js` | The hub's cat canvas: layout, movement bank, pointer look, visibility pause | know about the room, the demo page or a server |
 | `src/nora-sheet.js` | Sheet 02 only: marks the demo iframe `.is-focused` from its window focus/blur events (keyboard focus lands inside the child document, where `:focus`/`:focus-within` never match) | touch anything but the demo iframe |
 | `work/arm/index.html` + `src/style.css`, `main.js`, `arm-scene.js` | The film, unchanged (v4/v6 contracts) | be reused by the hub or sheets |
+| `work/arm/process/index.html` + `src/process.js` | The process page: film chrome and act choreography without the scene; copy for step 01 lives in the HTML | touch WebGL or the arm scene |
 | `work/nora/demo/*` | The desk-cat page (copied) + embed/demo adaptations | talk to a server or read real data |
 
 ## Shared page behaviour (scroll.js)

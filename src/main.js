@@ -612,7 +612,18 @@ function initIndex() {
     panel.classList.toggle('is-open', open)
     toggle.setAttribute('aria-expanded', String(open))
     body.style.overflow = open ? 'hidden' : ''
-    if (open) panel.querySelector('a')?.focus({ preventScroll: true })
+    // Focus only once the panel is actually visible: a focused element inside a
+    // still-hidden panel silently refuses focus, and the visibility transition
+    // keeps it hidden for a frame or two after the class lands.
+    if (open) focusWhenVisible()
+    else if (panel.contains(document.activeElement)) toggle.focus({ preventScroll: true })
+  }
+
+  const focusWhenVisible = (frames = 0) => {
+    const first = panel.querySelector('a')
+    if (!first) return
+    if (getComputedStyle(panel).visibility === 'visible') first.focus({ preventScroll: true })
+    else if (frames < 30) requestAnimationFrame(() => focusWhenVisible(frames + 1))
   }
 
   toggle.addEventListener('click', () => {

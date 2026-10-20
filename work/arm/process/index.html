@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f6f6f4" />
+    <title>Process — 5-axis arm · Ethan Antoine Li</title>
+    <meta
+      name="description"
+      content="The process behind the five-axis arm, in the order it happened. Step 01: the 3D printer that gave me access to personalised parts."
+    />
+    <meta property="og:title" content="Process — 5-axis arm · Ethan Antoine Li" />
+    <meta
+      property="og:description"
+      content="How the five-axis arm got made, in the order it happened. Step 01 — a 3D printer, and parts of my own."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="author" content="Ethan Antoine Li" />
+    <!-- og:image and og:url are set when the site has its final root URL (HUB-PLAN §8.2). -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/inter-tight-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-tight-300.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      document.documentElement.classList.add('js')
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <!-- ----------------------------------------------------------- cursor -->
+    <div class="cursor" id="cursor" aria-hidden="true">
+      <span class="cursor-dot"></span>
+      <span class="cursor-label mono" id="cursor-label"></span>
+    </div>
+
+    <!-- ------------------------------------------------------ ghost letters -->
+    <div class="ghost-wrap" aria-hidden="true">
+      <span class="ghost" id="ghost">MAKE</span>
+    </div>
+
+    <!-- ------------------------------------------------------------ chrome -->
+    <header class="chrome">
+      <div class="chrome-left">
+        <a class="brand" href="/" aria-label="Ethan Antoine Li — home">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">ethan antoine li</span>
+          <span class="brand-tag mono">rescue robotics</span>
+        </a>
+        <a class="sheet-back mono" href="/work/arm/" aria-label="Back to sheet 01, the five-axis arm">← sheet 01</a>
+      </div>
+
+      <p class="chrome-meta mono">5-axis arm · process</p>
+
+      <div class="chrome-right">
+        <p class="chrome-frame mono" id="chrome-frame" aria-hidden="true">F 000000</p>
+        <p class="chrome-clock mono" id="clock">GMT+8 —:—</p>
+        <button class="index-toggle mono" id="index-toggle" aria-expanded="false" aria-controls="index-panel">
+          index
+        </button>
+      </div>
+    </header>
+
+    <!-- ----------------------------------------------------- index overlay -->
+    <nav class="index-panel" id="index-panel" aria-label="Sections" hidden>
+      <ol>
+        <li><a href="#top"><span class="mono">00</span>How it got made</a></li>
+        <li><a href="#start"><span class="mono">01</span>How it all started</a></li>
+        <li><a href="#back"><span class="mono">02</span>Back to the arm</a></li>
+      </ol>
+      <p class="index-foot mono">ethan.li.1@outlook.com</p>
+    </nav>
+
+    <!-- ------------------------------------------------------ left progress -->
+    <aside class="progress" aria-hidden="true">
+      <p class="progress-num" id="progress-num">01</p>
+      <ol class="progress-ticks" id="progress-ticks">
+        <li class="on"></li>
+        <li></li>
+        <li></li>
+      </ol>
+    </aside>
+
+    <!-- The 3D printer model joins this page later; the stage slot stays here
+         so the acts keep the same frame as the arm film. -->
+
+    <!-- ------------------------------------------------------------ main -->
+    <main id="main">
+      <!-- =========================================================== HERO -->
+      <section class="act act--hero" id="top" data-ghost="MAKE" data-index="1" data-ex="rise">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>Sheet 01 · process</p>
+            <h1 class="hero-name">
+              <span class="line">How it</span>
+              <span class="line line--indent">got made</span>
+            </h1>
+          </div>
+
+          <div class="hero-foot">
+            <p class="hero-line">
+              The five-axis arm,<br />
+              told in the order<br />
+              it actually happened.
+            </p>
+            <p class="pull">A printer first.<br />Everything else followed.</p>
+            <a class="scroll-cue" href="#start" data-cursor="scroll">
+              <span class="scroll-dots" aria-hidden="true"></span>
+              <span class="mono">Scroll</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================== START -->
+      <section class="act act--start" id="start" data-ghost="PRINT" data-index="2" data-ent="rise" data-ex="swing">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>01 / How it all started</p>
+            <h2 class="act-title">
+              A 3D printer,<br />
+              <em>then parts of my own.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <p class="act-copy">
+              The 3D printer is what gave me access to personalised parts — pieces designed
+              for this arm instead of picked out of a supplier’s catalogue. That is the part
+              that changed everything: the design stopped being limited to what someone else
+              already sells.
+            </p>
+            <p class="act-note mono">One printer · geometry to my design · the arm came after</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ BACK -->
+      <section class="act act--contact" id="back" data-ghost="HI" data-index="3" data-ent="dolly">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>02 / Back to the arm</p>
+          </div>
+
+          <h2 class="act-title contact-title">That’s<br />where it started.</h2>
+
+          <a class="email" href="/work/arm/">← back to the arm</a>
+
+          <div class="links">
+            <a href="mailto:ethan.li.1@outlook.com">ethan.li.1@outlook.com</a>
+            <a href="https://github.com/EthanAntoineLi" target="_blank" rel="noopener">GitHub ↗</a>
+          </div>
+
+          <p class="colophon mono">Built by hand · no tracking · no cookies</p>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/process.js"></script>
+  </body>
+</html>
