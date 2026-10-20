@@ -15,6 +15,11 @@
 //   motors  — step 02: three motor types (big / shoulder-lift / small) hover in
 //             the free half of the screen, each with its own orientation + depth.
 //
+// Steps 01 and 02 share the printer's camera and ride the page: each object
+// belongs to its act and moves with the scroll (setTrack), so the printer rises
+// out with step 01's copy while the motors come up with step 02's — in
+// parallax, turning into place — instead of cross-fading on a threshold.
+//
 // PUBLIC API
 //   const stage = await createProcessStage(canvas, {
 //     printerUrl, motorsUrl, reducedMotion, phone, onLoadProgress, onFrame
@@ -32,6 +37,9 @@
 //                                   the part id when it was a click, not a drag
 //   stage.present(id)               index the turret until that part is in front
 //   stage.nudge(dy)                 page scroll in px — a flick of the turret
+//   stage.setTrack(printer, motors) where each step's act sits, in viewports
+//                                   from the top of the screen (0 = its act at
+//                                   the top, 1 = scrolled a viewport past it)
 //   onFrame(hud)                    per-frame screen data for the part balloons
 //   stage.setVisible(bool)          pause drawing
 //   stage.resize()
@@ -108,23 +116,28 @@ const PAPER = 0xf6f6f4
 // Step 02: three motor types floating in the free half of the screen.
 // sx/sy are viewport fractions from the centre, depth pushes toward the camera,
 // size is the max dimension as a fraction of the viewport width, rot is the
-// resting orientation.
-const HOVER_VIEW = {
-  desktop: { az: 0.12, el: 0.13, dist: 3.1, ty: 0.02 },
-  phone: { az: 0.1, el: 0.1, dist: 2.5, ty: -0.02 },
-}
+// resting orientation as it was tuned under a camera at HOVER_TUNED.az (step 02
+// now shares the printer's camera, so rot is turned by the difference).
+// travel = viewports moved per viewport of scroll (nearer parts travel further,
+// so they arrive in parallax); turn = extra rotation per viewport of travel, so
+// each part turns into its resting pose as it arrives and on out as it leaves.
+const HOVER_TUNED = { desktop: { az: 0.12 }, phone: { az: 0.1 } }
 const HOVER_ITEMS = {
   desktop: [
-    { node: 'motor-J1', sx: 0.27, sy: 0.03, depth: 0.18, size: 0.215, rot: [0.08, 0.62, -0.05], phase: 0.0, amp: [0.008, 0.011] },
-    { node: 'motor-J2', sx: 0.01, sy: 0.2, depth: 0.0, size: 0.195, rot: [0.3, -0.5, 0.14], phase: 1.9, amp: [0.007, 0.01] },
-    { node: 'motor-J3', sx: 0.125, sy: -0.155, depth: 0.28, size: 0.17, rot: [-0.26, 0.85, -0.3], phase: 3.4, amp: [0.008, 0.01] },
+    { node: 'motor-J1', sx: 0.27, sy: 0.03, depth: 0.18, size: 0.215, rot: [0.08, 0.62, -0.05], phase: 0.0, amp: [0.008, 0.011], travel: 1.12, turn: [0.22, -0.7, 0.1] },
+    { node: 'motor-J2', sx: 0.01, sy: 0.2, depth: 0.0, size: 0.195, rot: [0.3, -0.5, 0.14], phase: 1.9, amp: [0.007, 0.01], travel: 0.92, turn: [-0.26, 0.55, -0.14] },
+    { node: 'motor-J3', sx: 0.125, sy: -0.155, depth: 0.28, size: 0.17, rot: [-0.26, 0.85, -0.3], phase: 3.4, amp: [0.008, 0.01], travel: 1.3, turn: [0.36, -0.9, 0.24] },
   ],
   phone: [
-    { node: 'motor-J1', sx: 0.17, sy: 0.05, depth: 0.15, size: 0.29, rot: [0.08, 0.62, -0.05], phase: 0.0, amp: [0.008, 0.011] },
-    { node: 'motor-J2', sx: 0.01, sy: 0.2, depth: 0.0, size: 0.3, rot: [0.3, -0.5, 0.14], phase: 1.9, amp: [0.007, 0.01] },
-    { node: 'motor-J3', sx: -0.12, sy: -0.02, depth: 0.22, size: 0.21, rot: [-0.26, 0.85, -0.3], phase: 3.4, amp: [0.008, 0.01] },
+    { node: 'motor-J1', sx: 0.17, sy: 0.05, depth: 0.15, size: 0.29, rot: [0.08, 0.62, -0.05], phase: 0.0, amp: [0.008, 0.011], travel: 1.12, turn: [0.22, -0.7, 0.1] },
+    { node: 'motor-J2', sx: 0.01, sy: 0.2, depth: 0.0, size: 0.3, rot: [0.3, -0.5, 0.14], phase: 1.9, amp: [0.007, 0.01], travel: 0.92, turn: [-0.26, 0.55, -0.14] },
+    { node: 'motor-J3', sx: -0.12, sy: -0.02, depth: 0.22, size: 0.21, rot: [-0.26, 0.85, -0.3], phase: 3.4, amp: [0.008, 0.01], travel: 1.3, turn: [0.36, -0.9, 0.24] },
   ],
 }
+// The printer on the same track: it rises out with step 01's copy, tipping back
+// and turning away as it goes. smooth = how closely the objects follow the
+// scroll (1/s) — a touch of lag reads as weight.
+const TRACK = { printerTravel: 1.08, printerTurn: [0.16, -0.55, 0.0], smooth: 9, hideBeyond: 1.7 }
 
 const MOTOR_NAMES = ['motor-J1', 'motor-J2', 'motor-J3', 'motor-J4', 'motor-J5']
 // The turret steps forward (angle increasing), and the part at ring index i is
@@ -317,6 +330,10 @@ export async function createProcessStage(canvas, opts = {}) {
       next: 0, // state.time of the next automatic index
       drag: null,
     },
+    // where steps 01/02 sit on the page (viewports past their act's top), as
+    // reported by the page and as eased toward by the objects
+    track: { printer: 0, motors: -1, set: false },
+    trackLive: { printer: 0, motors: -1 },
     angVel: 0, // measured ring speed, whatever drove it (spring, hand, exit)
     lastAngle: 0,
     present: new Array(6).fill(0),
@@ -515,10 +532,6 @@ export async function createProcessStage(canvas, opts = {}) {
     const drift = settings.reducedMotion ? 0 : Math.sin(state.time * 0.11) * 0.045
     return { az: ring.az + drift, el: ring.el, dist: ring.dist, fov: ring.fov, tx: 0, ty: 0, tz: 0 }
   }
-  function hoverCamera() {
-    const hv = HOVER_VIEW[mode()]
-    return { az: hv.az, el: hv.el, dist: hv.dist, fov: FOV, tx: 0, ty: hv.ty, tz: 0 }
-  }
   function printerCamera() {
     const preset = settings.phone ? PRINTER_PRESETS.phone : PRINTER_PRESETS.step
     const aspect = state.width / state.height
@@ -529,7 +542,6 @@ export async function createProcessStage(canvas, opts = {}) {
   }
   function goalCamera() {
     if (state.camGoal === 'printer') return printerCamera()
-    if (state.camGoal === 'motors') return hoverCamera()
     if (state.camGoal === 'ring') return ringCamera()
     return null
   }
@@ -1021,7 +1033,9 @@ export async function createProcessStage(canvas, opts = {}) {
     tweenTo('out', 1, 0.62, 0.06)
     tweenTo('ringAlpha', 0, 0.22)
     tweenTo('printerAlpha', 1, 0.12)
-    tweenTo('motorsAlpha', 0, 0.2)
+    // once the ring has faded, the step-02 motors drop onto the scroll track
+    // (below the fold until step 02 scrolls in)
+    tweenTo('motorsAlpha', 1, 0.02, 0.4)
     state.camGoal = 'printer'
   }
 
@@ -1032,7 +1046,6 @@ export async function createProcessStage(canvas, opts = {}) {
     tweenTo('out', 0, 0.85)
     tweenTo('ringAlpha', 1, 0.6, 0.3)
     tweenTo('printerAlpha', 1, 0.15)
-    tweenTo('motorsAlpha', 0, 0.25)
     state.camGoal = 'ring'
   }
 
@@ -1052,52 +1065,56 @@ export async function createProcessStage(canvas, opts = {}) {
       }
     }
 
-    if (next === 'printer') {
-      if (prev === 'ring') {
-        beginSpinExit()
-      } else {
-        state.exit = null
-        state.out = 1
-        tweenTo('printerAlpha', 1, 0.5)
-        tweenTo('motorsAlpha', 0, 0.35)
-        tweenTo('ringAlpha', 0, 0.35)
-        state.camGoal = 'printer'
-      }
-    } else if (next === 'ring') {
-      if (prev === 'printer' || state.out > 0.01) {
+    if (next === 'ring') {
+      if (state.out > 0.01) {
         beginReturn()
       } else {
         state.exit = null
         state.out = 0
         tweenTo('ringAlpha', 1, 0.6, 0.15)
         tweenTo('printerAlpha', 1, 0.15)
-        tweenTo('motorsAlpha', 0, 0.35)
         state.camGoal = 'ring'
       }
-    } else if (next === 'motors') {
-      state.exit = null
-      if (prev === 'ring') state.out = 0
-      tweenTo('printerAlpha', 0, 0.35)
-      tweenTo('ringAlpha', 0, 0.35)
-      tweenTo('motorsAlpha', 1, 0.7, 0.25)
-      state.camGoal = 'motors'
-    } else {
-      // off: fade the stage out, leave the camera where it is
-      state.exit = null
+      // the step-02 motors leave the track and fly back up into the ring
+      tweenTo('motorsAlpha', 0, 0.9, 0.1)
+      return
+    }
+
+    // printer, motors and off share the printer's camera and the scroll track:
+    // from here on the objects move with their acts, nothing fades on a threshold
+    if (prev === 'ring' && next !== 'off') {
+      beginSpinExit()
+      return
+    }
+    state.exit = null
+    state.camGoal = 'printer'
+    if (prev === 'ring') {
+      // jumped straight past the steps: the ring fades where it is and the
+      // motors are parked on the track (off screen at this scroll)
       tweenTo('ringAlpha', 0, 0.45)
       tweenTo('printerAlpha', 0, 0.45)
-      tweenTo('motorsAlpha', 0, 0.45)
-      state.camGoal = 'hold'
+      tweenTo('motorsAlpha', 1, 0.02, 0.5)
+    } else if (state.out < 0.999 || state.printerAlpha < 0.999) {
+      // back from such a jump: the printer joins the track, off screen by now
+      state.out = 1
+      state.ringAlpha = 0
+      state.printerAlpha = 1
+      tweenTo('motorsAlpha', 1, 0.02)
     }
   }
 
   /* --------------------------------------------------------------- update */
   const clock = new THREE.Clock()
 
+  const _qFix = new THREE.Quaternion()
+  const _qTurn = new THREE.Quaternion()
+  const _eTurn = new THREE.Euler()
   function hoverPose(cfg, basis) {
     const depthWorld = cfg.depth * basis.viewH
     const planeDist = Math.max(0.3, state.camera.dist - depthWorld)
-    const pos = pointOn(basis, cfg.sx, cfg.sy, cfg.depth)
+    // on the track: below the fold before step 02, above it after
+    const shift = clamp(state.trackLive.motors, -TRACK.hideBeyond, TRACK.hideBeyond)
+    const pos = pointOn(basis, cfg.sx, cfg.sy + shift * cfg.travel, cfg.depth)
     if (!settings.reducedMotion) {
       const t = state.hoverTime
       pos
@@ -1105,7 +1122,15 @@ export async function createProcessStage(canvas, opts = {}) {
         .addScaledVector(basis.up, Math.cos(t * 0.45 + cfg.phase * 1.3) * cfg.amp[1] * basis.viewH)
         .addScaledVector(basis.dir, Math.sin(t * 0.35 + cfg.phase * 0.7) * 0.01 * basis.viewH)
     }
-    const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(cfg.rot[0], cfg.rot[1], cfg.rot[2]))
+    // rot was tuned under the old step-02 camera; turn it to read the same under
+    // the shared one, then add the arrive / leave turn
+    const preset = settings.phone ? PRINTER_PRESETS.phone : PRINTER_PRESETS.step
+    _qFix.setFromAxisAngle(UP, preset.az - HOVER_TUNED[mode()].az)
+    const quat = _qFix.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(cfg.rot[0], cfg.rot[1], cfg.rot[2])))
+    if (!settings.reducedMotion && shift !== 0) {
+      _eTurn.set(cfg.turn[0] * shift, cfg.turn[1] * shift, cfg.turn[2] * shift)
+      quat.multiply(_qTurn.setFromEuler(_eTurn))
+    }
     if (!settings.reducedMotion) {
       const wobble = new THREE.Euler(
         Math.sin(state.hoverTime * 0.4 + cfg.phase) * 0.05,
@@ -1116,7 +1141,12 @@ export async function createProcessStage(canvas, opts = {}) {
     }
     const item = motorPivots.get(cfg.node)
     const worldSize = cfg.size * basis.viewW * (planeDist / state.camera.dist)
-    return { position: pos, quaternion: quat, scale: worldSize / Math.max(0.0001, item.maxDim) }
+    return {
+      position: pos,
+      quaternion: quat,
+      scale: worldSize / Math.max(0.0001, item.maxDim),
+      gone: Math.abs(shift * cfg.travel) >= TRACK.hideBeyond - 0.05,
+    }
   }
 
   function screenRectFor(object, out) {
@@ -1166,6 +1196,15 @@ export async function createProcessStage(canvas, opts = {}) {
       if (k >= 1) startExit()
     }
     tickTurret(dt)
+    const tl = state.trackLive
+    const tr = state.track
+    if (settings.reducedMotion) {
+      tl.printer = tr.printer
+      tl.motors = tr.motors
+    } else {
+      tl.printer = ease(tl.printer, tr.printer, TRACK.smooth, dt)
+      tl.motors = ease(tl.motors, tr.motors, TRACK.smooth, dt)
+    }
     // measured speed drives the lean and the speed lines, whatever moved it
     const measured = dt > 0 ? (spin.angle - state.lastAngle) / dt : 0
     state.angVel = ease(state.angVel, measured, 18, dt)
@@ -1267,7 +1306,10 @@ export async function createProcessStage(canvas, opts = {}) {
     const goalPrinter = printerCamera()
     const printerBasis = makeBasis(goalPrinter)
     const preset = goalPrinter.preset
-    const stagePos = pointOn(printerBasis, preset.x + px * 0.5, -(preset.y || 0) + py * 0.5, 0)
+    // the printer only rides the track once its act is reached: before that the
+    // ring exit carries it in
+    const printerShift = clamp(tl.printer, 0, TRACK.hideBeyond)
+    const stagePos = pointOn(printerBasis, preset.x + px * 0.5, -(preset.y || 0) + py * 0.5 + printerShift * TRACK.printerTravel, 0)
 
     // the lean: parts tip outward on fast moves, and lag a touch in yaw
     const lean = settings.reducedMotion ? 0 : 0.2 * smooth(0.3, 4.2, speed)
@@ -1376,10 +1418,16 @@ export async function createProcessStage(canvas, opts = {}) {
           ? 0
           : Math.sin(state.time * 0.22) * 0.035 + state.pointer.liveX * 0.03
         const stageQuat = new THREE.Quaternion().setFromAxisAngle(UP, sway)
+        if (!settings.reducedMotion && printerShift > 0) {
+          const pt = TRACK.printerTurn
+          _eTurn.set(pt[0] * printerShift, pt[1] * printerShift, pt[2] * printerShift)
+          stageQuat.multiply(_qTurn.setFromEuler(_eTurn))
+        }
         printerPivot.position.copy(ringPos).lerp(stagePos, k)
         printerPivot.quaternion.copy(ringQuat).slerp(stageQuat, k)
         printerPivot.scale.setScalar(Math.max(1e-5, ringScale + (1 - ringScale) * k))
-        setAlpha(printer.pivot, state.printerAlpha * state.printerFade * (k > 0.02 ? 1 : Math.min(1, grow * 4)))
+        const printerGone = k > 0.98 && printerShift * TRACK.printerTravel >= TRACK.hideBeyond - 0.05
+        setAlpha(printer.pivot, printerGone ? 0 : state.printerAlpha * state.printerFade * (k > 0.02 ? 1 : Math.min(1, grow * 4)))
         continue
       }
 
@@ -1389,11 +1437,13 @@ export async function createProcessStage(canvas, opts = {}) {
       let pos = ringPos
       let quat = ringQuat
       let scale = ringScale
+      let gone = false
       if (cfg && mix > 0.0005) {
         const hp = hoverPose(cfg, basis)
         pos = ringPos.clone().lerp(hp.position, mix)
         quat = ringQuat.clone().slerp(hp.quaternion, mix)
         scale = ringScale + (hp.scale - ringScale) * mix
+        gone = mix > 0.999 && hp.gone
       }
       // shrink the ring away while it fades during the printer exit
       if (state.out > 0.01 && state.motorsAlpha < 0.2) {
@@ -1402,7 +1452,7 @@ export async function createProcessStage(canvas, opts = {}) {
       pivot.position.copy(pos)
       pivot.quaternion.copy(quat)
       pivot.scale.setScalar(Math.max(1e-5, scale))
-      setAlpha(pivot, (cfg ? Math.max(state.ringAlpha, state.motorsAlpha) : state.ringAlpha) * fade * Math.min(1, grow * 4))
+      setAlpha(pivot, gone ? 0 : (cfg ? Math.max(state.ringAlpha, state.motorsAlpha) : state.ringAlpha) * fade * Math.min(1, grow * 4))
     }
   }
 
@@ -1519,6 +1569,17 @@ export async function createProcessStage(canvas, opts = {}) {
       spin.next = state.time + TURRET.move + TURRET.dwellAfterHand
       return true
     },
+    setTrack(printerShift, motorsShift) {
+      const tr = state.track
+      tr.printer = Number(printerShift) || 0
+      tr.motors = Number(motorsShift) || 0
+      if (!tr.set) {
+        // first report (load / deep link): start where the page is
+        tr.set = true
+        state.trackLive.printer = tr.printer
+        state.trackLive.motors = tr.motors
+      }
+    },
     nudge(dy) {
       if (!handReady() || spin.mode === 'drag' || !dy) return
       spin.vel = clamp(spin.vel + dy * TURRET.flick, -10, 10)
@@ -1583,6 +1644,7 @@ export async function createProcessStage(canvas, opts = {}) {
         ringAlpha: state.ringAlpha,
         printerAlpha: state.printerAlpha,
         motorsAlpha: state.motorsAlpha,
+        track: { printer: +state.trackLive.printer.toFixed(3), motors: +state.trackLive.motors.toFixed(3) },
         camera: state.camera
           ? { az: state.camera.az, el: state.camera.el, dist: state.camera.dist }
           : null,

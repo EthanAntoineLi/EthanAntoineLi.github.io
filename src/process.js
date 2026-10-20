@@ -4,7 +4,8 @@
 // The arm film's chrome and act choreography, plus the 3D stage this page
 // owns: the indexing turret of parts on the hero (spin it by hand, click a
 // part to bring it round), the A1 mini that leaves it for step 01, and the
-// three motor types that hover on step 02.
+// three motor types that hover on step 02. Steps 01 and 02 ride the scroll:
+// each object moves with its own act.
 // Scene: ./process-stage.js. Balloons: ./process-hud.js. Curtain: ./film-loader.js.
 // ============================================================================
 import { createProcessStage } from './process-stage.js'
@@ -106,6 +107,7 @@ function startScene() {
       window.__printer = scene // dev/QA handle (harmless)
       window.__processStage = scene
       body.classList.add('scene-ready')
+      syncTrack()
       syncStage()
       scene.setStage(wantedStage) // honour a deep link / restored scroll position
       if (wasCurtainLifted()) scene.play() // the safety valve lifted it first
@@ -116,6 +118,17 @@ function startScene() {
     }
   })()
   return sceneTask
+}
+
+/* Where the printer's and the motors' acts sit, in viewports past the top of
+   the screen — the stage moves each object with its own act. */
+const PRINTER_ACT = ACTS.find((a) => a.stage === 'printer')
+const MOTORS_ACT = ACTS.find((a) => a.stage === 'motors')
+function syncTrack() {
+  if (!scene || !PRINTER_ACT || !MOTORS_ACT) return
+  const y = window.scrollY
+  const vh = window.innerHeight || 1
+  scene.setTrack((y - PRINTER_ACT.el.offsetTop) / vh, (y - MOTORS_ACT.el.offsetTop) / vh)
 }
 
 function syncStage() {
@@ -270,6 +283,7 @@ function measure() {
     setProgress(shown)
     body.classList.toggle('at-end', shown === ACTS.length - 1)
   }
+  syncTrack()
   syncStage()
   // scrolling on the hero flicks the turret round before the printer leaves it
   if (wantedStage === 'ring') scene?.nudge(y - lastNudgeY)
