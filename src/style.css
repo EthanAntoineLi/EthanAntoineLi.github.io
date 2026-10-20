@@ -764,6 +764,23 @@ main {
 body.stage-off .stage canvas {
   opacity: 0;
 }
+/* The turret's part balloons: a 2D layer drawn over the 3D canvas, inside the
+   stage so it rides the same velocity tilt. */
+.stage .ring-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* parts on the turret are grabbable; the canvas itself stays inert */
+html.over-part,
+html.over-part body {
+  cursor: grab;
+}
+html.is-turning,
+html.is-turning * {
+  cursor: grabbing !important;
+  user-select: none;
+}
 /* The still plate is a tight crop of the same render, so it is placed where the
    live object sits (right of the copy, upper half on phones) instead of centred. */
 .stage--static .stage-fallback {

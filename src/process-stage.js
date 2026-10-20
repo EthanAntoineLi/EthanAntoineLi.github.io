@@ -2,7 +2,12 @@
 // process-stage.js — the 3D stage for the process page.
 //
 // Three states on one canvas:
-//   ring    — five motor drive units + the A1 mini on a slowly spinning ring.
+//   ring    — the A1 mini and the five motor drive units ride an indexing
+//             turret: a tilted orbit drawn like a drawing sheet (rail, degree
+//             dial, centre lines). The turret spins up out of its hub, then
+//             steps one station at a time with real inertia — overshoot,
+//             settle, parts leaning out and leaving speed lines on the fast
+//             moves — and presents whichever part reaches the front.
 //             Everything sits in real 3D, so the front items pass in front of
 //             the ones behind.
 //   printer — the ring spins to its preset angle, the printer leaves the ring
@@ -12,13 +17,22 @@
 //
 // PUBLIC API
 //   const stage = await createProcessStage(canvas, {
-//     printerUrl, motorsUrl, reducedMotion, phone, onLoadProgress
+//     printerUrl, motorsUrl, reducedMotion, phone, onLoadProgress, onFrame
 //   })
 //   stage.ready                     model loaded + first frame drawn
+//   stage.play()                    run the turret's spin-up (call when the
+//                                   curtain lifts; until then the hub is empty)
 //   stage.setStage('ring'|'printer'|'motors'|'off')
 //                                   the ring spin + printer exit are sequenced
 //                                   internally; safe to call any time
 //   stage.setPointer(x, y)          pointer -1..1 for a little parallax
+//   stage.pick(x, y)                ring part id under a client point, or null
+//   stage.grab(x, y) / drag(x) / release()
+//                                   spin the turret by hand; release() returns
+//                                   the part id when it was a click, not a drag
+//   stage.present(id)               index the turret until that part is in front
+//   stage.nudge(dy)                 page scroll in px — a flick of the turret
+//   onFrame(hud)                    per-frame screen data for the part balloons
 //   stage.setVisible(bool)          pause drawing
 //   stage.resize()
 //   stage.dispose()
@@ -37,8 +51,21 @@ const TAU = Math.PI * 2
 const TAN_HALF = Math.tan((FOV * Math.PI) / 360)
 const UP = new THREE.Vector3(0, 1, 0)
 
-const RING_SPEED = 0.09 // rad/s — the ring drifts round very slowly
 const SPIN_RATE = 6.5 // rad/s while spinning to the preset
+
+// The turret: a spring drives the ring angle toward a target that is itself
+// eased from station to station, so each index starts smoothly and lands with
+// a small mechanical overshoot.
+const TURRET = {
+  stiffness: 42,
+  damping: 8.2, // ζ ≈ 0.63 → ~6% overshoot on a station step
+  move: 0.5, // s the target takes to travel one station
+  dwell: 2.1, // s each part is presented
+  dwellAfterHand: 4.2, // s of rest after the visitor has spun it
+  friction: 1.5, // 1/s while coasting after a flick
+  snapVel: 1.6, // rad/s below which a coasting turret picks its station
+  flick: 0.0042, // rad/s of spin per px of page scroll
+}
 
 // The printer's existing framings (az/el radians; fill = viewport share;
 // x/y = screen offset as a fraction of the viewport).
@@ -49,21 +76,34 @@ const PRINTER_PRESETS = {
 }
 
 // Ring composition: cx/cy = ring centre as a viewport fraction,
-// radius/item = world size as a fraction of the viewport width.
+// radius/item = world size as a fraction of the viewport width, present = how
+// much the part at the front station grows, pitch/roll = the dial plane's tilt.
 const RING_VIEW = {
-  desktop: { az: 0.14, el: 0.25, dist: 2.8, cx: 0.165, cy: 0.05, radius: 0.23, item: 0.205, pitch: 0.18, roll: 0.7 },
-  phone: { az: 0.12, el: 0.18, dist: 2.0, cx: 0.0, cy: 0.03, radius: 0.3, item: 0.28, pitch: 0.2, roll: 0.45 },
+  desktop: { az: 0.06, el: 0.3, dist: 2.8, fov: 38, cx: 0.215, cy: 0.07, radius: 0.19, item: 0.122, present: 1.5, pitch: 0.2, roll: 0.15 },
+  phone: { az: 0.05, el: 0.36, dist: 2.2, fov: 38, cx: 0.0, cy: 0.1, radius: 0.37, item: 0.25, present: 1.45, pitch: 0.24, roll: 0.08 },
 }
-const RING_ITEM_SCALE = { printer: 0.62 }
-// each ring item floats on its own spot instead of pinwheeling on its axis
-const RING_HOVER = {
-  yaw: [0.0, 0.16, -0.12, 0.2, -0.18, 0.1],
-  tiltX: [0.03, -0.04, 0.05, -0.02, 0.04, -0.05],
-  tiltZ: [-0.04, 0.05, -0.03, 0.06, -0.05, 0.03],
-  ampX: 0.012,
-  ampY: 0.017,
-  ampZ: 0.009,
+// per-part trim on the turret: scale, resting yaw on the platter, and the
+// extra turn it makes to show its best face while it is presented
+const RING_TRIM = {
+  printer: { scale: 0.78, yaw: 0.0, show: -0.62 },
+  'motor-J1': { scale: 1, yaw: 0.18, show: 0.55 },
+  'motor-J2': { scale: 1, yaw: -0.2, show: 0.6 },
+  'motor-J3': { scale: 0.92, yaw: 0.22, show: 0.5 },
+  'motor-J4': { scale: 0.92, yaw: -0.16, show: 0.55 },
+  'motor-J5': { scale: 0.92, yaw: 0.12, show: 0.5 },
 }
+// each ring item bobs on its own spot instead of pinwheeling on its axis
+const RING_HOVER = { ampX: 0.006, ampY: 0.01, ampZ: 0.006 }
+
+// The spin-up when the curtain lifts (seconds): the rail draws itself, the
+// dial ticks sweep in, the parts unfurl out of the hub while the turret winds
+// down from a turn and a quarter into the first station.
+const INTRO = { spin: 2.5, turns: 1.25, rail: 1.35, ticks: [0.15, 1.5], partsAt: 0.18, partStagger: 0.085, partDur: 1.15, hud: [1.9, 0.7] }
+
+// The dial is drawn in drawing-sheet ink, not lit like the parts.
+const INK = 0x101214
+const SIGNAL = 0xb23e22
+const PAPER = 0xf6f6f4
 
 // Step 02: three motor types floating in the free half of the screen.
 // sx/sy are viewport fractions from the centre, depth pushes toward the camera,
@@ -87,12 +127,151 @@ const HOVER_ITEMS = {
 }
 
 const MOTOR_NAMES = ['motor-J1', 'motor-J2', 'motor-J3', 'motor-J4', 'motor-J5']
-const RING_ORDER = ['printer', ...MOTOR_NAMES]
+// The turret steps forward (angle increasing), and the part at ring index i is
+// in front when angle ≡ -i·step — so the motors sit in reverse to be presented
+// printer, J1, J2 … J5: the order the build happened in.
+const RING_ORDER = ['printer', 'motor-J5', 'motor-J4', 'motor-J3', 'motor-J2', 'motor-J1']
 const HOVER_TYPES = new Set(['motor-J1', 'motor-J2', 'motor-J3'])
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3)
+const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4)
+const easeOutBack = (t) => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(t - 1, 2)
+const smooth = (a, b, v) => {
+  const t = clamp((v - a) / (b - a), 0, 1)
+  return t * t * (3 - 2 * t)
+}
 const ease = (current, target, rate, dt) => current + (target - current) * (1 - Math.exp(-rate * dt))
+const wrapPi = (a) => a - TAU * Math.round(a / TAU)
+
+// ------------------------------------------------------------ dial drawing
+class RingCurve extends THREE.Curve {
+  getPoint(t, target = new THREE.Vector3()) {
+    const a = t * TAU
+    return target.set(Math.sin(a), 0, Math.cos(a))
+  }
+}
+
+const RAIL_SEGMENTS = 384
+const RAIL_SIDES = 6
+const TICKS = 120
+
+function inkMaterial(color, opacity) {
+  return new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    toneMapped: false,
+    fog: true,
+  })
+}
+
+/** Long-dash / short-dash centre line along one axis of the dial plane. */
+function chainLine(axis, from, to, out) {
+  const pattern = [0.15, 0.035, 0.022, 0.035] // dash, gap, dot, gap
+  let t = from
+  let k = 0
+  while (t < to) {
+    const len = pattern[k % 4]
+    const end = Math.min(to, t + len)
+    if (k % 2 === 0) {
+      if (axis === 'x') out.push(t, 0, 0, end, 0, 0)
+      else out.push(0, 0, t, 0, 0, end)
+    }
+    t = end
+    k++
+  }
+}
+
+// Speed lines: three lanes of thin ribbon that trail each part along the rail
+// while the turret moves fast. Built once; the vertex shader bends them onto
+// the arc behind the part from a handful of uniforms, so no per-frame buffers.
+const TRAIL_SEGMENTS = 56
+function makeTrailGeometry() {
+  const lanes = [-1, 0, 1]
+  const count = lanes.length * (TRAIL_SEGMENTS + 1) * 2
+  const aU = new Float32Array(count)
+  const aSide = new Float32Array(count)
+  const aLane = new Float32Array(count)
+  const index = []
+  let v = 0
+  for (const lane of lanes) {
+    const base = v
+    for (let s = 0; s <= TRAIL_SEGMENTS; s++) {
+      for (const side of [-1, 1]) {
+        aU[v] = s / TRAIL_SEGMENTS
+        aSide[v] = side
+        aLane[v] = lane
+        v++
+      }
+    }
+    for (let s = 0; s < TRAIL_SEGMENTS; s++) {
+      const a = base + s * 2
+      index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2)
+    }
+  }
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3))
+  geo.setAttribute('aU', new THREE.BufferAttribute(aU, 1))
+  geo.setAttribute('aSide', new THREE.BufferAttribute(aSide, 1))
+  geo.setAttribute('aLane', new THREE.BufferAttribute(aLane, 1))
+  geo.setIndex(index)
+  return geo
+}
+
+function makeTrailMaterial() {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    uniforms: {
+      uAngle: { value: 0 },
+      uLen: { value: 0 },
+      uRadius: { value: 1 },
+      uLift: { value: 0 },
+      uGap: { value: 0.05 },
+      uWidth: { value: 0.003 },
+      uAlpha: { value: 0 },
+      // already in display space: the shader writes it straight out
+      uColor: { value: new THREE.Vector3(0.063, 0.071, 0.078) },
+    },
+    vertexShader: /* glsl */ `
+      attribute float aU;
+      attribute float aSide;
+      attribute float aLane;
+      uniform float uAngle;
+      uniform float uLen;
+      uniform float uRadius;
+      uniform float uLift;
+      uniform float uGap;
+      uniform float uWidth;
+      varying float vU;
+      varying float vLane;
+      void main() {
+        // the outer lanes are shorter, so the wake tapers like a brush stroke
+        float lane = abs(aLane);
+        float a = uAngle - uLen * aU * (1.0 - 0.28 * lane);
+        float y = uLift + aLane * uGap + aSide * uWidth * (1.0 - 0.6 * aU);
+        vec3 p = vec3(sin(a) * uRadius, y, cos(a) * uRadius);
+        vU = aU;
+        vLane = aLane;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uColor;
+      uniform float uAlpha;
+      varying float vU;
+      varying float vLane;
+      void main() {
+        float a = pow(1.0 - vU, 0.85) * smoothstep(0.0, 0.05, vU) * (1.0 - 0.25 * abs(vLane));
+        gl_FragColor = vec4(uColor, a * uAlpha);
+      }
+    `,
+  })
+}
 
 export async function createProcessStage(canvas, opts = {}) {
   const settings = {
@@ -101,6 +280,7 @@ export async function createProcessStage(canvas, opts = {}) {
     reducedMotion: opts.reducedMotion === true,
     phone: opts.phone === true,
     onLoadProgress: typeof opts.onLoadProgress === 'function' ? opts.onLoadProgress : null,
+    onFrame: typeof opts.onFrame === 'function' ? opts.onFrame : null,
   }
   if (!settings.printerUrl || !settings.motorsUrl) throw new Error('createProcessStage: model urls required')
   const mode = () => (settings.phone ? 'phone' : 'desktop')
@@ -123,7 +303,23 @@ export async function createProcessStage(canvas, opts = {}) {
     out: 0,
     time: 0,
     hoverTime: 0,
-    itemSpin: new Array(6).fill(0),
+    // the spin-up: held at 0 until play(), done once it has run its course
+    intro: { t: 0, playing: false, done: settings.reducedMotion },
+    // turret physics: angle/vel are the ring; target is where the spring pulls
+    spin: {
+      angle: 0,
+      vel: 0,
+      target: 0,
+      from: 0,
+      to: 0,
+      moveT: 1,
+      mode: 'index', // 'index' | 'drag' | 'free'
+      next: 0, // state.time of the next automatic index
+      drag: null,
+    },
+    angVel: 0, // measured ring speed, whatever drove it (spring, hand, exit)
+    lastAngle: 0,
+    present: new Array(6).fill(0),
     itemFade: new Array(6).fill(1),
     printerFade: 1,
     textRects: [],
@@ -134,6 +330,25 @@ export async function createProcessStage(canvas, opts = {}) {
     observers: [],
   }
   let pendingStage = null
+  // turret bookkeeping and per-frame scratch (declared before the first pose)
+  const STEP = TAU / RING_ORDER.length
+  const spin = state.spin
+  const nearestStation = (angle) => Math.round(angle / STEP) * STEP
+  /** Ring index of the part at the front station for a ring angle. */
+  const frontIndex = (angle) => ((-Math.round(angle / STEP) % RING_ORDER.length) + RING_ORDER.length) % RING_ORDER.length
+  const _dialEuler = new THREE.Euler(0, 0, 0, 'ZYX')
+  const _dialQuat = new THREE.Quaternion()
+  const _halfQuat = new THREE.Quaternion()
+  const _q = new THREE.Quaternion()
+  const _qLean = new THREE.Quaternion()
+  const _qYaw = new THREE.Quaternion()
+  const _euler = new THREE.Euler()
+  const _v = new THREE.Vector3()
+  const _tangent = new THREE.Vector3()
+  const _proj = new THREE.Vector3()
+  const IDENTITY = new THREE.Quaternion()
+  const hudFrame = { alpha: 0, time: 0, front: null, settled: 0, items: [] }
+
   const _scratchRect = { l: 0, r: 0, t: 0, b: 0 }
   const _box = new THREE.Box3()
   const _corner = new THREE.Vector3()
@@ -160,6 +375,9 @@ export async function createProcessStage(canvas, opts = {}) {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
     scene = new THREE.Scene()
+    // paper-coloured depth haze: the far side of the turret recedes into the
+    // sheet. Pushed out of reach whenever the ring is not on stage.
+    scene.fog = new THREE.Fog(PAPER, 100, 101)
     camera = new THREE.PerspectiveCamera(FOV, 1, NEAR, FAR)
     const pmrem = new THREE.PMREMGenerator(renderer)
     envRT = pmrem.fromScene(new RoomEnvironment(), 0.04)
@@ -240,7 +458,7 @@ export async function createProcessStage(canvas, opts = {}) {
     const target = new THREE.Vector3(cam.tx || 0, cam.ty || 0, cam.tz || 0)
     const right = new THREE.Vector3().crossVectors(UP, dir).normalize()
     const up = new THREE.Vector3().crossVectors(dir, right).normalize()
-    const viewH = 2 * cam.dist * TAN_HALF
+    const viewH = 2 * cam.dist * Math.tan(((cam.fov || FOV) * Math.PI) / 360)
     const viewW = viewH * (state.width / state.height)
     return {
       cam,
@@ -293,11 +511,13 @@ export async function createProcessStage(canvas, opts = {}) {
   /* ------------------------------------------------------------- cameras */
   function ringCamera() {
     const ring = RING_VIEW[mode()]
-    return { az: ring.az, el: ring.el, dist: ring.dist, tx: 0, ty: 0, tz: 0 }
+    // a slow drift of the eye keeps parallax alive on the dial
+    const drift = settings.reducedMotion ? 0 : Math.sin(state.time * 0.11) * 0.045
+    return { az: ring.az + drift, el: ring.el, dist: ring.dist, fov: ring.fov, tx: 0, ty: 0, tz: 0 }
   }
   function hoverCamera() {
     const hv = HOVER_VIEW[mode()]
-    return { az: hv.az, el: hv.el, dist: hv.dist, tx: 0, ty: hv.ty, tz: 0 }
+    return { az: hv.az, el: hv.el, dist: hv.dist, fov: FOV, tx: 0, ty: hv.ty, tz: 0 }
   }
   function printerCamera() {
     const preset = settings.phone ? PRINTER_PRESETS.phone : PRINTER_PRESETS.step
@@ -305,7 +525,7 @@ export async function createProcessStage(canvas, opts = {}) {
     const size = printer.size
     const distY = size.y / 2 / (TAN_HALF * preset.fillY)
     const distX = size.x / 2 / (TAN_HALF * aspect * preset.fillX)
-    return { az: preset.az, el: preset.el, dist: Math.max(distY, distX, 0.4), tx: 0, ty: 0, tz: 0, preset }
+    return { az: preset.az, el: preset.el, dist: Math.max(distY, distX, 0.4), fov: FOV, tx: 0, ty: 0, tz: 0, preset }
   }
   function goalCamera() {
     if (state.camGoal === 'printer') return printerCamera()
@@ -339,6 +559,82 @@ export async function createProcessStage(canvas, opts = {}) {
   const motorPivots = new Map()
   const ringItems = []
   let printer = null
+
+  /* ------------------------------------------------------------ the dial */
+  // Everything here is built at unit radius in the dial plane (XZ); the group
+  // carries the ring centre, the tilt and the radius each frame.
+  const dial = new THREE.Group()
+  dial.name = 'dial'
+  scene.add(dial)
+  const dialParts = (() => {
+    const rail = new THREE.Mesh(
+      new THREE.TubeGeometry(new RingCurve(), RAIL_SEGMENTS, 0.0032, RAIL_SIDES, true),
+      inkMaterial(INK, 0.5),
+    )
+    rail.userData.base = 0.5
+    dial.add(rail)
+
+    // degree dial outside the rail: every 3°, longer every 15° and 30°
+    const tickGeo = new THREE.BoxGeometry(1, 1, 1)
+    const ticks = new THREE.InstancedMesh(tickGeo, inkMaterial(INK, 0.34), TICKS)
+    ticks.userData.base = 0.34
+    const m = new THREE.Matrix4()
+    const q = new THREE.Quaternion()
+    const p = new THREE.Vector3()
+    const sc = new THREE.Vector3()
+    for (let i = 0; i < TICKS; i++) {
+      const a = (i / TICKS) * TAU
+      const len = i % 10 === 0 ? 0.085 : i % 5 === 0 ? 0.05 : 0.026
+      const r0 = 1.075
+      q.setFromAxisAngle(UP, a)
+      p.set(Math.sin(a) * (r0 + len / 2), 0, Math.cos(a) * (r0 + len / 2))
+      sc.set(i % 10 === 0 ? 0.0062 : 0.0042, 0.0042, len)
+      ticks.setMatrixAt(i, m.compose(p, q, sc))
+    }
+    ticks.instanceMatrix.needsUpdate = true
+    ticks.frustumCulled = false
+    dial.add(ticks)
+
+    // centre lines and a dashed pitch circle, in hairline
+    const chain = []
+    chainLine('x', -1.3, 1.3, chain)
+    chainLine('z', -1.3, 1.3, chain)
+    const dashes = []
+    const DASHES = 96
+    for (let i = 0; i < DASHES; i++) {
+      const a0 = (i / DASHES) * TAU
+      const a1 = a0 + (TAU / DASHES) * 0.55
+      dashes.push(Math.sin(a0) * 0.64, 0, Math.cos(a0) * 0.64, Math.sin(a1) * 0.64, 0, Math.cos(a1) * 0.64)
+    }
+    const lineGeo = new THREE.BufferGeometry()
+    lineGeo.setAttribute('position', new THREE.Float32BufferAttribute([...chain, ...dashes], 3))
+    const lines = new THREE.LineSegments(
+      lineGeo,
+      new THREE.LineBasicMaterial({ color: INK, transparent: true, opacity: 0.32, depthWrite: false, toneMapped: false, fog: true }),
+    )
+    lines.userData.base = 0.32
+    dial.add(lines)
+
+    // the presentation station: a signal-red index mark at the front of the dial
+    const mark = new THREE.Mesh(new THREE.ConeGeometry(0.026, 0.07, 3), inkMaterial(SIGNAL, 0.95))
+    mark.geometry.rotateX(-Math.PI / 2) // point it at the hub
+    mark.position.set(0, 0, 1.235)
+    mark.userData.base = 0.95
+    dial.add(mark)
+
+    // the lock-in ripple: a ring that spreads across the platter under a part
+    // the moment it lands on the station
+    const ripple = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 4, 128), inkMaterial(INK, 0))
+    ripple.geometry.rotateX(Math.PI / 2)
+    ripple.position.set(0, 0, 1)
+    ripple.visible = false
+    dial.add(ripple)
+
+    return { rail, ticks, lines, mark, ripple }
+  })()
+  const rippleState = { t: 9, armed: false }
+  const railIndexCount = dialParts.rail.geometry.index.count
+  const trailGeo = makeTrailGeometry()
 
   function collectMaterials(root) {
     const set = new Set()
@@ -578,7 +874,11 @@ export async function createProcessStage(canvas, opts = {}) {
       const id = RING_ORDER[i]
       const item = id === 'printer' ? printer : motorPivots.get(id)
       if (!item) continue
-      ringItems.push({ id, item, index: i })
+      const trail = new THREE.Mesh(trailGeo, makeTrailMaterial())
+      trail.frustumCulled = false
+      trail.renderOrder = 2
+      dial.add(trail)
+      ringItems.push({ id, item, index: i, trail, hud: { id, x: 0, y: 0, r: 0, depth: 0, present: 0, alpha: 0 } })
     }
 
     state.loaded = true
@@ -625,28 +925,99 @@ export async function createProcessStage(canvas, opts = {}) {
     }
   }
 
+  /* -------------------------------------------------------------- turret */
+  /** Ease the spring's target to an absolute ring angle. */
+  function indexTo(angle, dwell = TURRET.dwell) {
+    spin.mode = 'index'
+    spin.from = spin.target
+    spin.to = angle
+    spin.moveT = 0
+    spin.next = state.time + TURRET.move + dwell
+  }
+
+  function settleSpin(angle) {
+    spin.angle = spin.target = spin.from = spin.to = angle
+    spin.vel = 0
+    spin.moveT = 1
+    spin.mode = 'index'
+    state.lastAngle = angle
+  }
+
+  function finishIntro() {
+    if (state.intro.done) return
+    state.intro.done = true
+    state.intro.playing = false
+    settleSpin(0)
+    spin.next = state.time + TURRET.dwell
+  }
+
+  function tickTurret(dt) {
+    if (state.exit) return
+    if (!state.intro.done) {
+      const it = state.intro
+      if (it.playing) it.t += dt
+      const k = clamp(it.t / INTRO.spin, 0, 1)
+      spin.angle = -TAU * INTRO.turns * (1 - easeOutQuart(k))
+      if (it.t >= INTRO.spin + 0.05) finishIntro()
+      return
+    }
+    if (settings.reducedMotion) return
+    const active = state.stage === 'ring' && state.out < 0.02
+
+    if (spin.mode === 'drag') return // the pointer owns the angle
+    if (spin.mode === 'free') {
+      spin.vel *= Math.exp(-TURRET.friction * dt)
+      spin.angle += spin.vel * dt
+      if (Math.abs(spin.vel) < TURRET.snapVel) {
+        // carry on to the next station in the direction of travel
+        const dir = Math.sign(spin.vel) || 1
+        const s = Math.floor(spin.angle / STEP + (dir > 0 ? 1 : 0)) * STEP
+        spin.target = spin.angle
+        indexTo(s, TURRET.dwellAfterHand)
+        spin.moveT = 0.45 // the turret is already moving: skip the slow start
+      }
+      return
+    }
+
+    // index mode: the target travels, the spring follows
+    if (spin.moveT < 1) {
+      spin.moveT = Math.min(1, spin.moveT + dt / TURRET.move)
+      spin.target = spin.from + (spin.to - spin.from) * easeInOut(spin.moveT)
+    }
+    const steps = Math.max(1, Math.ceil(dt / (1 / 120)))
+    const h = dt / steps
+    for (let i = 0; i < steps; i++) {
+      const acc = TURRET.stiffness * (spin.target - spin.angle) - TURRET.damping * spin.vel
+      spin.vel += acc * h
+      spin.angle += spin.vel * h
+    }
+    if (active && spin.moveT >= 1 && state.time >= spin.next) {
+      indexTo(nearestStation(spin.to) + STEP)
+    }
+  }
+
   /* ------------------------------------------------------- stage changes */
-  const presetAngle = () => Math.round(state.ringAngle / TAU) * TAU
+  const presetAngle = () => Math.round(spin.angle / TAU) * TAU
 
   function beginSpinExit() {
-    const mod = ((state.ringAngle % TAU) + TAU) % TAU
+    const mod = ((spin.angle % TAU) + TAU) % TAU
     const forward = (TAU - mod) % TAU
     const aligned = forward < 0.04 || forward > TAU - 0.04
     if (aligned || settings.reducedMotion) {
-      state.ringAngle = presetAngle()
+      settleSpin(presetAngle())
       startExit()
       return
     }
     const delta = TAU + forward // at least one full circle, then the preset
     const dur = Math.max(0.9, delta / SPIN_RATE)
-    state.exit = { t: 0, dur, from: state.ringAngle, delta }
+    state.exit = { t: 0, dur, from: spin.angle, delta }
     state.camGoal = 'ring'
     tweenTo('ringAlpha', 1, 0.2)
   }
 
   function startExit() {
     state.exit = null
-    state.ringAngle = presetAngle()
+    settleSpin(presetAngle())
     tweenTo('out', 1, 0.62, 0.06)
     tweenTo('ringAlpha', 0, 0.22)
     tweenTo('printerAlpha', 1, 0.12)
@@ -656,7 +1027,8 @@ export async function createProcessStage(canvas, opts = {}) {
 
   function beginReturn() {
     state.exit = null
-    state.ringAngle = presetAngle()
+    settleSpin(presetAngle())
+    spin.next = state.time + 0.85 + TURRET.dwell
     tweenTo('out', 0, 0.85)
     tweenTo('ringAlpha', 1, 0.6, 0.3)
     tweenTo('printerAlpha', 1, 0.15)
@@ -669,6 +1041,16 @@ export async function createProcessStage(canvas, opts = {}) {
     if (next === prev) return
     state.appliedStage = next
     state.stage = next
+    // a deep link or a fast scroll past the hero skips the spin-up
+    if (next !== 'ring') {
+      finishIntro()
+      if (spin.mode !== 'index') {
+        spin.drag = null
+        spin.vel = 0
+        spin.target = spin.angle
+        spin.mode = 'index'
+      }
+    }
 
     if (next === 'printer') {
       if (prev === 'ring') {
@@ -780,15 +1162,15 @@ export async function createProcessStage(canvas, opts = {}) {
       const ex = state.exit
       ex.t += dt
       const k = clamp(ex.t / ex.dur, 0, 1)
-      state.ringAngle = ex.from + ex.delta * easeInOut(k)
+      spin.angle = ex.from + ex.delta * easeInOut(k)
       if (k >= 1) startExit()
     }
-
-    // idle spin while the ring is on stage and the printer is still in it
-    if (state.stage === 'ring' && !state.exit && state.out < 0.02 && !settings.reducedMotion) {
-      state.ringAngle += RING_SPEED * dt
-    }
-    state.ringAngle %= TAU * 1000
+    tickTurret(dt)
+    // measured speed drives the lean and the speed lines, whatever moved it
+    const measured = dt > 0 ? (spin.angle - state.lastAngle) / dt : 0
+    state.angVel = ease(state.angVel, measured, 18, dt)
+    state.lastAngle = spin.angle
+    const speed = Math.abs(state.angVel)
 
     tickTweens(dt)
 
@@ -799,12 +1181,18 @@ export async function createProcessStage(canvas, opts = {}) {
       state.camera.az = ease(state.camera.az, wantCam.az, rate, dt)
       state.camera.el = ease(state.camera.el, wantCam.el, rate, dt)
       state.camera.dist = ease(state.camera.dist, wantCam.dist, rate, dt)
+      state.camera.fov = ease(state.camera.fov || FOV, wantCam.fov || FOV, rate, dt)
       state.camera.tx = ease(state.camera.tx, wantCam.tx, rate, dt)
       state.camera.ty = ease(state.camera.ty, wantCam.ty, rate, dt)
+    }
+    if (Math.abs(camera.fov - state.camera.fov) > 1e-4) {
+      camera.fov = state.camera.fov
+      camera.updateProjectionMatrix()
     }
     const basis = makeBasis(state.camera)
     camera.position.copy(basis.cameraPos)
     camera.lookAt(basis.target)
+    camera.updateMatrixWorld()
 
     // parallax nudge shared by everything
     const px = state.pointer.liveX * 0.012
@@ -814,11 +1202,64 @@ export async function createProcessStage(canvas, opts = {}) {
     const ringCenter = pointOn(basis, rv.cx + px, rv.cy + py, 0)
     const ringRadius = rv.radius * basis.viewW
     const ringItemWorld = rv.item * basis.viewW
-    const step = TAU / RING_ORDER.length
+    const intro = state.intro
+    const introT = intro.done ? 99 : intro.t
+
+    // the dial plane tilts toward the pointer like a gimbal
+    const breathe = settings.reducedMotion ? 0 : Math.sin(state.time * 0.23) * 0.018
+    _dialEuler.set(rv.pitch + breathe + state.pointer.liveY * 0.07, 0, rv.roll - state.pointer.liveX * 0.06, 'ZYX')
+    _dialQuat.setFromEuler(_dialEuler)
+    // parts ride the platter but only take half its tilt, so they stay upright
+    _halfQuat.copy(IDENTITY).slerp(_dialQuat, 0.5)
+
+    const ringVis = state.ringAlpha
+    const collapse = 0.82 + 0.18 * ringVis
+    dial.position.copy(ringCenter)
+    dial.quaternion.copy(_dialQuat)
+    dial.scale.setScalar(ringRadius * collapse)
+    dial.visible = ringVis > 0.004
+
+    // dial drawing: rail draws itself, ticks sweep in, lines and mark follow
+    const railK = intro.done ? 1 : easeOutCubic(clamp(introT / INTRO.rail, 0, 1))
+    const tickK = intro.done ? 1 : clamp((introT - INTRO.ticks[0]) / (INTRO.ticks[1] - INTRO.ticks[0]), 0, 1)
+    const segs = Math.floor(railK * RAIL_SEGMENTS)
+    dialParts.rail.geometry.setDrawRange(0, Math.min(railIndexCount, segs * RAIL_SIDES * 6))
+    dialParts.ticks.count = Math.floor(easeOutCubic(tickK) * TICKS)
+    const lineK = intro.done ? 1 : smooth(0.5, 1.6, introT)
+    const markK = intro.done ? 1 : smooth(1.4, 2.0, introT)
+    dialParts.rail.material.opacity = dialParts.rail.userData.base * ringVis
+    dialParts.ticks.material.opacity = dialParts.ticks.userData.base * ringVis
+    dialParts.lines.material.opacity = dialParts.lines.userData.base * ringVis * lineK
+    // the index mark shows between parts; a part parked on it covers it
+    const parked = Math.max(...state.present)
+    dialParts.mark.material.opacity = dialParts.mark.userData.base * ringVis * markK * (1 - smooth(0.5, 0.95, parked))
+    dialParts.ticks.visible = dialParts.ticks.count > 0
+
+    // lock-in: arm on a real move, fire when the turret comes to rest on a station
+    if (speed > 1.2) rippleState.armed = true
+    if (rippleState.armed && speed < 0.35 && intro.done && !state.exit) {
+      rippleState.armed = false
+      rippleState.t = 0
+    }
+    rippleState.t += dt
+    const rk = clamp(rippleState.t / 1.1, 0, 1)
+    const ripple = dialParts.ripple
+    ripple.visible = rk < 1 && !settings.reducedMotion && ringVis > 0.05
+    if (ripple.visible) {
+      ripple.scale.setScalar(0.06 + 0.34 * easeOutCubic(rk))
+      ripple.material.opacity = 0.55 * (1 - rk) * (1 - rk) * ringVis
+    }
+
+    // paper haze over the far half of the turret (off once the ring leaves)
+    const camToRing = camera.position.distanceTo(ringCenter)
+    const haze = ringVis * (1 - state.out)
+    scene.fog.near = haze > 0.01 ? camToRing - ringRadius * 0.15 : 100
+    scene.fog.far = haze > 0.01 ? camToRing + ringRadius * (2.6 + 6 * (1 - haze)) : 101
 
     if (shadowCatcher) {
       // the soft shadow is a hero-ring device; step 02 floats free of it
-      shadowCatcher.material.opacity = 0.09 * state.ringAlpha
+      shadowCatcher.position.y = ringCenter.y - ringRadius * 0.62
+      shadowCatcher.material.opacity = 0.1 * state.ringAlpha
       shadowCatcher.visible = !settings.phone && shadowCatcher.material.opacity > 0.004
     }
 
@@ -828,47 +1269,64 @@ export async function createProcessStage(canvas, opts = {}) {
     const preset = goalPrinter.preset
     const stagePos = pointOn(printerBasis, preset.x + px * 0.5, -(preset.y || 0) + py * 0.5, 0)
 
-    const vPitch = Math.sin(rv.pitch || 0)
-    const cPitch = Math.cos(rv.pitch || 0)
-    const sRoll = Math.sin(rv.roll || 0)
-    const cRoll = Math.cos(rv.roll || 0)
+    // the lean: parts tip outward on fast moves, and lag a touch in yaw
+    const lean = settings.reducedMotion ? 0 : 0.2 * smooth(0.3, 4.2, speed)
+    const lag = settings.reducedMotion ? 0 : clamp(-state.angVel * 0.045, -0.2, 0.2)
+    const trailLen = clamp(state.angVel * 0.4, -1.4, 1.4)
+    const trailAlpha = settings.reducedMotion ? 0 : smooth(0.45, 2.2, speed) * ringVis * (1 - state.out)
+
+    hudFrame.alpha = intro.done ? 1 : smooth(INTRO.hud[0], INTRO.hud[0] + INTRO.hud[1], introT)
+    hudFrame.alpha *= ringVis * (1 - smooth(0.02, 0.3, state.out))
+    hudFrame.time = state.time
+    hudFrame.front = RING_ORDER[frontIndex(spin.angle)]
+    hudFrame.settled = intro.done ? 1 - smooth(0.25, 1.1, speed) : 0
+    hudFrame.items.length = 0
+
     for (const ringItem of ringItems) {
-      const { id, item, index } = ringItem
-      const angle = state.ringAngle + index * step
-      const ringX = Math.sin(angle) * ringRadius
-      const ringZ0 = Math.cos(angle) * ringRadius
-      // pitch around X, then roll around Z so the right side sits lower
-      const pitchY = -ringZ0 * vPitch
-      const pitchZ = ringZ0 * cPitch
-      const tiltedX = ringX * cRoll - pitchY * sRoll
-      const tiltedY = ringX * sRoll + pitchY * cRoll
-      const ringPos = ringCenter.clone().add(new THREE.Vector3(tiltedX, tiltedY, pitchZ))
+      const { id, item, index, trail } = ringItem
+      const trim = RING_TRIM[id] || { scale: 1, yaw: 0, show: 0 }
+      const angle = spin.angle + index * STEP
+      const rel = wrapPi(angle) // 0 at the front station
+      const order = (index === 0 ? 0 : RING_ORDER.length - index) // presentation order
+
+      // spin-up: each part unfurls out of the hub on its own beat
+      const partK = intro.done ? 1 : clamp((introT - INTRO.partsAt - order * INTRO.partStagger) / INTRO.partDur, 0, 1)
+      const reach = intro.done ? 1 : easeOutCubic(partK)
+      const grow = intro.done ? 1 : Math.max(0, easeOutBack(partK))
+
+      // the part at the front station is presented: bigger, lifted, turned
+      const presentTarget = 1 - smooth(0.0, STEP * 0.62, Math.abs(rel))
+      state.present[index] = settings.reducedMotion ? presentTarget : ease(state.present[index], presentTarget, 9, dt)
+      const pres = state.present[index] * (intro.done ? 1 : smooth(1.2, 2.4, introT))
+
+      const r = ringRadius * collapse * reach
+      _v.set(Math.sin(angle) * r, ringRadius * 0.05 * pres, Math.cos(angle) * r).applyQuaternion(_dialQuat)
+      const ringPos = _v.clone().add(ringCenter)
       // hover drift: every item bobs gently around its orbit position
       if (!settings.reducedMotion) {
         const phase = index * 1.73 + 0.4
-        const heavy = id === 'printer' ? 0.55 : 1
+        const heavy = (id === 'printer' ? 0.55 : 1) * (1 - 0.6 * pres)
         ringPos
           .addScaledVector(basis.right, Math.sin(state.hoverTime * 0.5 + phase) * RING_HOVER.ampX * basis.viewW * heavy)
           .addScaledVector(basis.up, Math.cos(state.hoverTime * 0.37 + phase * 1.3) * RING_HOVER.ampY * basis.viewH * heavy)
-          .addScaledVector(basis.dir, Math.sin(state.hoverTime * 0.29 + phase * 0.7) * RING_HOVER.ampZ * basis.viewH)
+          .addScaledVector(basis.dir, Math.sin(state.hoverTime * 0.29 + phase * 0.7) * RING_HOVER.ampZ * basis.viewH * heavy)
       }
-      const wobble = settings.reducedMotion
-        ? { x: 0, y: 0, z: 0 }
-        : {
-            x: Math.sin(state.hoverTime * 0.33 + index * 0.9) * 0.032,
-            y: Math.sin(state.hoverTime * 0.27 + index * 1.6) * 0.042,
-            z: Math.cos(state.hoverTime * 0.31 + index * 1.2) * 0.028,
-          }
-      const ringQuat = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(
-          RING_HOVER.tiltX[index] + wobble.x,
-          angle + RING_HOVER.yaw[index] + wobble.y,
-          RING_HOVER.tiltZ[index] + wobble.z,
-        ),
+      const wobble = settings.reducedMotion ? 0 : 1
+      // orientation: platter tilt → lean outward about the tangent → yaw
+      _tangent.set(Math.cos(angle), 0, -Math.sin(angle))
+      _qLean.setFromAxisAngle(_tangent, lean)
+      const swivel = settings.reducedMotion ? 0 : Math.sin(state.time * 0.55 + index) * 0.12 * pres
+      _qYaw.setFromAxisAngle(UP, angle + trim.yaw + (trim.show + swivel) * pres + lag)
+      _euler.set(
+        Math.sin(state.hoverTime * 0.33 + index * 0.9) * 0.03 * wobble,
+        0,
+        Math.cos(state.hoverTime * 0.31 + index * 1.2) * 0.026 * wobble,
       )
-      const ringScale = (ringItemWorld * (RING_ITEM_SCALE[id] || 1)) / item.maxDim
+      const ringQuat = _halfQuat.clone().multiply(_qLean).multiply(_qYaw).multiply(_q.setFromEuler(_euler))
+      const ringScale = ((ringItemWorld * trim.scale) / item.maxDim) * (1 + (rv.present - 1) * pres) * grow
 
-      const screenRect = screenRectFor(id === 'printer' ? printerPivot : item.pivot, _scratchRect)
+      const target = id === 'printer' ? printerPivot : item.pivot
+      const screenRect = screenRectFor(target, _scratchRect)
       item.debugRect = screenRect ? [Math.round(screenRect.l), Math.round(screenRect.t), Math.round(screenRect.r), Math.round(screenRect.b)] : null
       let fadeTarget = 1
       if (state.textRects.length && screenRect) {
@@ -878,10 +1336,38 @@ export async function createProcessStage(canvas, opts = {}) {
           if (hit > 0.02) fadeTarget = 1 - 0.86 * Math.min(1, hit / 0.22)
         }
       }
+      let fade
       if (id === 'printer') {
         state.printerFade = ease(state.printerFade, fadeTarget, 7, dt)
+        fade = state.printerFade
       } else {
         state.itemFade[index] = ease(state.itemFade[index], fadeTarget, 7, dt)
+        fade = state.itemFade[index]
+      }
+
+      // speed lines behind the part, at its own height on the rail
+      const tu = trail.material.uniforms
+      tu.uAngle.value = angle
+      tu.uLen.value = trailLen
+      tu.uRadius.value = reach
+      tu.uLift.value = 0.05 * pres
+      tu.uGap.value = ((ringScale * item.maxDim) / Math.max(1e-4, ringRadius)) * 0.24
+      tu.uWidth.value = 0.0058
+      tu.uAlpha.value = trailAlpha * fade * (0.55 + 0.45 * (1 - (1 - Math.cos(rel)) / 2))
+      trail.visible = tu.uAlpha.value > 0.003
+
+      // screen data for the part balloons
+      if (screenRect) {
+        const hud = ringItem.hud
+        _proj.copy(target.position).project(camera)
+        hud.x = (_proj.x * 0.5 + 0.5) * state.width
+        hud.y = (-_proj.y * 0.5 + 0.5) * state.height
+        hud.r = 0.5 * Math.min(screenRect.r - screenRect.l, screenRect.b - screenRect.t)
+        hud.depth = (1 - Math.cos(rel)) / 2
+        hud.present = pres
+        hud.order = order
+        hud.alpha = fade * Math.min(1, grow)
+        hudFrame.items.push(hud)
       }
 
       if (id === 'printer') {
@@ -892,8 +1378,8 @@ export async function createProcessStage(canvas, opts = {}) {
         const stageQuat = new THREE.Quaternion().setFromAxisAngle(UP, sway)
         printerPivot.position.copy(ringPos).lerp(stagePos, k)
         printerPivot.quaternion.copy(ringQuat).slerp(stageQuat, k)
-        printerPivot.scale.setScalar(ringScale + (1 - ringScale) * k)
-        setAlpha(printer.pivot, state.printerAlpha * state.printerFade)
+        printerPivot.scale.setScalar(Math.max(1e-5, ringScale + (1 - ringScale) * k))
+        setAlpha(printer.pivot, state.printerAlpha * state.printerFade * (k > 0.02 ? 1 : Math.min(1, grow * 4)))
         continue
       }
 
@@ -915,8 +1401,8 @@ export async function createProcessStage(canvas, opts = {}) {
       }
       pivot.position.copy(pos)
       pivot.quaternion.copy(quat)
-      pivot.scale.setScalar(scale)
-      setAlpha(pivot, (cfg ? Math.max(state.ringAlpha, state.motorsAlpha) : state.ringAlpha) * state.itemFade[index])
+      pivot.scale.setScalar(Math.max(1e-5, scale))
+      setAlpha(pivot, (cfg ? Math.max(state.ringAlpha, state.motorsAlpha) : state.ringAlpha) * fade * Math.min(1, grow * 4))
     }
   }
 
@@ -928,12 +1414,116 @@ export async function createProcessStage(canvas, opts = {}) {
     update(dt)
     renderer.render(scene, camera)
     state.frames++
+    settings.onFrame?.(hudFrame)
   }
   renderer.setAnimationLoop(frame)
+
+  /* ------------------------------------------------------------ by hand */
+  const handReady = () => state.loaded && state.intro.done && state.stage === 'ring' && state.out < 0.02 && !state.exit && !settings.reducedMotion
+
+  function pickAt(x, y) {
+    // front-most part whose (slightly tightened) screen box holds the point
+    let best = null
+    let bestDepth = Infinity
+    for (const ri of ringItems) {
+      const r = ri.item.debugRect
+      if (!r) continue
+      const w = r[2] - r[0]
+      const h = r[3] - r[1]
+      const inset = 0.14
+      if (x < r[0] + w * inset || x > r[2] - w * inset || y < r[1] + h * inset || y > r[3] - h * inset) continue
+      if (ri.hud.depth < bestDepth) {
+        bestDepth = ri.hud.depth
+        best = ri.id
+      }
+    }
+    return best
+  }
+
+  function ringBounds() {
+    let l = Infinity
+    let t = Infinity
+    let r = -Infinity
+    let b = -Infinity
+    for (const ri of ringItems) {
+      const d = ri.item.debugRect
+      if (!d) continue
+      l = Math.min(l, d[0]); t = Math.min(t, d[1]); r = Math.max(r, d[2]); b = Math.max(b, d[3])
+    }
+    return { l, t, r, b }
+  }
 
   /* ----------------------------------------------------------------- api */
   const api = {
     ready,
+    play() {
+      if (state.intro.done || state.intro.playing) return
+      if (settings.reducedMotion) finishIntro()
+      else state.intro.playing = true
+    },
+    pick(x, y) {
+      return handReady() ? pickAt(x, y) : null
+    },
+    grab(x, y) {
+      if (!handReady()) return false
+      const b = ringBounds()
+      if (!pickAt(x, y) && (x < b.l || x > b.r || y < b.t || y > b.b)) return false
+      spin.mode = 'drag'
+      spin.drag = { x, lastX: x, lastT: performance.now(), vel: 0, moved: 0, id: pickAt(x, y) }
+      spin.vel = 0
+      return true
+    },
+    drag(x) {
+      const d = spin.drag
+      if (spin.mode !== 'drag' || !d) return
+      // a pointer sweep across the ring's radius turns it about one radian
+      const radiusPx = Math.max(60, RING_VIEW[mode()].radius * state.width)
+      const dx = x - d.lastX
+      const now = performance.now()
+      const dts = Math.max(0.001, (now - d.lastT) / 1000)
+      spin.angle += dx / radiusPx
+      d.vel = ease(d.vel, dx / radiusPx / dts, 0.5, 1) // light smoothing of the fling
+      d.moved += Math.abs(dx)
+      d.lastX = x
+      d.lastT = now
+    },
+    release() {
+      const d = spin.drag
+      if (spin.mode !== 'drag' || !d) return null
+      spin.drag = null
+      const stale = performance.now() - d.lastT > 90
+      if (d.moved < 5) {
+        // a click, not a drag: bring that part round to the front
+        spin.mode = 'index'
+        spin.target = spin.angle
+        spin.vel = 0
+        if (d.id) api.present(d.id)
+        return d.id
+      }
+      spin.vel = stale ? 0 : clamp(d.vel, -14, 14)
+      spin.mode = 'free'
+      return null
+    },
+    present(id) {
+      if (!handReady()) return false
+      const index = RING_ORDER.indexOf(id)
+      if (index < 0) return false
+      // shortest way round to the angle that puts this part at the front
+      const goal = -index * STEP
+      const target = spin.angle + wrapPi(goal - spin.angle)
+      spin.target = spin.angle
+      spin.mode = 'index'
+      spin.from = spin.angle
+      spin.to = target
+      spin.moveT = 0
+      spin.next = state.time + TURRET.move + TURRET.dwellAfterHand
+      return true
+    },
+    nudge(dy) {
+      if (!handReady() || spin.mode === 'drag' || !dy) return
+      spin.vel = clamp(spin.vel + dy * TURRET.flick, -10, 10)
+      if (spin.mode === 'index') spin.mode = 'free'
+    },
     setStage(name) {
       if (!['ring', 'printer', 'motors', 'off'].includes(name)) return false
       if (!state.loaded) {
@@ -966,6 +1556,17 @@ export async function createProcessStage(canvas, opts = {}) {
       envRT?.dispose?.()
       renderer?.dispose()
     },
+    /** QA: step the scene by fixed frames (pair with setVisible(false)). */
+    advance(seconds, fps = 60) {
+      if (!state.loaded) return
+      const n = Math.max(1, Math.round(seconds * fps))
+      for (let i = 0; i < n; i++) {
+        update(1 / fps)
+        settings.onFrame?.(hudFrame)
+      }
+      refreshTextRects()
+      renderer.render(scene, camera)
+    },
     debug() {
       return {
         loaded: state.loaded,
@@ -973,7 +1574,11 @@ export async function createProcessStage(canvas, opts = {}) {
         stage: state.stage,
         appliedStage: state.appliedStage,
         camGoal: state.camGoal,
-        ringAngle: state.ringAngle,
+        ringAngle: spin.angle,
+        spinMode: spin.mode,
+        angVel: +state.angVel.toFixed(3),
+        intro: { ...state.intro },
+        front: RING_ORDER[frontIndex(spin.angle)],
         out: state.out,
         ringAlpha: state.ringAlpha,
         printerAlpha: state.printerAlpha,

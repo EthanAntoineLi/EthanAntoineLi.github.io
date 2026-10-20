@@ -2,20 +2,33 @@
 // process.js — Sheet 01 / process page.
 //
 // The arm film's chrome and act choreography, plus the 3D stage this page
-// owns: the motor ring that spins on the hero, the A1 mini that leaves it for
-// step 01, and the three motor types that hover on step 02.
-// Scene: ./process-stage.js. Curtain: ./film-loader.js.
+// owns: the indexing turret of parts on the hero (spin it by hand, click a
+// part to bring it round), the A1 mini that leaves it for step 01, and the
+// three motor types that hover on step 02.
+// Scene: ./process-stage.js. Balloons: ./process-hud.js. Curtain: ./film-loader.js.
 // ============================================================================
 import { createProcessStage } from './process-stage.js'
+import { createRingHud } from './process-hud.js'
 import motorsUrl from './assets/process/arm-motors.glb?url'
-import { initFilmLoader, reportLoadProgress } from './film-loader.js'
+import { initFilmLoader, reportLoadProgress, wasCurtainLifted } from './film-loader.js'
 
 const PRINTER_MODEL_URL = import.meta.env.BASE_URL + 'models/printer-a1-mini.glb'
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const body = document.body
 const canvas = document.getElementById('printer-canvas')
+const hudCanvas = document.getElementById('ring-hud')
 const phone = window.matchMedia('(max-width: 820px)').matches
+
+// The turret's balloons, numbered in the order the build happened.
+const RING_PARTS = {
+  printer: { n: '01', name: 'A1 mini', spec: 'Bambu Lab · the printer' },
+  'motor-J1': { n: '02', name: 'J1 · base', spec: 'UMIR57 stepper' },
+  'motor-J2': { n: '03', name: 'J2 · shoulder', spec: 'UMIR57 stepper' },
+  'motor-J3': { n: '04', name: 'J3', spec: 'UMIR42 stepper' },
+  'motor-J4': { n: '05', name: 'J4', spec: 'UMIR42 stepper' },
+  'motor-J5': { n: '06', name: 'J5', spec: 'UMIR42 stepper' },
+}
 
 /* --------------------------------------------------------- smooth scroll */
 let lenis = null
@@ -79,12 +92,14 @@ function startScene() {
   }
   sceneTask = (async () => {
     try {
+      const hud = hudCanvas ? createRingHud(hudCanvas, { parts: RING_PARTS, reducedMotion, phone }) : null
       scene = await createProcessStage(canvas, {
         printerUrl: PRINTER_MODEL_URL,
         motorsUrl,
         reducedMotion,
         phone,
         onLoadProgress: reportLoadProgress,
+        onFrame: hud ? (frame) => hud.draw(frame) : null,
       })
       if (!scene) return null
       await scene.ready
@@ -93,6 +108,7 @@ function startScene() {
       body.classList.add('scene-ready')
       syncStage()
       scene.setStage(wantedStage) // honour a deep link / restored scroll position
+      if (wasCurtainLifted()) scene.play() // the safety valve lifted it first
       return scene
     } catch (err) {
       console.warn('[scene] unavailable, keeping still render:', err)
@@ -119,6 +135,55 @@ function syncStage() {
     wantedStage = wanted
     scene?.setStage(wanted)
   }
+}
+
+/* -------------------------------------------------------- turret by hand */
+// Mouse: drag anywhere on the ring to spin it, click a part to bring it round.
+// Touch: a tap on a part brings it round; swipes stay the page's scroll.
+let turning = false
+let lastNudgeY = window.scrollY
+function initTurretHand() {
+  if (reducedMotion) return
+  let tap = null
+  const blocked = (e) =>
+    e.target instanceof Element && Boolean(e.target.closest('a, button, input, .index-panel, .chrome'))
+
+  window.addEventListener('pointerdown', (e) => {
+    if (!scene || blocked(e)) return
+    if (e.pointerType === 'mouse') {
+      if (e.button !== 0 || !scene.grab(e.clientX, e.clientY)) return
+      turning = true
+      e.preventDefault()
+      document.documentElement.classList.add('is-turning')
+    } else {
+      tap = { x: e.clientX, y: e.clientY, t: performance.now() }
+    }
+  })
+  window.addEventListener(
+    'pointermove',
+    (e) => {
+      if (turning) scene?.drag(e.clientX)
+    },
+    { passive: true },
+  )
+  const end = (e) => {
+    if (turning) {
+      turning = false
+      scene?.release()
+      document.documentElement.classList.remove('is-turning')
+    }
+    if (tap && e?.type === 'pointerup') {
+      const near = Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 10
+      if (near && performance.now() - tap.t < 450) {
+        const id = scene?.pick(e.clientX, e.clientY)
+        if (id) scene.present(id)
+      }
+    }
+    tap = null
+  }
+  window.addEventListener('pointerup', end)
+  window.addEventListener('pointercancel', end)
+  window.addEventListener('blur', end)
 }
 
 /* --------------------------------------------------------------- ghost type */
@@ -206,6 +271,9 @@ function measure() {
     body.classList.toggle('at-end', shown === ACTS.length - 1)
   }
   syncStage()
+  // scrolling on the hero flicks the turret round before the printer leaves it
+  if (wantedStage === 'ring') scene?.nudge(y - lastNudgeY)
+  lastNudgeY = y
   // Runs last: transition state depends on the freshly updated activeAct.
   updateTransitions(y, vh)
 }
@@ -261,8 +329,13 @@ function initCursor() {
       cursor.classList.add('is-on')
 
       const target = e.target instanceof Element ? e.target.closest('a, button, [data-cursor]') : null
-      cursor.classList.toggle('is-hover', Boolean(target))
-      if (label) label.textContent = target?.dataset.cursor ? target.dataset.cursor.toUpperCase() : ''
+      // a part on the turret is a control too: drag to spin, click to bring round
+      const part = !target && (turning || scene?.pick(x, y))
+      document.documentElement.classList.toggle('over-part', Boolean(part))
+      cursor.classList.toggle('is-hover', Boolean(target || part))
+      if (label) {
+        label.textContent = part ? 'DRAG' : target?.dataset.cursor ? target.dataset.cursor.toUpperCase() : ''
+      }
     },
     { passive: true },
   )
@@ -352,10 +425,11 @@ const sceneReady = new Promise((resolve) => {
 initFilmLoader({
   reducedMotion,
   sceneReady,
-  // The stage is a static object, not a film: no entry reveal to start.
-  onLift: () => {},
+  // the turret spins up out of its hub as the curtain goes
+  onLift: () => scene?.play(),
 })
 initReveals()
+initTurretHand()
 initCursor()
 initClock()
 initFrameCounter()
