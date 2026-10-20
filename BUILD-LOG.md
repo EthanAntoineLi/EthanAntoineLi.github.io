@@ -268,3 +268,15 @@ five 100vh acts, ~171 words on the whole page (v2 had ~1,100).
 - Close-up strength on phones reduced to 0.3 (was 0.85).
 - Verified: innerWidth == clientWidth == 390, no horizontal scroll, scene-ready, 0 console
   errors; desktop 1440×900 unchanged.
+
+## 2026-10-20 — free view hand-over to presets
+
+- The Free view now hands the camera back to the page as soon as the visitor
+  scrolls out of it (in either direction): the camera eases from whatever
+  orbit/zoom they left it at back to the neighbouring slide's preset.
+- Arriving on any slide is deterministic: after free-view manipulation the
+  Scan framing matches a clean pass (az/el/distance within damping epsilon).
+- Scrolling back up into Free view resets it to its own preset, so the section
+  always starts from the same framing; idle spin restarts from there.
+- Boot/reload at the Free section no longer counts as "leaving" (direction is
+  only known after real scroll input).

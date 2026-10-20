@@ -143,6 +143,8 @@ let hideDetailCard = null
 
 let scene = null
 let activeAct = 0
+let scrollPrev = typeof window !== 'undefined' ? window.scrollY : 0
+let scrollDir = 1
 
 const canvas = document.getElementById('arm-canvas')
 const phone = window.matchMedia('(max-width: 820px)').matches
@@ -173,11 +175,25 @@ function startScene() {
   })()
 }
 
-function applyStop(i, t = 1) {
+function applyStop(i, t = 1, dir = 0) {
   const act = ACTS[i]
   if (!act || !scene) return
   try {
     if (act.stop === 'free') {
+      // Hand-over zone: once the visitor scrolls out of the act (in either
+      // direction) the camera eases back to the neighbouring preset, so every
+      // slide always arrives in the same framing no matter how they left the
+      // free view.
+      if (t > 0.72 && dir !== 0) {
+        const next = ACTS[i + 1]
+        scene.setControlMode('scroll')
+        scene.setStop('free', 1)
+        if (dir > 0 && next) {
+          const bt = Math.min(1, (t - 0.72) / 0.28)
+          scene.setStop(next.stop, bt)
+        }
+        return
+      }
       // Free view: the visitor owns orbit + zoom, the page stops steering.
       scene.setStop('free', 1)
       scene.setControlMode('free')
@@ -320,6 +336,9 @@ function updateVelocity(y) {
 function measure() {
   const y = window.scrollY
   const vh = window.innerHeight
+  const delta = y - scrollPrev
+  scrollPrev = y
+  if (Math.abs(delta) > 0.5) scrollDir = delta > 0 ? 1 : -1
 
   // Cross-fade each act's copy with the fold so two sections' text never shout
   // over each other during a transition.
@@ -353,7 +372,7 @@ function measure() {
     if (shown === 1) countSpecs()
     if (shown !== FREE_INDEX && hideDetailCard) hideDetailCard()
   }
-  applyStop(i, t)
+  applyStop(i, t, scrollDir)
   // Runs last: the stage/scan/close-up state depends on the freshly updated
   // activeAct (otherwise it is one frame behind and can sit in the wrong mode).
   updateTransitions(y, vh)
