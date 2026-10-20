@@ -42,7 +42,11 @@ const ACTS = [...document.querySelectorAll('.act')].map((el) => ({
   stop: el.dataset.stop || '',
   ghost: el.dataset.ghost || '',
   index: el.dataset.index || '',
+  // which 3D object (if any) lives behind this act, and its framing preset
+  stage: el.dataset.stage || '',
+  preset: el.dataset.preset || '',
 }))
+const PRINTER_STAGE = 'printer'
 
 let activeAct = 0
 
@@ -90,14 +94,16 @@ function startScene() {
   return sceneTask
 }
 
-// hero + step show the printer; the last act hands the page back to the arm.
+// Only the acts marked data-stage="printer" show the printer; the rest are
+// deliberately empty until their own models arrive.
 function applyAct(i) {
-  const last = ACTS.length - 1
-  const showStage = i < last
+  const act = ACTS[i]
+  if (!act) return
+  const showStage = act.stage === PRINTER_STAGE
   body.classList.toggle('stage-off', !showStage)
   if (scene) {
     scene.setVisible(showStage)
-    scene.setPreset(i <= 0 ? 'hero' : 'step')
+    scene.setPreset(act.preset === 'hero' ? 'hero' : 'step')
   }
 }
 

@@ -6,7 +6,7 @@ modules**. No framework, no backend, no runtime data. Everything ships as static
 ```
 /                → index.html                 Sheet 00, the hub
 /work/arm/       → work/arm/index.html        Sheet 01, the v6 film
-/work/arm/process/ → work/arm/process/index.html  Sheet 01 / process, step 01 (A1 mini 3D stage)
+/work/arm/process/ → work/arm/process/index.html  Sheet 01 / process, steps 01-04 (printer 3D live)
 /work/nora/      → work/nora/index.html       Sheet 02, Nora
 /work/nora/demo/ → work/nora/demo/index.html  the desk-cat demo (iframe target; ?full = full page)
 ```
@@ -62,6 +62,9 @@ personal-page/
 - Film asset URLs are absolute (`/fonts/...`, `/img/...`); the GLB URL derives from
   `import.meta.env.BASE_URL + 'models/arm-opt.glb'`.
 - The Nora sheet iframes `/work/nora/demo/` (same origin, no server, demo events only).
+- The process page owns one scene at a time: an act that should show a 3D object carries
+  `data-stage="<name>"` and `data-preset="hero|step"`, and `process.js` hides the stage on every
+  other act. Only `stage="printer"` exists today; steps 02–04 have no object yet.
 
 ## Ownership / what each file owns
 
@@ -75,7 +78,7 @@ personal-page/
 | `src/nora-cat.js` | The hub's cat canvas: layout, movement bank, pointer look, visibility pause | know about the room, the demo page or a server |
 | `src/nora-sheet.js` | Sheet 02 only: marks the demo iframe `.is-focused` from its window focus/blur events (keyboard focus lands inside the child document, where `:focus`/`:focus-within` never match) | touch anything but the demo iframe |
 | `work/arm/index.html` + `src/style.css`, `main.js`, `arm-scene.js` | The film, unchanged (v4/v6 contracts) | be reused by the hub or sheets |
-| `work/arm/process/index.html` + `src/process.js` | The process page: film chrome, act choreography, and the printer scene wiring; copy for step 01 lives in the HTML | touch the arm scene |
+| `work/arm/process/index.html` + `src/process.js` | The process page: film chrome, six acts (hero, steps 01–04, back), and the printer scene wiring; copy lives in the HTML | touch the arm scene |
 | `src/film-loader.js` | The shared loading curtain: promise-based lift on the scene's first frame, real transfer progress, safety valve | know what the scene renders |
 | `src/printer-scene.js` | The process page's A1 mini: framing presets, idle sway, pointer parallax, dispose | know the page layout |
 | `work/nora/demo/*` | The desk-cat page (copied) + embed/demo adaptations | talk to a server or read real data |

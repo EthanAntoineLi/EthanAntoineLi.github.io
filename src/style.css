@@ -888,7 +888,7 @@ body.stage-off .stage canvas {
   left: 72%;
   height: min(58vh, 640px);
 }
-.act--start .act-title {
+.act--step .act-title {
   max-width: 21ch;
 }
 .act-copy {
@@ -898,7 +898,7 @@ body.stage-off .stage canvas {
   letter-spacing: -0.012em;
   color: var(--ink-soft);
 }
-.act--start .act-bottom {
+.act--step .act-bottom {
   max-width: 64ch;
 }
 

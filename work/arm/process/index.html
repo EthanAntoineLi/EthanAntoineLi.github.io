@@ -83,7 +83,10 @@
       <ol>
         <li><a href="#top"><span class="mono">00</span>How it got made</a></li>
         <li><a href="#start"><span class="mono">01</span>How it all started</a></li>
-        <li><a href="#back"><span class="mono">02</span>Back to the arm</a></li>
+        <li><a href="#motors"><span class="mono">02</span>Motors</a></li>
+        <li><a href="#design"><span class="mono">03</span>Design</a></li>
+        <li><a href="#assemble"><span class="mono">04</span>Assemble</a></li>
+        <li><a href="#back"><span class="mono">05</span>Back to the arm</a></li>
       </ol>
       <p class="index-foot mono">ethan.li.1@outlook.com</p>
     </nav>
@@ -95,13 +98,16 @@
         <li class="on"></li>
         <li></li>
         <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
       </ol>
     </aside>
 
     <!-- ------------------------------------------------------------ main -->
     <main id="main">
       <!-- =========================================================== HERO -->
-      <section class="act act--hero" id="top" data-ghost="MAKE" data-index="1" data-ex="rise">
+      <section class="act act--hero" id="top" data-ghost="MAKE" data-index="1" data-stage="printer" data-preset="hero" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
             <p class="eyebrow mono"><span class="dot"></span>Sheet 01 · process</p>
@@ -127,7 +133,7 @@
       </section>
 
       <!-- =========================================================== START -->
-      <section class="act act--start" id="start" data-ghost="PRINT" data-index="2" data-ent="rise" data-ex="swing">
+      <section class="act act--step" id="start" data-ghost="PRINT" data-index="2" data-stage="printer" data-preset="step" data-ent="rise" data-ex="swing">
         <div class="act-inner">
           <div class="act-top">
             <p class="eyebrow mono"><span class="dot"></span>01 / How it all started</p>
@@ -149,14 +155,82 @@
         </div>
       </section>
 
+      <!-- ========================================================== MOTORS -->
+      <section class="act act--step" id="motors" data-ghost="DRIVE" data-index="3" data-ent="curtain" data-ex="swing">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>02 / Motors</p>
+            <h2 class="act-title">
+              Five motors,<br />
+              <em>two sizes.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <p class="act-copy">
+              The joints run on five steppers — two UMIR57s at the base and the shoulder,
+              three UMIR42s further out — all on one RS485 / Modbus-RTU bus. Picking them
+              was the first time the build had to match a datasheet.
+            </p>
+            <p class="act-note mono">UMIR57 ×2 · UMIR42 ×3 · RS485 / Modbus-RTU</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================== DESIGN -->
+      <section class="act act--step" id="design" data-ghost="DRAW" data-index="4" data-ent="rise" data-ex="swing">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>03 / Design</p>
+            <h2 class="act-title">
+              Six axes,<br />
+              <em>drawn in CAD.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <p class="act-copy">
+              Every part of the arm was modelled before it was made: six axes on screen,
+              five of them built. The printed parts were sized to the motors instead of
+              picked to fit a catalogue — that is what the printer made possible.
+            </p>
+            <p class="act-note mono">6 axes drawn · 5 built · CAD assembly</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== ASSEMBLE -->
+      <section class="act act--step" id="assemble" data-ghost="BUILD" data-index="5" data-ent="curtain" data-ex="swing">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>04 / Assemble</p>
+            <h2 class="act-title">
+              Five joints,<br />
+              <em>one arm.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <p class="act-copy">
+              Printed parts, motors and wiring go together into one five-axis arm, each
+              joint fitted around the parts it has to hold. What came out of this bench
+              is the machine on sheet 01.
+            </p>
+            <p class="act-note mono">printed parts · five motors · one arm</p>
+          </div>
+        </div>
+      </section>
+
       <!-- ============================================================ BACK -->
       <section class="act act--contact" id="back" data-ghost="HI" data-index="3" data-ent="dolly">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>02 / Back to the arm</p>
+            <p class="eyebrow mono"><span class="dot"></span>05 / Back to the arm</p>
           </div>
 
-          <h2 class="act-title contact-title">That’s<br />where it started.</h2>
+          <h2 class="act-title contact-title">That’s the process<br /><em>so far.</em></h2>
+
+          <p class="act-note mono">More steps go up as they are written</p>
 
           <a class="email" href="/work/arm/">← back to the arm</a>
 

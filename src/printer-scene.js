@@ -39,9 +39,9 @@ const D2R = Math.PI / 180
 // bounding box may use; x/y shift the model on screen (fraction of the viewport,
 // +x right, +y down), which is how the copy column keeps its side of the page.
 const PRESETS = {
-  hero: { az: 0.60, el: 0.10, fillX: 0.50, fillY: 0.50, x: 0.195, y: -0.01 },
-  step: { az: 0.42, el: 0.07, fillX: 0.52, fillY: 0.54, x: 0.20, y: -0.02 },
-  phone: { az: 0.55, el: 0.08, fillX: 0.66, fillY: 0.38, x: 0.0, y: -0.13 },
+  hero: { az: 1.34, el: 0.09, fillX: 0.50, fillY: 0.50, x: 0.195, y: -0.01 },
+  step: { az: 1.22, el: 0.07, fillX: 0.52, fillY: 0.54, x: 0.20, y: -0.02 },
+  phone: { az: 1.26, el: 0.08, fillX: 0.66, fillY: 0.38, x: 0.0, y: -0.13 },
 }
 
 const ease = (current, target, rate, dt) => current + (target - current) * (1 - Math.exp(-rate * dt))
