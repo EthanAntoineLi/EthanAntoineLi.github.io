@@ -713,3 +713,41 @@ sections, no horizontal overflow at 1440 / 1024 / 860 / 700 / 560 / 390, all rev
 renders every section, reduced motion static, zero console errors / failed requests; build green with
 seven entries (sheet CSS 6.7 kB raw). Evidence in `../review-v21/` (`qa-drone.json`, hero + section
 captures at 1440 and 390).
+
+## 2026-10-20 — process hero: the slow ring becomes an indexing turret
+
+Ethan: the parts turning in a circle were "more or less" right but did not hit — not visual enough, not
+fascinating enough. The old ring drifted at 0.09 rad/s (a turn every 70 s) and its tilt (roll 0.7) read
+as a loose diagonal pile; nothing showed it was a ring, and nothing ever happened.
+
+**The turret** (`src/process-stage.js`, ring state only — step 01 / 02 framings untouched)
+- **A drawn orbit.** The ring is now visible as a drawing in 3D: an ink rail (tube), a 120-tick degree
+  dial outside it, chain-line centre lines and a dashed pitch circle, a signal-red index mark at the
+  front station. Paper-coloured fog hazes the far side so the depth reads.
+- **Indexing, not drifting.** A spring (ζ ≈ 0.63) chases a target eased one station (60°) at a time:
+  each part is presented for ~2 s, then the turret steps with a small mechanical overshoot and settle.
+  Parts lean outward on fast moves, lag a touch in yaw, and trail ink speed lines along the rail; a
+  ripple spreads across the platter when a part locks onto the station.
+- **Presentation.** The part at the front grows ×1.5, lifts, and turns to a better face. Order is the
+  build order: A1 mini → J1 → J2 → J3 → J4 → J5.
+- **Spin-up.** When the curtain lifts the rail draws itself, the ticks sweep in, and the parts unfurl
+  out of the hub while the turret winds down from 1¼ turns into the first station (2.5 s).
+- **By hand.** Mouse: drag anywhere on the ring to spin it (it coasts, then picks a station); click a
+  part to bring it round the short way; the cursor reads `DRAG` over a part. Touch: tap a part. A page
+  scroll on the hero flicks it on a station before the existing spin-out hands the printer to step 01.
+- Composition retuned: smaller ring (radius 0.19 vw), centred in the free right half, clear of the
+  bottom copy; FOV 38 on the ring only (eases back to 30 for the printer / motors framings).
+
+**Balloons** (`src/process-hud.js`, new) — a 2D canvas over the stage draws drawing-sheet callouts:
+each part has a numbered balloon (01–06) on a parallel leader line, fading with depth; the presented
+part's balloon fills signal-red and a name tag types itself in (`A1 mini · Bambu Lab · the printer`,
+`J1 · base · UMIR57 stepper`, … `J5 · UMIR42 stepper` — the same facts as the step copy). The tag
+sits on a paper plate and flips left when it would leave the sheet (phones).
+
+**Reduced motion** — no spin-up, no indexing, no trails: a still, composed dial with the printer
+presented and its tag shown.
+
+**Verified** on dev (5178), headless Chromium / SwiftShader, stepped with the stage's QA `advance()`:
+spin-up, index, mid-move trails and settled frames at 1440×900 and 390×844; hero → step 01 (spin-out,
+printer leaves) → step 02 (motors) → back to the hero; click-to-present (J4 via the short way), drag
+fling → coast → snap, scroll nudge → next station; reduced motion; zero console errors; build green.
