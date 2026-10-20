@@ -27,7 +27,6 @@ const screenFrame = hero?.querySelector('.device-screen iframe')
 const copy = hero?.querySelector('.hero-copy')
 const cue = hero?.querySelector('.hero-cue')
 const dim = hero?.querySelector('.hero-dim')
-const scrim = hero?.querySelector('.zoom-scrim')
 const words = hero?.querySelector('.zoom-words')
 
 /* The glass quad per turn frame, in image fractions (frames share one crop and
@@ -217,7 +216,7 @@ function measure() {
 }
 
 function resetOverlays() {
-  for (const el of [device, copy, cue, dim, scrim, words]) {
+  for (const el of [device, copy, cue, dim, words]) {
     if (!el) continue
     el.style.transform = ''
     el.style.opacity = ''
@@ -252,15 +251,20 @@ function update() {
     device.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${s.toFixed(4)})`
   }
 
-  // Background fades to ink while the camera moves in.
-  if (dim) dim.style.opacity = clamp01((zoom - 0.02) / 0.5).toFixed(3)
+  // Background fades to ink while the camera moves in, then goes transparent
+  // once the glass covers the viewport (invisible behind it), so the section
+  // hands off to the paper intro without a dark band.
+  if (dim) {
+    const inkUp = clamp01((zoom - 0.02) / 0.22)
+    const inkAway = clamp01((zoom - 0.55) / 0.12)
+    dim.style.opacity = (inkUp * (1 - inkAway)).toFixed(3)
+  }
 
   copy.style.opacity = `${(1 - titleFade).toFixed(3)}`
   copy.style.transform = `translate3d(0, ${(-28 * titleFade).toFixed(1)}px, 0)`
 
   // Words rise from the bottom once the glass is nearly face-on and full bleed.
   const rise = clamp01((zoom - 0.9) / 0.1)
-  if (scrim) scrim.style.opacity = rise.toFixed(3)
   if (words) {
     words.style.opacity = rise.toFixed(3)
     words.style.transform = `translate3d(0, ${((1 - rise) * 64).toFixed(1)}px, 0)`

@@ -95,7 +95,6 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1109 / 688;
-  filter: drop-shadow(0 34px 46px rgba(16, 18, 20, 0.22));
 }
 
 .device-shell {
@@ -139,23 +138,6 @@ html:not(.js) .device-screen {
 }
 
 /* words rise from the bottom of the screen as it fills */
-.zoom-scrim {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 2;
-  height: 62vh;
-  background: linear-gradient(
-    to top,
-    rgba(8, 9, 11, 0.94) 0%,
-    rgba(8, 9, 11, 0.62) 42%,
-    rgba(8, 9, 11, 0) 100%
-  );
-  opacity: 0;
-  pointer-events: none;
-}
-
 .zoom-words {
   position: absolute;
   right: var(--gutter);
@@ -396,7 +378,6 @@ html:not(.js) .still-only {
   }
 
   .hero-dim,
-  .zoom-scrim,
   .zoom-words,
   .hero-cue {
     display: none;
@@ -426,7 +407,6 @@ html:not(.js) .device {
 }
 
 html:not(.js) .hero-dim,
-html:not(.js) .zoom-scrim,
 html:not(.js) .zoom-words,
 html:not(.js) .hero-cue {
   display: none;
