@@ -365,3 +365,23 @@ actually does.
   fast PageDown reveals, film scene still `scene-ready`; 1440/390 no horizontal overflow; **zero console
   errors, zero failed requests**. Captures + report: `../review-v11/`.
 - **Not done:** deploy, sheets 03–05, About page, OG image/URL, any public repo for the Nora source.
+
+## 2026-10-20 — hub final pass: Nora's plate is the cat alone
+
+Hub-only change; Sheet 02 is untouched.
+
+- **The room screenshot is gone from the hub.** The 02 row's plate is now a transparent canvas with
+  only Nora on the sheet (`src/nora-cat.js`), drawn from the same sprites as the desk-cat page.
+- **Movement bank.** She picks at random between resting (blinks, ear twitch), looking, grooming,
+  yawning, tail flicking, kneading and a short nap. The room-dependent moves from the real bank
+  (walking, bowl, window, plant, butterfly) are not used; the plate has no room. Her eyes follow the
+  pointer when it is over the plate.
+- **Craft/perf:** integer-scaled pixel art, 44 × 34 logical box, faint shadow so she sits on the paper;
+  15 fps; pauses via IntersectionObserver off-screen and on tab hide; one static frame under
+  `prefers-reduced-motion`. A transparent `nora-cat.png/.webp` still covers the no-JS case and is hidden
+  once the canvas initialises.
+- **Hub only:** the `nora-16x10` room plate remains in the repo as Sheet 02's demo no-JS fallback; the
+  sheet's own layout and copy were not touched.
+- **Verified:** build green; hub at 1440/390 with no overflow; canvas animation changes between frames;
+  reduced-motion canvas is stable; no-JS shows the still; screenshot QA for every movement (rest, nap,
+  knead, groom, yawn, look); no console errors. Captures: `../review-v11/cat-plate-*`, `act-*`.

@@ -19,5 +19,5 @@
   "allowScripts": {
     "esbuild@0.21.5": true
   },
-  "description": "Ethan Antoine Li — engineering portfolio. Sheet 00 hub, Sheet 01 interactive 5-DOF CAD arm film, Sheet 02 Nora personal-AI desk-cat sheet with a live demo (Vite MPA + three.js)."
+  "description": "Ethan Antoine Li — engineering portfolio. Sheet 00 hub with a live pixel-cat plate, Sheet 01 interactive 5-DOF CAD arm film, Sheet 02 Nora personal-AI desk-cat sheet with a live demo (Vite MPA + three.js)."
 }

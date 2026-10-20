@@ -4,6 +4,14 @@
 // ============================================================================
 
 import './scroll.js'
+import { initNoraCat } from './nora-cat.js'
+
+// Sheet 00's Nora plate: the cat alone, idling through her movement bank.
+const noraCanvas = document.getElementById('nora-cat')
+if (noraCanvas) {
+  const cat = initNoraCat(noraCanvas)
+  if (cat) noraCanvas.closest('.plate-media')?.classList.add('is-live')
+}
 
 /* ---------------------------------------------------------- copy e-mail */
 const copyBtn = document.getElementById('copy-email')

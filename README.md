@@ -12,7 +12,7 @@ direction and the open decisions live in [`HUB-PLAN.md`](HUB-PLAN.md).
 
 | Route | Sheet | Content |
 | --- | --- | --- |
-| `/` | 00 — index | Name, one line, current state, works register (01 and 02 published, 03–05 in prep), mission band with the system diagram, built/in build/next, record, contact, title block. No 3D. |
+| `/` | 00 — index | Name, one line, current state, works register (01 and 02 published, 03–05 in prep), mission band with the system diagram, built/in build/next, record, contact, title block. No 3D. The Nora plate is a live canvas: the cat alone on paper, idling through her movement bank. |
 | `/work/arm/` | 01 — the arm | The v6 **product film**: fixed 3D stage, six camera stops, the real articulated `arm-opt.glb`, mesh/points/x-ray modes, free view with part details. Unchanged except a back link to the index. |
 | `/work/nora/` | 02 — Nora | The personal AI that runs 24/7 on a Mac of her own, with an **interactive pixel-art desk cat** as its status window. Argument, state table, build diagram, and the live demo. |
 | `/work/nora/demo/` | — | The actual desk-cat page, copied into the site and permanently in demo mode (fake events, no server). Embedded on Sheet 02; `?full` opens the complete pet page. |
@@ -51,7 +51,8 @@ Requires Node 18+ (tested on Node 24). Ports are pinned in `vite.config.js`.
 | --- | --- | --- |
 | `public/models/arm-opt.glb` | 1.6 MB, 290k tris | EPQ 3.1 Design FINAL.step (Shapr3D) → articulated GLB via `HAVK/three-arm/tools` (meshopt + quantization), joints `J1…J5` |
 | `public/img/plates/arm-16x10.png/.webp` | 156 KB / 22 KB | 16:10 hub plate composed from a 1600×1000 render of the page's own `arm-viewer.js` at pose `[12, 38, 8, 52, 20]` |
-| `public/img/plates/nora-16x10.png/.webp` | 112 KB / 11 KB | 16:10 hub plate composed from a 1600×900 capture of the Nora demo (working state) |
+| `public/img/plates/nora-16x10.png/.webp` | 112 KB / 11 KB | Sheet 02's 16:10 room still (used as the demo figure's no-JS fallback) |
+| `public/img/plates/nora-cat.png/.webp` | 5 KB / 5 KB | Transparent still of the cat alone — the exact hub canvas layout — shown when JS is off |
 | `public/img/plates/nora-states.png/.webp` | 178 KB / 63 KB | 2×2 contact sheet of four demo states (listening, working, error, offline) |
 | `public/img/arm-plate.png/.webp` | 193 / 46 KB | The film's own hero / no-WebGL still (portrait) |
 | `public/fonts/*.woff2` | 48 KB total | Inter Tight 300/400, Instrument Serif italic — latin subsets, self-hosted |
@@ -62,11 +63,16 @@ plates by capturing `?state=<state>` from the demo at 1280×720 / 1600×900 and 
 The desk cat itself is a copy of the Nora project's public page (`work/nora/demo/`, 58 KB JS + 7 KB
 CSS, all pixel art drawn in code) with two small changes for the portfolio: an embed mode that fills a
 160:90 iframe, and a scripted demo cycle rewritten around Nora's real jobs. It never connects to an
-agent server.
+agent server. For the hub, the room is removed: `src/nora-cat.js` redraws just the cat from the same
+sprites and plays the sitting part of her movement bank (blink, look, groom, yawn, tail flick, knead,
+nap) on a transparent canvas, with the eyes following the pointer.
+
+The cat canvas runs at 15 fps, pauses off-screen, and renders one static frame under
+`prefers-reduced-motion`. Without JavaScript the plate shows the transparent still.
 
 ## Performance
 
-- Hub initial payload: ~70 KB (HTML 4 + CSS 4.4 gzip + fonts + 22 KB plate + 1 KB JS); no three.js.
+- Hub initial payload: ~75 KB (HTML 4 + CSS 4.4 gzip + fonts + 22 KB arm plate + 3.4 KB JS, including the cat canvas module); no three.js.
 - Sheet 02: ~14 KB gzip of page CSS/JS + 11 KB cover + 63 KB state figure (lazy); the demo iframe
   loads ~16 KB gzip of its own JS/CSS + no images.
 - The film's hard 3D (≈167 KB gzip + 1.6 MB GLB) is still lazy and remains out of the hub's path.
@@ -99,7 +105,8 @@ personal-page/
     hub.css                # hub + shared components (chrome, sections, plates, title block, reveal)
     sheet.css              # sheet-specific layout (hero, demo, jobs, stack, states, status)
     scroll.js              # shared reveals / nav / ghost word
-    hub.js                 # hub-only: copy-email (+ imports scroll.js)
+    hub.js                 # hub-only: copy-email + the cat plate (+ imports scroll.js)
+    nora-cat.js            # the hub's living cat plate (idle movement bank, no room)
     style.css              # film styles (mirrors the tokens)
     main.js                # film behaviour
     arm-scene.js           # film three.js scene

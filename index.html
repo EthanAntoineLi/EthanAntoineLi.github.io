@@ -142,20 +142,24 @@
 
           <figure class="plate">
             <span class="plate-frame" aria-hidden="true"></span>
-            <span class="plate-media">
-              <picture>
-                <source srcset="/img/plates/nora-16x10.webp" type="image/webp" />
-                <img
-                  src="/img/plates/nora-16x10.png"
-                  width="1280"
-                  height="800"
-                  alt="Nora, a grey tabby pixel cat, working on a tiny laptop in a dark room."
-                  loading="lazy"
-                  decoding="async"
-                />
-              </picture>
+            <span class="plate-media plate-media--cat">
+              <canvas
+                class="nora-cat"
+                id="nora-cat"
+                role="img"
+                aria-label="Nora, a grey tabby pixel cat, idling on a sheet of paper."
+              ></canvas>
+              <img
+                class="cat-fallback"
+                src="/img/plates/nora-cat.png"
+                width="1080"
+                height="675"
+                alt="Nora, a grey tabby pixel cat, sitting on a sheet of paper."
+                loading="lazy"
+                decoding="async"
+              />
             </span>
-            <figcaption class="mono">Fig. 02 — the desk cat, working</figcaption>
+            <figcaption class="mono">Fig. 02 — Nora, between jobs</figcaption>
           </figure>
         </a>
 

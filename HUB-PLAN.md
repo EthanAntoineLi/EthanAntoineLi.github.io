@@ -21,6 +21,9 @@ Phase 1 is implemented on the `hub` branch, locally only (no deploy, no push):
 - **Sheet 02 — Nora** was built on 2026-10-20 (personal AI + desk cat, with the real pet page embedded
   as a demo). The register is now `05 sheets · 02 published`: 01 arm, 02 Nora, with drone / AI
   interviewer / physics renumbered 03–05 and still `SHEET IN PREP`.
+- Hub final pass (2026-10-20): the Nora row's plate is now the cat alone on paper — a live canvas from
+  `src/nora-cat.js`, playing the sitting part of her movement bank at random with no room background.
+  Sheet 02 itself is unchanged. A transparent still covers the no-JS/reduced-motion case.
 - Per Ethan's privacy call, the Nora page publishes no ports, localhost/launchd details or repo links,
   and uses only the demo mode with scripted fake events — the real activity log is never used.
 - The remaining open decisions in §10 are unchanged, particularly the repo/URL rename and deployment.

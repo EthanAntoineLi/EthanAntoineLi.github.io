@@ -25,7 +25,8 @@ personal-page/
     hub.css                   # hub + shared components (chrome, sections, plates, title block, reveal)
     sheet.css                 # sheet layout (hero, demo, jobs, stack, states, status, next)
     scroll.js                 # shared: reveals, nav state, ghost word, hero-ready flag
-    hub.js                    # hub-only: copy-email; imports scroll.js
+    hub.js                    # hub-only: copy-email + cat plate init; imports scroll.js
+    nora-cat.js               # hub's living cat plate (movement bank, no room)
     style.css                 # film styling + tokens mirror
     main.js                   # film behaviour (loader, Lenis, stop blending, ghost, cursor, copy)
     arm-scene.js              # film three.js scene (GLB, six stops, point cloud, free view)
@@ -62,7 +63,8 @@ personal-page/
 | `src/hub.css` | Tokens import, chrome, section heads, plates, title block, responsive, reveal states | style the film or the demo |
 | `src/sheet.css` | Sheet-only layout (hero, demo frame, jobs, build stack, state table, status band, next) | restyle hub components |
 | `src/scroll.js` | Shared reveals, nav active state, ghost word, `body.is-ready` | know anything about a specific page |
-| `src/hub.js` | Copy-email only (imports `scroll.js`) | duplicate scroll logic |
+| `src/hub.js` | Copy-email + cat-plate init (imports `scroll.js`) | duplicate scroll logic |
+| `src/nora-cat.js` | The hub's cat canvas: layout, movement bank, pointer look, visibility pause | know about the room, the demo page or a server |
 | `work/arm/index.html` + `src/style.css`, `main.js`, `arm-scene.js` | The film, unchanged (v4/v6 contracts) | be reused by the hub or sheets |
 | `work/nora/demo/*` | The desk-cat page (copied) + embed/demo adaptations | talk to a server or read real data |
 
@@ -74,6 +76,7 @@ personal-page/
 | `[data-ghost]` | section → giant background word (`WORK`, `AI`, `HOW`, `CAT`, `NOW`, …) |
 | `[data-nav]` | nav links; `aria-current="true"` from the active section (page-bottom special case) |
 | `#ghost` | fixed ghost word element (optional) |
+| `#nora-cat` | hub plate canvas; initialised by `hub.js`, `data-action` exposes the current idle action for QA |
 | `body.is-ready` | starts the hero name reveal after first paint |
 
 The reveal threshold is `innerHeight`, not an 8% inset: elements aligned to the bottom of the first
@@ -134,6 +137,11 @@ same pose; compose a 16:10 plate on `#f6f6f4`, arm at 94% height, centre; export
 
 **Nora plates** — in the demo page, `?state=<state>` at 1600×900; the working state composes to the
 16:10 hub plate (paper margins), and listening/working/error/offline compose to the 2×2 contact sheet.
+
+**Hub cat still** — `dev/cat-still.html` renders `src/nora-cat.js` at 540 × 337 CSS (2×, transparent);
+clip the canvas with `omitBackground`, export `public/img/plates/nora-cat.png/.webp`, and show it under
+the live canvas until `initNoraCat()` adds `.is-live` to the plate. `nora-16x10` is now only Sheet 02's
+demo fallback.
 
 **Fonts** — Inter Tight 300/400 and Instrument Serif italic, latin subsets from Google Fonts, stored in
 `public/fonts/`, declared in `src/tokens.css` with preloads in the HTML heads. No CDN requests.
