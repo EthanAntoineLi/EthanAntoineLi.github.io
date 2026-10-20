@@ -14,7 +14,7 @@ direction and the open decisions live in [`HUB-PLAN.md`](HUB-PLAN.md).
 | --- | --- | --- |
 | `/` | 00 — index | Name, one line, current state, works register (01 and 02 published, 03–05 in prep), mission band with the system diagram, built/in build/next, record, contact, title block. No 3D. The Nora plate is a live canvas: the cat alone on paper, idling through her movement bank. |
 | `/work/arm/` | 01 — the arm | The v6 **product film**: fixed 3D stage, six camera stops, the real articulated `arm-opt.glb`, mesh/points/x-ray modes, free view with part details. Unchanged except a back link to the index. |
-| `/work/arm/process/` | 01 — process | How the arm got made, in order. Step 01 (the 3D printer and personalised parts) is live; the printer stage and the remaining steps land later. Same film chrome as the arm sheet, no 3D yet. |
+| `/work/arm/process/` | 01 — process | How the arm got made, in order. Step 01 is the Bambu Lab A1 mini — a live 3D model that gave access to personalised parts. Same film chrome as the arm sheet; the remaining steps land later. |
 | `/work/nora/` | 02 — Nora | The personal AI that runs 24/7 on a Mac of her own, with an **interactive pixel-art desk cat** as its status window. Argument, state table, build diagram, and the live demo. |
 | `/work/nora/demo/` | — | The actual desk-cat page, copied into the site and permanently in demo mode (fake events, no server). Embedded on Sheet 02; `?full` opens the complete pet page. |
 
@@ -101,7 +101,7 @@ Two things are still manual / unverified:
 personal-page/
   index.html               # Sheet 00 — hub
   work/arm/index.html      # Sheet 01 — the v6 film (verbatim, + back link)
-  work/arm/process/        # Sheet 01 / process — step 01, type only for now
+  work/arm/process/        # Sheet 01 / process — step 01, A1 mini 3D
   work/nora/index.html     # Sheet 02 — Nora
   work/nora/demo/          # the desk-cat page, demo-only (iframe target; ?full = full page)
     index.html nora.js style.css

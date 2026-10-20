@@ -1,16 +1,19 @@
 // ============================================================================
 // process.js — Sheet 01 / process page.
 //
-// The arm film's chrome and act choreography without the 3D scene: reveals,
-// act cross-fade + exit transitions, ghost type, progress, index overlay,
-// clock, frame counter, custom cursor and Lenis smooth scroll.
-//
-// The printer stage joins this page later (see the stage comment in
-// work/arm/process/index.html); nothing here touches WebGL.
+// The arm film's chrome and act choreography, plus the one 3D object this page
+// owns: the A1 mini that started the build. Scene: ./printer-scene.js.
+// Curtain: ./film-loader.js (same promise-based loader as the arm film).
 // ============================================================================
+import { createPrinterScene } from './printer-scene.js'
+import { initFilmLoader, reportLoadProgress } from './film-loader.js'
+
+const MODEL_URL = import.meta.env.BASE_URL + 'models/printer-a1-mini.glb'
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const body = document.body
+const canvas = document.getElementById('printer-canvas')
+const phone = window.matchMedia('(max-width: 820px)').matches
 
 /* --------------------------------------------------------- smooth scroll */
 let lenis = null
@@ -42,6 +45,61 @@ const ACTS = [...document.querySelectorAll('.act')].map((el) => ({
 }))
 
 let activeAct = 0
+
+/* --------------------------------------------------------- the 3D printer */
+// Same contract as the arm film: probe WebGL before importing three.js, start
+// the scene in parallel with the loader, and let a failed scene fall back to
+// the still plate without a console error.
+function hasWebGL() {
+  try {
+    const probe = document.createElement('canvas')
+    return Boolean(probe.getContext('webgl2') || probe.getContext('webgl'))
+  } catch {
+    return false
+  }
+}
+
+let scene = null
+let sceneTask = null
+function startScene() {
+  if (sceneTask) return sceneTask
+  if (!canvas) return Promise.resolve(null)
+  if (!hasWebGL()) {
+    console.warn('[scene] WebGL unavailable, keeping still render')
+    return Promise.resolve(null)
+  }
+  sceneTask = (async () => {
+    try {
+      scene = await createPrinterScene(canvas, {
+        modelUrl: MODEL_URL,
+        reducedMotion,
+        phone,
+        onLoadProgress: reportLoadProgress,
+      })
+      if (!scene) return null
+      await scene.ready
+      window.__printer = scene // dev/QA handle (harmless)
+      body.classList.add('scene-ready')
+      applyAct(activeAct)
+      return scene
+    } catch (err) {
+      console.warn('[scene] unavailable, keeping still render:', err)
+      return null
+    }
+  })()
+  return sceneTask
+}
+
+// hero + step show the printer; the last act hands the page back to the arm.
+function applyAct(i) {
+  const last = ACTS.length - 1
+  const showStage = i < last
+  body.classList.toggle('stage-off', !showStage)
+  if (scene) {
+    scene.setVisible(showStage)
+    scene.setPreset(i <= 0 ? 'hero' : 'step')
+  }
+}
 
 /* --------------------------------------------------------------- ghost type */
 const ghostEl = document.getElementById('ghost')
@@ -126,6 +184,7 @@ function measure() {
     setGhost(shownAct.ghost)
     setProgress(shown)
     body.classList.toggle('at-end', shown === ACTS.length - 1)
+    applyAct(shown)
   }
   // Runs last: transition state depends on the freshly updated activeAct.
   updateTransitions(y, vh)
@@ -264,6 +323,18 @@ function initIndex() {
 }
 
 /* -------------------------------------------------------------- boot */
+// The curtain needs the scene's promise before the scene exists: settle it once
+// startScene() runs on the next frame, after the loader has painted.
+let settleScene = () => {}
+const sceneReady = new Promise((resolve) => {
+  settleScene = resolve
+})
+initFilmLoader({
+  reducedMotion,
+  sceneReady,
+  // The stage is a static object, not a film: no entry reveal to start.
+  onLift: () => {},
+})
 initReveals()
 initCursor()
 initClock()
@@ -271,6 +342,21 @@ initFrameCounter()
 initIndex()
 initScroll()
 measure()
+
+requestAnimationFrame(() => {
+  startScene().then(settleScene)
+})
+
+// pointer parallax on the object (the canvas itself is not interactive)
+window.addEventListener(
+  'pointermove',
+  (e) => {
+    const nx = (e.clientX / window.innerWidth) * 2 - 1
+    const ny = (e.clientY / window.innerHeight) * 2 - 1
+    scene?.setPointer?.(nx, ny)
+  },
+  { passive: true },
+)
 
 // Keep the layout in sync if fonts or images change the act heights.
 window.addEventListener('load', onScroll)

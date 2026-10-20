@@ -30,6 +30,15 @@
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
+    <!-- ---------------------------------------------------------- loader -->
+    <div class="loader" id="loader" aria-hidden="true">
+      <p class="loader-label mono">Scanning</p>
+      <p class="loader-count" id="loader-count">000</p>
+      <div class="loader-bar"><span id="loader-bar"></span></div>
+      <p class="loader-ascii mono" id="loader-ascii">----------</p>
+      <p class="mono loader-foot">A1 mini · process · CAD</p>
+    </div>
+
     <!-- ----------------------------------------------------------- cursor -->
     <div class="cursor" id="cursor" aria-hidden="true">
       <span class="cursor-dot"></span>
@@ -39,6 +48,12 @@
     <!-- ------------------------------------------------------ ghost letters -->
     <div class="ghost-wrap" aria-hidden="true">
       <span class="ghost" id="ghost">MAKE</span>
+    </div>
+
+    <!-- ---------------------------------------------------------- 3D stage -->
+    <div class="stage stage--static" aria-hidden="true">
+      <canvas id="printer-canvas"></canvas>
+      <img class="stage-fallback" id="stage-fallback" src="/img/printer-plate.png" alt="" />
     </div>
 
     <!-- ------------------------------------------------------------ chrome -->
@@ -82,9 +97,6 @@
         <li></li>
       </ol>
     </aside>
-
-    <!-- The 3D printer model joins this page later; the stage slot stays here
-         so the acts keep the same frame as the arm film. -->
 
     <!-- ------------------------------------------------------------ main -->
     <main id="main">

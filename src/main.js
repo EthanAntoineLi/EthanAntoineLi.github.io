@@ -8,117 +8,12 @@
 // The 3D scene itself lives in ./arm-scene.js (createArmScene).
 // ============================================================================
 import { createArmScene } from './arm-scene.js'
+import { initFilmLoader, reportLoadProgress, wasCurtainLifted } from './film-loader.js'
 
 const MODEL_URL = import.meta.env.BASE_URL + 'models/arm-opt.glb'
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const body = document.body
-
-/* ------------------------------------------------------------- loader */
-// The curtain is a promise, not a timer. It lifts when the 3D scene reports its
-// first real frame (GLB parsed, point cloud built, camera placed), so the still
-// plate — and the model's assembly reveal — never flash through mid-swap.
-const MODEL_MIN_MS = reducedMotion ? 300 : 1200 // never flash the curtain away
-const MODEL_MAX_WAIT_MS = 15000 // a stuck GLB must not trap the page
-
-let modelProgress = 0 // 0..1, GLB transfer progress reported by the scene
-let curtainLifted = false
-
-function initLoader(sceneReady) {
-  const countEl = document.getElementById('loader-count')
-  const barEl = document.getElementById('loader-bar')
-  const asciiEl = document.getElementById('loader-ascii')
-
-  const paint = (value) => {
-    const v = Math.min(1, Math.max(0, value))
-    if (countEl) countEl.textContent = String(Math.round(v * 100)).padStart(3, '0')
-    if (barEl) barEl.style.width = `${(v * 100).toFixed(2)}%`
-    if (asciiEl) {
-      const filled = Math.round(v * 10)
-      asciiEl.textContent = '='.repeat(filled) + '-'.repeat(10 - filled)
-    }
-  }
-
-  let finished = false
-  const finish = () => {
-    if (finished) return
-    finished = true
-    paint(1)
-    curtainLifted = true
-    body.classList.remove('is-loading')
-    body.classList.add('loaded')
-    // The film's entry reveal starts with the curtain, not under it.
-    scene?.playEntry?.()
-  }
-
-  body.classList.add('is-loading')
-  const start = performance.now()
-
-  // No animation (reduced motion / missing nodes): still wait for the scene, so
-  // the hand-off stays a hand-off and not a plate-to-model pop.
-  if (!countEl || !barEl || reducedMotion) {
-    paint(1)
-    Promise.race([sceneReady, new Promise((r) => setTimeout(r, MODEL_MAX_WAIT_MS))]).then(() => {
-      setTimeout(finish, Math.max(0, MODEL_MIN_MS - (performance.now() - start)))
-    })
-    return
-  }
-
-  let ready = false
-  sceneReady.then(() => {
-    ready = true
-    // Timer safety, not the normal path: rAF can be throttled (background tab,
-    // exhausted GPU) and the curtain must never become a dead end.
-    setTimeout(() => {
-      paint(1)
-      finish()
-    }, MODEL_MIN_MS + 1200)
-  })
-  setTimeout(() => {
-    ready = true
-  }, MODEL_MAX_WAIT_MS)
-
-  // Wall-clock driven on purpose: a frame-count animation stretches on a slow
-  // GPU, which is exactly where the model takes longest and the curtain matters
-  // most. The last 10 % is a short ramp from wherever the bar actually is.
-  let shown = 0
-  let transferSeen = 0
-  let last = 0
-  let completeAt = 0
-  let completeFrom = 0
-  const paintShown = (v) => {
-    shown = Math.min(1, Math.max(0, v))
-    paint(shown)
-  }
-  const tick = (now) => {
-    const elapsed = now - start
-    const dt = last ? Math.min(100, now - last) : 16
-    last = now
-
-    if (ready && elapsed >= MODEL_MIN_MS) {
-      if (!completeAt) {
-        completeAt = now
-        completeFrom = shown
-      }
-      const p = Math.min(1, (now - completeAt) / 350)
-      paintShown(completeFrom + (1 - completeFrom) * (1 - Math.pow(1 - p, 3)))
-      if (p < 1) requestAnimationFrame(tick)
-      else finish()
-      return
-    }
-
-    // 0 -> 35 %: a short ease out while the bundle and the scene boot, so the
-    // counter moves before the model has reported any bytes.
-    const sweep = 0.35 * (1 - Math.pow(1 - Math.min(1, elapsed / 1000), 3))
-    // 35 -> 90 %: the GLB's real transfer, damped so jumpy progress events
-    // still read as a smooth scan. 100 % (parse + first frame) is the last 10 %.
-    const transferTarget = modelProgress > 0 ? 0.35 + 0.55 * modelProgress : 0
-    transferSeen += (transferTarget - transferSeen) * (1 - Math.exp(-dt / 120))
-    paintShown(Math.min(0.9, Math.max(sweep, transferSeen)))
-    requestAnimationFrame(tick)
-  }
-  requestAnimationFrame(tick)
-}
 
 /* --------------------------------------------------------- smooth scroll */
 let lenis = null
@@ -253,16 +148,14 @@ function startScene() {
         reducedMotion,
         phone,
         deferEntry: !reducedMotion,
-        onLoadProgress: (p) => {
-          modelProgress = p
-        },
+        onLoadProgress: reportLoadProgress,
       })
       await scene.ready
       window.__scene = scene // dev/QA handle (harmless)
       body.classList.add('scene-ready')
       applyStop(activeAct, 1)
       // Curtain already up (slow load past the safety valve): play it now.
-      if (curtainLifted) scene.playEntry?.()
+      if (wasCurtainLifted()) scene.playEntry?.()
       return scene
     } catch (err) {
       console.warn('[scene] unavailable, keeping still render:', err)
@@ -791,7 +684,12 @@ let settleScene = () => {}
 const sceneReady = new Promise((resolve) => {
   settleScene = resolve
 })
-initLoader(sceneReady)
+initFilmLoader({
+  reducedMotion,
+  sceneReady,
+  // The film's entry reveal starts with the curtain, not under it.
+  onLift: () => scene?.playEntry?.(),
+})
 initReveals()
 initCursor()
 initClock()

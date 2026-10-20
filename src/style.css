@@ -873,8 +873,21 @@ main {
 }
 
 /* ------------------------------------------------------------ process page */
-/* Step 01 is type, not a model yet: the copy column widens where the printer
-   will eventually sit, and the stage slot stays empty. */
+/* The printer stage is a display object, not a control surface: no orbit drag
+   and no pointer capture over the copy. It steps aside on the last act. */
+.stage--static canvas {
+  pointer-events: none;
+  cursor: default;
+}
+body.stage-off .stage canvas {
+  opacity: 0;
+}
+/* The still plate is a tight crop of the same render, so it is placed where the
+   live object sits (right of the copy, upper half on phones) instead of centred. */
+.stage--static .stage-fallback {
+  left: 72%;
+  height: min(58vh, 640px);
+}
 .act--start .act-title {
   max-width: 21ch;
 }
@@ -1530,5 +1543,13 @@ body.detail-open .cursor {
     max-width: none;
     font-size: 17px;
     line-height: 1.45;
+  }
+}
+
+@media (max-width: 820px) {
+  .stage--static .stage-fallback {
+    left: 50%;
+    top: 38%;
+    height: min(36vh, 340px);
   }
 }
