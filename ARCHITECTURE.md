@@ -1,130 +1,117 @@
-# ARCHITECTURE.md — personal-page module contracts (v2)
+# ARCHITECTURE.md — module contracts (v7 hub)
 
-Static portfolio site. Stack: **Vite 5 + three.js 0.170 + vanilla ES modules**.
+Static portfolio site, two HTML entries. Stack: **Vite 5 (MPA) + three.js 0.170 + vanilla ES modules**.
 No framework, no backend, no runtime data. Everything ships as static files.
+
+```
+/            → index.html          Sheet 00, the hub
+/work/arm/   → work/arm/index.html Sheet 01, the v6 film
+```
 
 ## File layout
 
 ```
 personal-page/
-  index.html                  # HTML: all content, section ids, inline SVG diagram
-  src/style.css               # all styling + design tokens
-  src/main.js                 # page behaviour; dynamically imports arm-viewer.js
-  src/arm-viewer.js           # three.js viewer for the articulated arm GLB
-  public/models/arm-opt.glb   # 1.6 MB, meshopt + quantization, J1..J5 hierarchy
-  public/img/arm-plate.webp   # 2x still render (paper-transparent), PNG fallback
-  public/fonts/*.woff2        # Instrument Serif latin regular + italic
-  public/favicon.svg
-  vite.config.js              # base './', ports 5178 / 4178
+  index.html                  # hub: hero, works register, mission, status, record, contact, title block
+  work/arm/index.html         # film: chrome, loader, fixed stage, six acts, contact, inline index panel
+  src/
+    tokens.css                # design tokens + @font-face (shared; film mirrors them in style.css)
+    hub.css                   # hub styling only
+    hub.js                    # hub behaviour only
+    style.css                 # film styling + tokens mirror
+    main.js                   # film behaviour (loader, Lenis, stop blending, ghost, cursor, copy)
+    arm-scene.js              # film three.js scene (GLB, six stops, point cloud, free view)
+    arm-viewer.js             # standalone arm viewer (dev harness, hub plate renders)
+  public/                     # copied verbatim into dist/
+    models/arm-opt.glb        # 1.6 MB articulated CAD, J1..J5
+    img/arm-plate.*           # film hero / no-WebGL still (portrait)
+    img/plates/arm-16x10.*    # hub 16:10 plate
+    img/og.jpg
+    fonts/*.woff2             # Inter Tight 300/400, Instrument Serif italic (latin)
+    favicon.svg
+  dev/                        # local-only QA tooling, git-ignored
+  vite.config.js              # base '/', appType 'mpa', two rollup inputs
+  .github/workflows/deploy.yml
 ```
 
-`public/` is copied verbatim into `dist/`, so asset URLs in HTML/CSS are root-relative
-(`./img/…`, `/fonts/…`, `./models/…`). **Do not move `models/` back to the repo root** — that is
-exactly what broke the v1 production build (Vite does not copy root-level folders).
+## Routes and base
+
+- `base: '/'` — the site is meant for the GitHub user-site root (`EthanAntoineLi.github.io`). For a
+  project-path deploy use `BASE=/personal-page/ npm run build`.
+- `appType: 'mpa'` — no SPA history fallback; `/work/arm/` resolves to its own `index.html` in dev and
+  preview.
+- Film asset URLs are absolute (`/fonts/...`, `/img/...`); the GLB URL is derived from
+  `import.meta.env.BASE_URL + 'models/arm-opt.glb'` so it follows the base.
 
 ## Ownership / what each file owns
 
 | File | Owns | Must not |
 | --- | --- | --- |
-| `index.html` | Content, semantics, section structure, diagram SVG | contain style/JS logic beyond hooks |
-| `src/style.css` | Design tokens, layout, responsive, motion | be duplicated inline |
-| `src/main.js` | Reveals, nav state, viewer boot, copy-email | implement 3D rendering |
-| `src/arm-viewer.js` | Everything three.js: loading, materials, camera, orbits, pose | touch the DOM outside its canvas |
+| `index.html` | Hub content, semantics, section ids, plate markup | contain style/JS logic beyond hooks |
+| `src/hub.css` | Hub tokens import, layout, register, mission band, title block, responsive | style the film |
+| `src/hub.js` | Hub reveals, nav/ghost state, copy-email | load three.js |
+| `work/arm/index.html` | Film content + stage markup | change the film's copy without BUILD-LOG |
+| `src/style.css` / `main.js` / `arm-scene.js` | The film, unchanged (see v4 DESIGN-NOTES) | be reused by the hub |
+| `src/tokens.css` | Tokens + font faces | diverge from the film's mirror |
 
-## HTML hooks (contract with main.js)
+## Hub contracts (hub.js)
 
-| Selector / id | Purpose |
+| Hook | Purpose |
 | --- | --- |
-| `#arm-canvas` | canvas the viewer renders into |
-| `.viewer-stage` | observed container; when it approaches the viewport the viewer boots |
-| `#arm-fallback` | still image shown until the canvas is ready (and if WebGL fails) |
-| `#viewer-status` | loading/error line; gets `.is-hidden` when the model is live |
-| `#pose-readout` | live joint angles (updated from `onPose`) |
-| `[data-preset]` | camera preset buttons (`iso`, `profile`, `front`, `top`) |
-| `#play-toggle` | play/pause, `aria-pressed` reflects state, `.pp-label` text |
-| `.nav a[data-nav]` | section links; `aria-current="true"` on the active section |
-| `#copy-email[data-email]` | clipboard button |
-| `#mission`, `#arm`, `#drone`, `#status`, `#contact` | scroll targets + nav observers |
+| `.reveal` | progressive entrance; revealed when `rect.top < innerHeight * 0.92` on a rAF scroll check (not IO-only, so fast jumps can't strand an element invisible) |
+| `[data-ghost]` | section → giant background word (`WORK`, `WHY`, `NOW`, `REC`, `TALK`) |
+| `[data-nav]` | nav links; `aria-current="true"` set from the active section (`record` maps to `Status`) |
+| `#ghost` | fixed ghost word element |
+| `#copy-email[data-email]` | clipboard button with `execCommand` fallback |
+| `body.is-ready` | starts the hero name reveal after first paint |
+| `#work`, `#mission`, `#status`, `#record`, `#contact` | scroll targets |
 
-## src/arm-viewer.js — public API
+Reveals are a **scroll-position check**, not IntersectionObserver-only: jumping from below a section to
+above it (anchor click, key repeat, restored scroll) would otherwise skip the observer and leave the
+element at `opacity: 0` forever. The hub keeps the check in the same rAF as the nav/ghost state.
 
-```js
-export async function createArmViewer(canvas, opts = {}) {
-  // opts: { modelUrl = './models/arm-opt.glb', reducedMotion = false,
-  //         onPose = null, autoplay = true }
-  // returns:
-  //   ready    Promise<void>            model loaded + one frame rendered
-  //   setPreset(name, { immediate })    'iso' | 'profile' | 'front' | 'top' | 'detail'
-  //   setPose(deg5, { immediate })      joint targets in degrees, clamped to limits, eased
-  //   play() / pause()
-  //   resize()                          also self-wires ResizeObserver on the canvas
-  //   dispose()                         listeners, geometries, materials, renderer, env RT
-}
-```
+Active section: last `[data-ghost]` section whose `offsetTop` is above `scrollY + 32% viewport`, with a
+page-bottom special case so `Contact` wins at the end of the document.
 
-Behaviour that the page depends on:
+## Film contracts (unchanged from v4/v6)
 
-- **Loading:** `GLTFLoader` + `MeshoptDecoder` (`three/addons/libs/meshopt_decoder.module.js`),
-  `RoomEnvironment` PMREM for metal reflections.
-- **Geometry:** the GLB keeps the EPQ hierarchy `ArmRoot → J1 → J2 → J3 → J4 → J5` plus a mount
-  transform copied from HAVK's `realArm.js` (chest-mount orientation, J1 axis horizontal). Joint
-  rotation axes: J1 `y`, J2 `z`, J3 `x` (negated), J4 `z`, J5 `x` (negated).
-- **Materials** are applied by GLB material name: `printed #1B222C`, `motor #11151C`,
-  `silver #99A1AC`, `steel #AAB1BB`. A small `#C2410C` marker sits at the end effector.
-- **Renderer:** `alpha: true`, clear alpha `0` (paper grid shows through), ACESFilmic tone mapping,
-  SRGB output, pixel ratio capped at 2.
-- **Framing:** distance is derived from the measured model bounds and the canvas aspect, so the arm
-  is fully in frame at any canvas shape (desktop ≈ 1.0:1, phone ≈ 0.8:1).
-- **Interaction:** custom orbit (not OrbitControls), so the page never loses vertical scroll on
-  touch; horizontal drags orbit on touch, both axes on mouse; no wheel zoom.
-- **Performance:** lazy boot via IntersectionObserver (500 px margin) + in-module IntersectionObserver
-  so rendering pauses off-screen; render only when something changed (`needsRender`).
-- **Reduced motion:** no showcase animation; static plate pose; presets still work.
-- **Failure:** if the GLB/WebGL fails, `ready` rejects, the page keeps the still image and reports
-  "3D view unavailable — still shown". No console errors in the happy path.
+The film's public behaviour and hooks are documented in the v4 design notes and were not changed when
+it moved under `/work/arm/`. The only edits in v7:
 
-## src/main.js — behaviour
+- asset/model URLs made absolute / `BASE_URL`-derived;
+- a left-side `← sheet 00` link to the hub added to the chrome (`src/style.css` gains `.chrome-left` /
+  `.sheet-back`).
 
-1. `html.js` class for reveal CSS (inlined in `<head>` to avoid a flash).
-2. IntersectionObserver reveals for section heads/bodies/figures (`prefers-reduced-motion` → visible
-   immediately).
-3. Scroll-driven nav state (`aria-current`), rAF-throttled.
-4. Arm viewer: dynamically imports `arm-viewer.js` only when the viewer is within 500 px; wires
-   presets, play/pause, pose readout, fallback. Initial pose is `PLATE_POSE = [12, 38, 8, 52, 20]`
-   so the still → live handoff is seamless; motion starts immediately after (unless reduced motion).
-5. Copy-email with clipboard API + `execCommand` fallback.
+Hooks and viewer API remain as before: `#arm-canvas`, `.viewer-stage`, `#arm-fallback`, `#viewer-status`,
+`#pose-readout`, `[data-preset]`, `#play-toggle`, `.nav a[data-nav]`, `#copy-email`, and
+`createArmViewer()`'s `ready / setPreset / setPose / play / pause / resize / dispose`.
 
 ## Build & deploy
 
-- `npm run dev` → port **5178**; `npm run build` → `dist/`; `npm run preview` → port **4178**.
-- `base: './'` — relative asset URLs, valid at a Pages project path or a domain root.
-- Code-splitting is intentional: `arm-viewer.js` becomes a separate ~600 KB (156 KB gzip) chunk and
-  is only requested on approach; the GLB is fetched by that chunk.
-- CI: `.github/workflows/deploy.yml` builds and publishes `dist/` to GitHub Pages on `master`.
-  Required manual step: repo must be public on the free plan (or account on Pro) for Pages.
+- `npm run dev` → 5178 (hub + film); `npm run build` → `dist/` with both entries; `npm run preview` →
+  4178.
+- Code-splitting: `hub.js` (~1 KB gzip) is separate; the film chunk (~167 KB gzip) and GLB stay lazy.
+- Pages deploy: `.github/workflows/deploy.yml` on push to `master`. Repo must be public on the free
+  plan; the site expects the user-site root (see HUB-PLAN §8).
 
-## Asset pipeline (how to regenerate)
+## Asset pipeline
 
-**Arm GLB** — source of truth is the EPQ CAD (`HAVK/cad/EPQ-3.1-Design-FINAL.step`, Shapr3D). The
-articulated export comes from `HAVK/three-arm/tools/export_model.py` + `optimize.mjs` (meshopt +
-quantization). Regenerate there, copy to `public/models/arm-opt.glb`, then update the still:
+**Arm GLB** — source of truth `HAVK/cad/EPQ-3.1-Design-FINAL.step` (Shapr3D); articulated export via
+`HAVK/three-arm/tools/export_model.py` + `optimize.mjs`, then copy to `public/models/arm-opt.glb`.
 
-**Hero / fallback still** — render from the page's own viewer, 2×, transparent:
+**Film still** — rendered from the page's own viewer (contract in the v4 notes): pose
+`[12, 38, 8, 52, 20]`, iso preset, transparent canvas, 2×.
 
-```js
-// in a Playwright page on the dev server, after forcing preserveDrawingBuffer:
-const mod = await import('/src/arm-viewer.js')
-const canvas = document.createElement('canvas')       // CSS 1200x1500, dpr 2
-const viewer = await mod.createArmViewer(canvas, { reducedMotion: true, autoplay: false })
-await viewer.ready
-viewer.setPreset('iso', { immediate: true })
-viewer.setPose([12, 38, 8, 52, 20], { immediate: true })
-const png = canvas.toDataURL('image/png')             // keep alpha
-```
+**Hub plate** — `dev/make-plate.mjs` screenshots `dev/plate.html` (arm-viewer.js, 1600×1000, paper
+background) at the same pose; compose a 16:10 plate on `#f6f6f4` with the arm at 94% height, centre;
+export WebP (quality 86) + optimised PNG. Keep the pose in sync with the film's `PLATE_POSE`.
 
-Then crop to the alpha bounding box + 120 px padding (2×), resize to 900 px wide, export
-`arm-plate.png` (optimised) and `arm-plate.webp` (quality 90). Keep `PLATE_POSE` in `main.js` and the
-SPEC in sync with the pose used.
+**Fonts** — Inter Tight 300/400 and Instrument Serif italic, latin subsets from Google Fonts, stored in
+`public/fonts/`, declared in `src/tokens.css` with preloads in both HTML heads. No CDN requests.
 
-**Fonts** — Instrument Serif (SIL OFL) downloaded from Google Fonts as latin-subset WOFF2, stored in
-`public/fonts/`, declared with `@font-face` + preload in `index.html`. No CDN requests.
+## QA
+
+`dev/shoot-hub.mjs` (local, git-ignored) uses the shared Playwright install at `../_qa/node_modules`,
+captures desktop/laptop/mobile, a no-JS pass, a film smoke test and a production-preview pass, and
+writes a JSON report (console errors, request failures, layout metrics, reveal counts). Latest
+captures: `../review-v10/`.

@@ -291,3 +291,40 @@ five 100vh acts, ~171 words on the whole page (v2 had ~1,100).
   framing, no matter how the previous slide was left.
 - Verified: dragging payload/geometry/scan then moving on gives Δaz/Δel ≤ 0.003
   rad and Δdistance ≤ 0.002 vs a clean pass (free view hand-over already exact).
+
+## 2026-10-20 — v7 hub, phase 1 (branch `hub`, local only)
+
+The site stops being one film and becomes a drawing set: **Sheet 00** is an index, **Sheet 01** is the
+existing arm film. Design rationale and the open decisions are in `HUB-PLAN.md`; this entry records
+what was built.
+
+- **Split, not rewrite.** `index.html` moved to `work/arm/index.html`; its asset URLs became absolute
+  (`/fonts`, `/img`, `/src`) and the GLB URL is derived from `import.meta.env.BASE_URL`. The film's
+  markup, CSS, scene and behaviour are otherwise untouched. Added a left-side `← sheet 00` link in the
+  chrome back to the hub.
+- **New hub** (`index.html`, `src/hub.css`, `src/hub.js`, `src/tokens.css`): hero (name, one line,
+  three state chips), works register (`01` arm live + `02` drone / `03` AI interviewer / `04` physics
+  marked `SHEET IN PREP`), dark mission band with a responsive drone → fix → handoff → arm diagram,
+  built/in-build/next columns, a small record table, contact with copy-email, and a title-block footer.
+  Collagraphy carried over: paper/ink/rust, hairlines, mono annotations, Instrument Serif italic for
+  one phrase per section, ghost word per section, custom corner ticks on plates.
+- **Hub plate** rendered from the real CAD: `dev/plate.html` + `dev/make-plate.mjs` (1600×1000,
+  arm-viewer.js, pose `[12, 38, 8, 52, 20]`), composed to a 16:10 paper plate (arm at 94% height),
+  exported WebP 22 KB + PNG 156 KB.
+- **Build:** Vite MPA (`appType: 'mpa'`, two rollup inputs), `base: '/'` for the intended user-site
+  root (`BASE=/personal-page/` for a project path). Hub payload stays ~70 KB; the film's three.js
+  chunk and GLB remain lazy and only on `/work/arm/`.
+- **Reveal fix:** hub entrances use a scroll-position check in the same rAF as nav/ghost state instead
+  of IntersectionObserver-only. A fast jump (anchor, key repeat, restored scroll) can move an element
+  from below the viewport to above it between frames, and an observer never fires — the element stayed
+  at `opacity: 0` for good. The check also makes the page's own QA deterministic.
+- **Mobile:** hub is single-column with stacked register rows, horizontal scroll cue, vertical system
+  diagram; overflow checked at 390 px (`innerWidth == scrollWidth`).
+- **No-JS:** hub and film copy are static HTML; the hub's reveals are enhancement only. (The film still
+  assumes JS for its loader, as before.)
+- **Verified:** `npm run build` green with both entries; production preview (4178) served hub + film;
+  Playwright pass at 1440/1280/390 (plus 1920/1024/900 spot checks) with **zero console errors and zero
+  failed requests**; film smoke test still gets `scene-ready` with the GLB loaded; no-JS render shows
+  all content. Captures + JSON report: `../review-v10/`.
+- **Not done:** deploy/Pages (repo visibility + URL rename still open), Astro migration, sheets 02–04
+  (need real assets), OG image/URL, custom domain, About page.

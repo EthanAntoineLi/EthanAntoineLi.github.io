@@ -9,6 +9,8 @@
 // ============================================================================
 import { createArmScene } from './arm-scene.js'
 
+const MODEL_URL = import.meta.env.BASE_URL + 'models/arm-opt.glb'
+
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const body = document.body
 
@@ -164,7 +166,7 @@ function startScene() {
   sceneReady = (async () => {
     try {
       scene = await createArmScene(canvas, {
-        modelUrl: './models/arm-opt.glb',
+        modelUrl: MODEL_URL,
         reducedMotion,
         phone,
       })

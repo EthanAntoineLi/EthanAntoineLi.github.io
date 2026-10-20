@@ -1,98 +1,101 @@
-# Ethan Antoine Li — Rescue Robotics
+# Ethan Antoine Li — engineering portfolio
 
-A one-page engineering portfolio, laid out like a drafting sheet: paper, hairlines, mono
-annotations, one signal colour — and, in section 02, the **real CAD assembly** of my 5-DOF
-robotic arm, articulated live in the browser.
+A static site laid out like an engineering drawing set. **Sheet 00** is the index (`/`), **Sheet 01**
+is the arm film (`/work/arm/`). The film is the previous v6 single-page site, kept intact: the real
+EPQ CAD arm, scroll-choreographed in three.js.
 
-**Mission:** *Why send more people into the same dangerous ground to save someone — why not robots?*
-
-Live: _not deployed yet_ · Local: `npm run dev` → http://localhost:5178/
+**Status:** the hub is built and verified locally (2026-10-20). It is **not deployed** yet — see
+*Deploy* below. The direction and the open decisions live in [`HUB-PLAN.md`](HUB-PLAN.md).
 
 ---
 
-## What the page is
+## What the site is
 
-| Section | Content |
-| --- | --- |
-| Hero | Name, mission line, one arm still render (`FIG. 01`), the facts strip |
-| 01 — Mission | Why mountain rescue, and the intended drone → fix → arm system as a drawing |
-| 02 — The arm | The EPQ artefact: real CAD arm viewer, architecture + joint-travel tables, link to the full visualiser |
-| 03 — The drone | What the FPV drone does today vs. the recognition layer that isn't built |
-| 04 — Status | Built / In build / Next, stated plainly |
-| 05 — Contact | Email, GitHub, arm visualiser |
+| Route | Sheet | Content |
+| --- | --- | --- |
+| `/` | 00 — index | Name, one line, current state, works register (01 published + 03 in prep), mission band with the system diagram, built/in build/next, record, contact, title block. No 3D. |
+| `/work/arm/` | 01 — the arm | The v6 **product film**: fixed 3D stage, six camera stops, the real articulated `arm-opt.glb`, mesh/points/x-ray modes, free view with part details. Unchanged except a back link to the index. |
 
-Content rule: **nothing claims the drone vision system works.** Prototype status is labelled
-wherever it matters. If a fact changes, change it here first.
+Register rules: a sheet is only linked when it has real content. Sheets 02–04 (drone, AI interviewer,
+physics) are listed as `SHEET IN PREP` until each has a real visual and facts to show.
+
+Content rule, unchanged from v2: **nothing claims the drone vision system works.** Prototype status is
+labelled wherever it matters.
 
 ## Stack
 
-- **Vite 5** + **three.js 0.170** (vanilla ES modules, no framework, no router, no trackers).
-- Self-hosted **Instrument Serif** (WOFF2, latin subset, SIL OFL) — serif for voice, system sans
-  for prose, system mono for technical annotation. No external font/CDN requests.
-- Palettes carried over from the EPQ arm visualiser (HAVK): paper `#EEF2F7`, ink `#0B1B2F`,
-  accent `#C2410C`, grid `#D3DDE8`.
+- **Vite 5** multi-page build + **three.js 0.170** on the film page only (vanilla ES modules, no
+  framework, no router, no trackers).
+- Self-hosted **Inter Tight** (display/prose) and **Instrument Serif** italic (voice) — no external
+  font/CDN requests.
+- Palette and type tokens live in [`src/tokens.css`](src/tokens.css); the film keeps a mirrored copy at
+  the top of `src/style.css` until it is migrated (see HUB-PLAN §8.1).
+- Paper `#f6f6f4` · ink `#101214` · signal rust `#b23e22`.
 
 ## Run it
 
 ```bash
 npm install
-npm run dev       # http://localhost:5178/
-npm run build     # → dist/ (static, relative paths)
+npm run dev       # http://localhost:5178/  (hub)  and /work/arm/ (film)
+npm run build     # → dist/ (both entries)
 npm run preview   # http://localhost:4178/
 ```
 
-Requires Node 18+. The dev server binds all interfaces; ports are pinned in `vite.config.js`.
+Requires Node 18+ (tested on Node 24). Ports are pinned in `vite.config.js`.
 
 ## Assets
 
 | File | Size | Origin |
 | --- | --- | --- |
-| `public/models/arm-opt.glb` | 1.6 MB, 290k tris | EPQ 3.1 Design FINAL.step (Shapr3D) → articulated GLB via the HAVK export pipeline (`HAVK/three-arm/tools/export_model.py`, `optimize.mjs`); meshopt + quantization compression, joints `J1…J5` |
-| `public/img/arm-plate.png/.webp` | 193 / 46 KB | 2× render from the page's own viewer (iso preset, pose `[12, 38, 8, 52, 20]`), cropped and padded |
-| `public/fonts/instrument-serif-*.woff2` | 30 KB total | Instrument Serif, SIL Open Font License, latin subset self-hosted |
+| `public/models/arm-opt.glb` | 1.6 MB, 290k tris | EPQ 3.1 Design FINAL.step (Shapr3D) → articulated GLB via `HAVK/three-arm/tools` (meshopt + quantization), joints `J1…J5` |
+| `public/img/plates/arm-16x10.png/.webp` | 156 KB / 22 KB | 16:10 hub plate composed from a 1600×1000 render of the page's own `arm-viewer.js` at pose `[12, 38, 8, 52, 20]` |
+| `public/img/arm-plate.png/.webp` | 193 / 46 KB | The film's own hero / no-WebGL still (portrait) |
+| `public/fonts/*.woff2` | 48 KB total | Inter Tight 300/400, Instrument Serif italic — latin subsets, self-hosted |
 
-The old `robot.glb` / `person.glb` / `drone.glb` Meshy meshes (660–883k tris, 71 MB total, no
-usable hierarchy) are **not** part of this build. They were archived outside the repo and removed
-from git in the v2 rebuild — see `BUILD-LOG.md`.
+Plate pipeline (local tooling, `dev/` is git-ignored): render `dev/plate.html` with
+`node dev/make-plate.mjs /tmp/plates`, compose the 16:10 crop on paper, export WebP + PNG.
 
 ## Performance
 
-Initial payload before the 3D section is reached: ~130 KB (HTML + CSS + page JS + fonts + hero
-WebP). The arm viewer chunk (156 KB gzip) and the GLB (1.6 MB) are dynamically imported only when
-section 02 comes within 500 px of the viewport, so the page reads instantly and the 3D is never in
-the critical path. The canvas is transparent (paper grid shows through), `prefers-reduced-motion`
-disables the pose animation, and without WebGL the page falls back to the still plate.
+- Hub initial payload: ~70 KB (HTML 3.7 + CSS 4.4 gzip + fonts + 22 KB plate + 1 KB JS); no three.js.
+- The film's hard 3D (≈167 KB gzip + 1.6 MB GLB) is still lazy and remains out of the hub's path.
+- Hub and sheets read fine with **JavaScript disabled** — reveals are progressive enhancement only.
+- `prefers-reduced-motion` disables entrances; no smooth-scroll hijacking on the hub.
 
 ## Deploy
 
-`.github/workflows/deploy.yml` builds `dist/` and publishes it to GitHub Pages on every push to
-`master` (Pages source: *GitHub Actions*). One manual step is required first: the repository is
-currently **private**, and GitHub Pages on the free plan only serves public repositories — make the
-repo public (or use a Pro plan) before the first deploy.
+`.github/workflows/deploy.yml` builds `dist/` and publishes it to GitHub Pages on push to `master`.
+Two things are still manual / unverified:
 
-`vite.config.js` uses `base: './'`, so the build works both at `EthanAntoineLi.github.io/personal-page/`
-and at a custom-domain root without changes.
+1. The site is intended for the **user-site root** (`https://ethanantoineli.github.io/`), so the repo
+   should be renamed `EthanAntoineLi.github.io`. `vite.config.js` uses `base: '/'`; build with
+   `BASE=/personal-page/ npm run build` if it stays a project site.
+2. GitHub Pages on the free plan needs a **public** repository. Verify before relying on the workflow.
+
+`HUB-PLAN.md` §8–10 tracks the deploy/URL decision.
 
 ## Layout
 
 ```
 personal-page/
-  index.html              # all content, semantic sections, inline system diagram (SVG)
+  index.html               # Sheet 00 — hub
+  work/arm/index.html      # Sheet 01 — the v6 film (verbatim, + back link)
   src/
-    style.css             # design tokens, layout, responsive rules, reduced motion
-    main.js               # reveals, nav state, lazy arm viewer wiring, copy-email
-    arm-viewer.js         # three.js viewer for public/models/arm-opt.glb (standalone)
+    tokens.css             # shared design tokens + @font-face
+    hub.css                # hub layout, register, mission band, title block
+    hub.js                 # reveals, nav/ghost state, copy-email
+    style.css              # film styles (mirrors the tokens)
+    main.js                # film behaviour (loader, Lenis, scene choreography)
+    arm-scene.js           # film three.js scene (fixed stage, six stops, point cloud)
+    arm-viewer.js          # standalone viewer (dev harness + plate renders)
   public/
-    fonts/                # Instrument Serif woff2 (latin)
-    img/                  # hero / fallback plate renders
-    models/arm-opt.glb    # articulated arm CAD (1.6 MB)
-    favicon.svg
-  SPEC.md                 # what this page wants to be, content facts, design language
-  ARCHITECTURE.md         # module contracts + asset pipeline
-  BUILD-LOG.md            # v1 scroll-story record, then the v2 rebuild rationale
+    fonts/ img/ models/ favicon.svg
+  HUB-PLAN.md              # v7 direction: IA, design system, tech, open decisions
+  SPEC.md                  # v2 spec (historical — the current direction is HUB-PLAN)
+  ARCHITECTURE.md          # module contracts + build/routes
+  BUILD-LOG.md             # v1–v7 build history
   .github/workflows/deploy.yml
 ```
 
-`src/arm-viewer.js` is self-contained and can be reused: it loads the articulated GLB, fits the
-camera to the model bounds at any canvas aspect, orbits on drag, switches to iso/profile/front/top,
-and exposes `setPose(deg5)` / `play()` / `pause()`.
+QA captures and the iteration record for the hub are in `../review-v10/` (Playwright: desktop/laptop/
+mobile, no-JS pass, film smoke test, production-preview pass).

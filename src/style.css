@@ -371,6 +371,27 @@ body.at-end .stage-fallback {
   border-left: 1px solid var(--line);
   font-size: 8.5px;
 }
+.chrome-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-self: start;
+  min-width: 0;
+}
+
+.sheet-back {
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+  transition: color 0.2s;
+}
+
+.sheet-back:hover {
+  color: var(--ink);
+}
+
 .chrome-meta {
   justify-self: center;
   color: var(--dim);

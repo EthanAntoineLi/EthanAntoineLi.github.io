@@ -19,5 +19,5 @@
   "allowScripts": {
     "esbuild@0.21.5": true
   },
-  "description": "Ethan Antoine Li — rescue-robotics portfolio. Drafting-sheet editorial page with an embedded interactive 5-DOF CAD arm viewer."
+  "description": "Ethan Antoine Li — engineering portfolio. Sheet 00 hub + Sheet 01 interactive 5-DOF CAD arm film (Vite MPA + three.js)."
 }

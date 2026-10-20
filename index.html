@@ -5,259 +5,332 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#f6f6f4" />
-    <title>Ethan Antoine Li — Rescue Robotics</title>
+    <title>Ethan Antoine Li — Engineering portfolio</title>
     <meta
       name="description"
-      content="A five-axis robotic arm, printed and programmed. Built toward a mountain-rescue system. Real CAD, real prototype, honest about what is not built."
+      content="Prototypes for mountain rescue: a five-axis robotic arm, an FPV drone, and the system that should join them. Real CAD, real builds, honest labels."
     />
-    <meta property="og:title" content="Ethan Antoine Li — Rescue Robotics" />
+    <meta property="og:title" content="Ethan Antoine Li — Engineering portfolio" />
     <meta
       property="og:description"
-      content="A five-axis arm, printed and programmed. The drone half is not built yet."
+      content="A five-axis arm, an FPV drone, and the rescue system they belong to."
     />
     <meta property="og:type" content="website" />
     <meta name="author" content="Ethan Antoine Li" />
-    <meta property="og:url" content="https://ethanantoineli.github.io/personal-page/" />
-    <meta property="og:image" content="https://ethanantoineli.github.io/personal-page/img/og.jpg" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <link rel="preload" href="./fonts/inter-tight-400.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="./fonts/inter-tight-300.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="./fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="./src/style.css" />
+    <!-- og:image and og:url are set when the site has its final root URL (HUB-PLAN §8.2). -->
     <script>
       document.documentElement.classList.add('js')
     </script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/inter-tight-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-tight-300.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/src/hub.css" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
-    <!-- ---------------------------------------------------------- loader -->
-    <div class="loader" id="loader" aria-hidden="true">
-      <p class="loader-label mono">Scanning</p>
-      <p class="loader-count" id="loader-count">000</p>
-      <div class="loader-bar"><span id="loader-bar"></span></div>
-      <p class="loader-ascii mono" id="loader-ascii">----------</p>
-      <p class="mono loader-foot">EPQ 3.1 · 5-axis arm · CAD</p>
-    </div>
-
-    <!-- ----------------------------------------------------------- cursor -->
-    <div class="cursor" id="cursor" aria-hidden="true">
-      <span class="cursor-dot"></span>
-      <span class="cursor-label mono" id="cursor-label"></span>
-    </div>
-
-    <!-- ------------------------------------------------------ ghost letters -->
     <div class="ghost-wrap" aria-hidden="true">
-      <span class="ghost" id="ghost">SCAN</span>
+      <span class="ghost" id="ghost">WORK</span>
     </div>
 
-    <!-- ---------------------------------------------------------- 3D stage -->
-    <div class="stage" aria-hidden="true">
-      <canvas id="arm-canvas"></canvas>
-      <img class="stage-fallback" id="stage-fallback" src="./img/arm-plate.png" alt="" />
-      <span class="scan-line" id="scan-line" aria-hidden="true"></span>
-    </div>
-
-    <!-- ------------------------------------------------------------ chrome -->
     <header class="chrome">
-      <a class="brand" href="#top" aria-label="Ethan Antoine Li — top">
+      <a class="brand" href="/" aria-label="Ethan Antoine Li — home">
         <span class="brand-mark" aria-hidden="true"></span>
         <span class="brand-name">ethan antoine li</span>
-        <span class="brand-tag mono">rescue robotics</span>
+        <span class="brand-tag mono">portfolio</span>
       </a>
 
-      <p class="chrome-meta mono">5-axis arm · EPQ 2026</p>
+      <p class="chrome-meta mono">Sheet 00 · rev 2026.10</p>
 
-      <div class="chrome-right">
-        <p class="chrome-frame mono" id="chrome-frame" aria-hidden="true">F 000000</p>
-        <div class="mode" role="group" aria-label="Render mode">
-          <button type="button" data-mode="mesh" class="on">Mesh</button>
-          <button type="button" data-mode="points">Points</button>
-          <button type="button" data-mode="xray">X-ray</button>
-        </div>
-        <p class="chrome-clock mono" id="clock">GMT+8 —:—</p>
-        <button class="index-toggle mono" id="index-toggle" aria-expanded="false" aria-controls="index-panel">
-          index
-        </button>
-      </div>
+      <nav class="nav mono" aria-label="Sections">
+        <a href="#work" data-nav>Work</a>
+        <a href="#mission" data-nav>Mission</a>
+        <a href="#status" data-nav>Status</a>
+        <a href="#contact" data-nav>Contact</a>
+      </nav>
     </header>
 
-    <!-- ----------------------------------------------------- index overlay -->
-    <nav class="index-panel" id="index-panel" aria-label="Sections" hidden>
-      <ol>
-        <li><a href="#act-arm"><span class="mono">01</span>Payload</a></li>
-        <li><a href="#act-geometry"><span class="mono">02</span>Geometry</a></li>
-        <li><a href="#act-free"><span class="mono">03</span>Free view</a></li>
-        <li><a href="#act-scan"><span class="mono">04</span>Scan</a></li>
-        <li><a href="#act-contact"><span class="mono">05</span>Contact</a></li>
-      </ol>
-      <p class="index-foot mono">ethan.li.1@outlook.com</p>
-    </nav>
-
-    <!-- ------------------------------------------------------ left progress -->
-    <aside class="progress" aria-hidden="true">
-      <p class="progress-num" id="progress-num">01</p>
-      <ol class="progress-ticks" id="progress-ticks">
-        <li class="on"></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-      </ol>
-    </aside>
-
-    <!-- ------------------------------------------------------------ main -->
     <main id="main">
-      <!-- =========================================================== HERO -->
-      <section class="act act--hero" id="top" data-stop="hero" data-ghost="SCAN" data-index="1" data-ex="rise">
-        <div class="act-inner">
-          <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>Rescue robotics</p>
-            <h1 class="hero-name">
-              <span class="line">Ethan</span>
-              <span class="line line--indent">Antoine Li</span>
-            </h1>
-          </div>
+      <!-- ============================================================ HERO -->
+      <section class="hero" id="top" data-ghost="WORK">
+        <div class="hero-top">
+          <p class="eyebrow mono reveal"><span class="dot"></span>Engineering · rescue robotics</p>
+          <h1 class="hero-name">
+            <span class="line">Ethan</span>
+            <span class="line line--indent">Antoine Li</span>
+          </h1>
 
-          <div class="hero-foot">
-            <p class="hero-line">
-              A five-axis arm, printed<br />
-              and programmed. Mountain<br />
-              rescue is the target.
-            </p>
-            <p class="pull">“Why send people into the same dangerous ground — why not robots?”</p>
-            <a class="scroll-cue" href="#act-arm" data-cursor="scroll">
-              <span class="scroll-dots" aria-hidden="true"></span>
-              <span class="mono">Scroll</span>
-            </a>
-          </div>
+          <p class="hero-line reveal">
+            I build prototypes for mountain rescue — a five-axis arm, an FPV drone, and the
+            system that should join them.
+          </p>
         </div>
-      </section>
 
-      <!-- =========================================================== ARM -->
-      <section class="act act--arm" id="act-arm" data-stop="joints" data-ghost="ARM" data-index="2" data-ent="rise" data-ex="swing">
-        <div class="act-inner">
-          <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>01 / Payload</p>
-            <h2 class="act-title">
-              Built to hold<br />
-              <em>500 grams.</em>
-            </h2>
-          </div>
-
-          <div class="act-bottom">
-            <ul class="spec-row" id="spec-row">
-              <li class="spec" data-spec="dof">
-                <span class="spec-num">5</span>
-                <span class="spec-unit">DOF</span>
-                <span class="spec-label mono">[ built · 6 drawn ]</span>
-              </li>
-              <li class="spec" data-spec="payload">
-                <span class="spec-num">500</span>
-                <span class="spec-unit">g</span>
-                <span class="spec-label mono">[ payload target ]</span>
-              </li>
-              <li class="spec" data-spec="torque">
-                <span class="spec-num">19</span>
-                <span class="spec-unit">N·m</span>
-                <span class="spec-label mono">[ base torque ]</span>
-              </li>
-            </ul>
-            <p class="act-note mono">UMIR57 ×2 · UMIR42 ×3 · RS485 / Modbus-RTU</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- ======================================================== GEOMETRY -->
-      <section class="act act--geometry" id="act-geometry" data-stop="profile" data-ghost="AXIS" data-index="3" data-ent="swing" data-ex="curtain">
-        <div class="act-inner">
-          <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>02 / Geometry</p>
-            <h2 class="act-title">
-              Six axes drawn.<br />
-              Five built.
-            </h2>
-          </div>
-
-          <ul class="joints mono">
-            <li><span>J1</span> base yaw <b>±120°</b></li>
-            <li><span>J2</span> shoulder <b>0–150°</b></li>
-            <li><span>J3</span> upper arm <b>±135°</b></li>
-            <li><span>J4</span> elbow <b>0–140°</b></li>
-            <li><span>J5</span> wrist <b>±180°</b></li>
+        <div class="hero-foot">
+          <ul class="status-strip mono reveal" aria-label="Current state">
+            <li><span class="sq sq--built" aria-hidden="true"></span>5-axis arm — built</li>
+            <li><span class="sq sq--flying" aria-hidden="true"></span>FPV drone — flying</li>
+            <li><span class="sq sq--missing" aria-hidden="true"></span>handoff — not built</li>
           </ul>
 
-          <p class="drag-note mono" id="drag-note">⟨ drag to orbit ⟩</p>
+          <a class="scroll-cue mono reveal" href="#work">
+            <span class="cue-line" aria-hidden="true"></span>
+            Selected work
+          </a>
         </div>
       </section>
 
+      <!-- ============================================================ WORK -->
+      <section class="work section" id="work" data-ghost="WORK">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>01 / Selected work</p>
+            <h2 class="section-title">The set <em>so far.</em></h2>
+          </div>
+          <p class="section-meta mono">04 sheets · 01 published</p>
+        </header>
 
-      <!-- ======================================================== FREE VIEW -->
-      <section class="act act--free" id="act-free" data-stop="free" data-ghost="MOVE" data-index="4" data-ent="curtain" data-ex="swing">
-        <div class="act-inner">
-          <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>03 / Free view</p>
-            <h2 class="act-title">
-              Your turn.<br />
-              <em>Move it.</em>
-            </h2>
+        <a class="sheet-row sheet-row--lead reveal" href="/work/arm/">
+          <span class="sheet-no mono">01</span>
+
+          <div class="sheet-copy">
+            <h3 class="sheet-title">Five-axis<br />robotic arm</h3>
+            <p class="sheet-line">
+              Six axes drawn, five built. Designed in Shapr3D, printed on a Bambu Lab, and
+              articulated in the browser from the real CAD.
+            </p>
+            <p class="sheet-tags mono">
+              <span>Hardware</span><span>EPQ 2026</span><span class="state state--built">Built</span>
+            </p>
+            <span class="sheet-open mono">Open sheet <span aria-hidden="true">↗</span></span>
           </div>
 
-          <div class="free-hud">
-            <p class="act-note mono">Drag to orbit · click a part for details</p>
-            <div class="free-controls" role="group" aria-label="Model view controls">
-              <button type="button" class="free-btn" data-zoom="in" aria-label="Zoom in">+</button>
-              <button type="button" class="free-btn" data-zoom="out" aria-label="Zoom out">−</button>
-              <button type="button" class="free-btn free-btn--text" data-free-reset>Reset view</button>
+          <figure class="plate">
+            <span class="plate-frame" aria-hidden="true"></span>
+            <span class="plate-media">
+              <picture>
+                <source srcset="/img/plates/arm-16x10.webp" type="image/webp" />
+                <img
+                  src="/img/plates/arm-16x10.png"
+                  width="1600"
+                  height="1000"
+                  alt="The EPQ 3.1 five-axis robotic arm, rendered from the real CAD assembly."
+                  loading="eager"
+                  decoding="async"
+                />
+              </picture>
+            </span>
+            <figcaption class="mono">Fig. 01 — EPQ 3.1 · CAD assembly</figcaption>
+          </figure>
+        </a>
+
+        <ol class="register" aria-label="Sheets in preparation">
+          <li class="register-row reveal">
+            <span class="sheet-no mono">02</span>
+            <h3 class="register-title">FPV drone</h3>
+            <p class="register-line">Pilot, goggles, video. The half that should find the person.</p>
+            <div class="register-meta mono">
+              <span class="register-tags"><span>Hardware</span><span>2026</span></span>
+              <span class="state">Flying</span>
+              <span class="register-note">Sheet in prep</span>
+            </div>
+          </li>
+
+          <li class="register-row reveal">
+            <span class="sheet-no mono">03</span>
+            <h3 class="register-title">AI interviewer</h3>
+            <p class="register-line">Reading apparent confidence from facial data — a Python study.</p>
+            <div class="register-meta mono">
+              <span class="register-tags"><span>Software</span><span>2026</span></span>
+              <span class="state">Study</span>
+              <span class="register-note">Sheet in prep</span>
+            </div>
+          </li>
+
+          <li class="register-row reveal">
+            <span class="sheet-no mono">04</span>
+            <h3 class="register-title">Physics at the bench</h3>
+            <p class="register-line">Centripetal force and diode I–V curves, measured on real apparatus.</p>
+            <div class="register-meta mono">
+              <span class="register-tags"><span>Research</span><span>2026</span></span>
+              <span class="state">Study</span>
+              <span class="register-note">Sheet in prep</span>
+            </div>
+          </li>
+        </ol>
+
+        <p class="register-foot mono reveal">
+          Sheets in prep are not linked until there is something real to show.
+        </p>
+      </section>
+
+      <!-- ========================================================= MISSION -->
+      <section class="mission section" id="mission" data-ghost="WHY">
+        <div class="mission-grid">
+          <header class="section-head reveal">
+            <div>
+              <p class="eyebrow mono"><span class="dot"></span>02 / Mission</p>
+              <h2 class="section-title">Two machines.<br /><em>One handoff.</em></h2>
+            </div>
+          </header>
+
+          <div class="mission-copy reveal">
+            <p>
+              I ski. Every winter the same shape of accident: a person down on a line that is
+              difficult, exposed, or both — and a team that has to commit people to that ground.
+            </p>
+            <p>
+              The intent is a drone that finds the person and stays overhead, and an arm that does
+              the reaching and lifting. Each half is a prototype.
+              <strong>The handoff between them does not exist yet.</strong>
+            </p>
+          </div>
+        </div>
+
+        <figure class="system reveal">
+          <div
+            class="system-track"
+            role="img"
+            aria-label="System intent: drone, position fix, handoff, arm. The drone flies as FPV, the arm is a bench prototype, and the two middle stages are not built."
+          >
+            <div class="system-node is-built">
+              <span class="system-mark" aria-hidden="true"></span>
+              <p class="system-name mono">Drone</p>
+              <p class="system-state">FPV · flying</p>
+            </div>
+            <span class="system-link is-missing" aria-hidden="true"></span>
+            <div class="system-node is-missing">
+              <span class="system-mark" aria-hidden="true"></span>
+              <p class="system-name mono">Position fix</p>
+              <p class="system-state">not built</p>
+            </div>
+            <span class="system-link is-missing" aria-hidden="true"></span>
+            <div class="system-node is-missing">
+              <span class="system-mark" aria-hidden="true"></span>
+              <p class="system-name mono">Handoff</p>
+              <p class="system-state">not built</p>
+            </div>
+            <span class="system-link is-missing" aria-hidden="true"></span>
+            <div class="system-node is-built">
+              <span class="system-mark" aria-hidden="true"></span>
+              <p class="system-name mono">Arm</p>
+              <p class="system-state">bench prototype</p>
             </div>
           </div>
+          <figcaption class="mono">Fig. 02 — System intent · not a simulation</figcaption>
+        </figure>
+      </section>
 
-          <div class="detail" id="detail-card" role="dialog" aria-modal="false" aria-labelledby="detail-title" hidden>
-            <button type="button" class="detail-close mono" id="detail-close" aria-label="Close details">Close ✕</button>
-            <p class="detail-id mono" id="detail-id"></p>
-            <h3 class="detail-title" id="detail-title"></h3>
-            <dl class="detail-rows" id="detail-rows"></dl>
+      <!-- ========================================================== STATUS -->
+      <section class="status section" id="status" data-ghost="NOW">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>03 / Status</p>
+            <h2 class="section-title">Built, in build,<br /><em>next.</em></h2>
           </div>
+          <p class="section-meta mono">Last updated — October 2026</p>
+        </header>
+
+        <div class="status-grid">
+          <article class="status-col reveal">
+            <h3 class="status-label mono"><span class="status-dot"></span>Built</h3>
+            <ul>
+              <li>Arm CAD finalised — EPQ 3.1</li>
+              <li>Five joints printed, assembled and moving</li>
+              <li>Real-geometry articulation in the browser</li>
+              <li>Drone flying as FPV — pilot, goggles, video</li>
+            </ul>
+          </article>
+
+          <article class="status-col reveal">
+            <h3 class="status-label mono"><span class="status-dot"></span>In build</h3>
+            <ul>
+              <li>Arm firmware on the STM32F407</li>
+              <li>RS485 / Modbus-RTU joint control</li>
+              <li>Payload work toward the 500 g target</li>
+            </ul>
+          </article>
+
+          <article class="status-col reveal">
+            <h3 class="status-label mono"><span class="status-dot status-dot--accent"></span>Next</h3>
+            <ul>
+              <li>Drone recognition</li>
+              <li>A usable position fix</li>
+              <li>The handoff from fix to arm</li>
+            </ul>
+          </article>
         </div>
       </section>
 
-      <!-- ============================================================ SCAN -->
-      <section class="act act--scan" id="act-scan" data-stop="scan" data-ghost="REAL" data-index="5" data-ent="swing" data-ex="dolly">
-        <div class="act-inner">
-          <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>04 / Scan</p>
-            <h2 class="act-title">
-              This half is real.<br />
-              <span class="dim-line">The drone half <em>isn’t built yet.</em></span>
-            </h2>
+      <!-- ========================================================== RECORD -->
+      <section class="record section" id="record" data-ghost="REC">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>04 / Record</p>
+            <h2 class="section-title">On the <em>record.</em></h2>
           </div>
-          <p class="act-note mono">X-ray of the real EPQ 3.1 CAD — edges only, no stand-in geometry</p>
-        </div>
+        </header>
+
+        <table class="record-table reveal">
+          <caption class="visually-hidden">Selected record</caption>
+          <tbody>
+            <tr>
+              <th scope="row" class="mono">2026</th>
+              <td>EPQ artefact P304 — <a href="/work/arm/">five-axis robotic arm</a></td>
+            </tr>
+            <tr>
+              <th scope="row" class="mono">2026</th>
+              <td>ASDAN Senior Physics Challenge — final</td>
+            </tr>
+          </tbody>
+        </table>
       </section>
 
       <!-- ========================================================= CONTACT -->
-      <section class="act act--contact" id="act-contact" data-stop="outro" data-ghost="HI" data-index="6" data-ent="dolly">
-        <div class="act-inner">
-          <div class="act-top">
+      <section class="contact section" id="contact" data-ghost="TALK">
+        <div class="contact-grid">
+          <header class="contact-head reveal">
             <p class="eyebrow mono"><span class="dot"></span>05 / Contact</p>
+            <h2 class="contact-title">Let’s <em>talk.</em></h2>
+          </header>
+
+          <div class="contact-side reveal">
+            <div class="contact-mail">
+              <a class="email" href="mailto:ethan.li.1@outlook.com">ethan.li.1@outlook.com</a>
+              <button
+                class="copy mono"
+                id="copy-email"
+                type="button"
+                data-email="ethan.li.1@outlook.com"
+                data-label="Copy"
+              >
+                <span class="copy-label">Copy</span>
+              </button>
+            </div>
+            <p class="contact-links mono">
+              <a href="https://github.com/EthanAntoineLi" target="_blank" rel="noopener">GitHub ↗</a>
+              <a href="https://ethanantoineli.github.io/HAVK/" target="_blank" rel="noopener"
+                >Live model ↗</a
+              >
+            </p>
           </div>
-
-          <h2 class="act-title contact-title">Let’s talk.</h2>
-
-          <a class="email" href="mailto:ethan.li.1@outlook.com">ethan.li.1@outlook.com</a>
-
-          <div class="links">
-            <a href="https://github.com/EthanAntoineLi" target="_blank" rel="noopener">GitHub ↗</a>
-            <a href="https://ethanantoineli.github.io/HAVK/" target="_blank" rel="noopener">Arm demo ↗</a>
-          </div>
-
-          <p class="colophon mono">Built by hand · no tracking · no cookies</p>
         </div>
       </section>
     </main>
 
-    <script type="module" src="./src/main.js"></script>
+    <!-- ============================================================ FOOTER -->
+    <footer class="title-block">
+      <div class="tb-grid mono">
+        <div class="tb-cell"><span class="tb-k">Project</span><span class="tb-v">ethan antoine li</span></div>
+        <div class="tb-cell"><span class="tb-k">Sheet</span><span class="tb-v">00 / 04</span></div>
+        <div class="tb-cell"><span class="tb-k">Rev</span><span class="tb-v">2026.10</span></div>
+        <div class="tb-cell"><span class="tb-k">Scale</span><span class="tb-v">1:1</span></div>
+        <div class="tb-cell"><span class="tb-k">Status</span><span class="tb-v">prototypes, honestly labelled</span></div>
+      </div>
+      <p class="colophon mono">Built by hand · no tracking · no cookies</p>
+    </footer>
+
+    <script type="module" src="/src/hub.js"></script>
   </body>
 </html>

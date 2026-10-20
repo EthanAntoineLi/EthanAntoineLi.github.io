@@ -1,5 +1,10 @@
 # SPEC — Ethan's Personal Page
 
+> **Status note (2026-10-20):** this is the v2 single-page spec, kept for the content facts and the
+> design language. The site is now a v7 **hub + sheets** build; the current direction, information
+> architecture and open decisions live in [`HUB-PLAN.md`](HUB-PLAN.md) and the built state in
+> [`README.md`](README.md) / [`ARCHITECTURE.md`](ARCHITECTURE.md).
+
 **v2 — 2026-10-19.** This supersedes the v1 "scroll-story" spec (one cinematic Three.js scene over
 three placeholder Meshy models). v2 keeps the content facts and the mission, and changes the form:
 a **drafting-sheet portfolio** with the real CAD arm as the only 3D object. Why v1 was replaced is

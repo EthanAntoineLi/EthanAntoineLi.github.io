@@ -85,7 +85,7 @@ import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js'
 const D2R = Math.PI / 180
 const UP = new THREE.Vector3(0, 1, 0)
 
-const DEFAULT_MODEL_URL = './models/arm-opt.glb'
+const DEFAULT_MODEL_URL = import.meta.env.BASE_URL + 'models/arm-opt.glb'
 const POINT_COUNT = 90000
 const ENTRY_MS = 2200
 const MAX_DPR = 2

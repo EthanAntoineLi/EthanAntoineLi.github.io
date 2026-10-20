@@ -348,7 +348,10 @@ function fitDistance(bounds, target, az, el, aspect, fillY, fillX) {
 // ---------------------------------------------------------------------------
 export async function createArmViewer(canvas, opts = {}) {
   const settings = {
-    modelUrl: typeof opts.modelUrl === 'string' && opts.modelUrl ? opts.modelUrl : './models/arm-opt.glb',
+    modelUrl:
+      typeof opts.modelUrl === 'string' && opts.modelUrl
+        ? opts.modelUrl
+        : import.meta.env.BASE_URL + 'models/arm-opt.glb',
     reducedMotion:
       typeof opts.reducedMotion === 'boolean'
         ? opts.reducedMotion

@@ -1,0 +1,61 @@
+/* ==========================================================================
+   Design tokens — shared by the hub and (eventually) the film.
+   Mirrors the :root block at the top of src/style.css; until the film is
+   migrated (HUB-PLAN §8.1) both copies must stay identical.
+   ========================================================================== */
+
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/fonts/inter-tight-300.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/fonts/inter-tight-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("/fonts/instrument-serif-italic-latin.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --paper: #f6f6f4;
+  --paper-2: #efefec;
+  --ink: #101214;
+  --ink-soft: #2c2f33;
+  --body: #3c4045;
+  --muted: #5f6469;
+  --dim: #6f7377;
+  --accent: #b23e22;
+  --accent-soft: #c2410c;
+  /* rust that still reads on the ink band */
+  --accent-on-ink: #d9633f;
+
+  --line: rgba(16, 18, 20, 0.14);
+  --line-soft: rgba(16, 18, 20, 0.07);
+  --line-on-ink: rgba(246, 246, 244, 0.18);
+  --text-on-ink: rgba(246, 246, 244, 0.74);
+  --text-on-ink-dim: rgba(246, 246, 244, 0.5);
+
+  --sans: "Inter Tight", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --serif: "Instrument Serif", "Iowan Old Style", Palatino, Georgia, serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "IBM Plex Mono", monospace;
+
+  --gutter: clamp(22px, 3.6vw, 56px);
+  --chrome-h: 54px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
