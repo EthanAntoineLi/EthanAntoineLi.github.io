@@ -358,7 +358,7 @@ function countSpecs() {
   requestAnimationFrame(tick)
 }
 
-// Which named joint a transition dives into. Boundary 3 (geometry -> scan) is
+// Which named joint a transition dives into. Boundary 3 (process -> scan) is
 // the scan itself, so it has no close-up.
 const CLOSEUP_BY_BOUNDARY = ['shoulder', 'elbow', null, null, null]
 

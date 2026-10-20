@@ -17,9 +17,7 @@
     />
     <meta property="og:type" content="website" />
     <meta name="author" content="Ethan Antoine Li" />
-    <meta property="og:url" content="https://ethanantoineli.github.io/personal-page/" />
-    <meta property="og:image" content="https://ethanantoineli.github.io/personal-page/img/og.jpg" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <!-- og:image and og:url are set when the site has its final root URL (HUB-PLAN §8.2). -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preload" href="/fonts/inter-tight-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/inter-tight-300.woff2" as="font" type="font/woff2" crossorigin />
@@ -90,7 +88,7 @@
     <nav class="index-panel" id="index-panel" aria-label="Sections" hidden>
       <ol>
         <li><a href="#act-arm"><span class="mono">01</span>Payload</a></li>
-        <li><a href="#act-geometry"><span class="mono">02</span>Geometry</a></li>
+        <li><a href="#act-geometry"><span class="mono">02</span>Process</a></li>
         <li><a href="#act-free"><span class="mono">03</span>Free view</a></li>
         <li><a href="#act-scan"><span class="mono">04</span>Scan</a></li>
         <li><a href="#act-contact"><span class="mono">05</span>Contact</a></li>
@@ -173,26 +171,29 @@
         </div>
       </section>
 
-      <!-- ======================================================== GEOMETRY -->
-      <section class="act act--geometry" id="act-geometry" data-stop="profile" data-ghost="AXIS" data-index="3" data-ent="swing" data-ex="curtain">
+      <!-- ========================================================= PROCESS -->
+      <!-- The whole slide is the doorway to the process page (not built yet). -->
+      <section class="act act--geometry" id="act-geometry" data-stop="profile" data-ghost="MAKE" data-index="3" data-ent="swing" data-ex="curtain">
         <div class="act-inner">
-          <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>02 / Geometry</p>
-            <h2 class="act-title">
-              Six axes drawn.<br />
-              Five built.
-            </h2>
-          </div>
+          <a class="process-entry" href="./process/" draggable="false" data-cursor="open" aria-labelledby="process-title process-cue">
+            <div class="act-top">
+              <p class="eyebrow mono"><span class="dot"></span>02 / Process</p>
+              <h2 class="act-title" id="process-title">
+                Drawn, printed,<br />
+                <em>then programmed.</em>
+              </h2>
+            </div>
 
-          <ul class="joints mono">
-            <li><span>J1</span> base yaw <b>±120°</b></li>
-            <li><span>J2</span> shoulder <b>0–150°</b></li>
-            <li><span>J3</span> upper arm <b>±135°</b></li>
-            <li><span>J4</span> elbow <b>0–140°</b></li>
-            <li><span>J5</span> wrist <b>±180°</b></li>
-          </ul>
+            <ul class="joints mono" aria-hidden="true">
+              <li><span>01</span> Draw <b>CAD · 6 axes</b></li>
+              <li><span>02</span> Print <b>the parts</b></li>
+              <li><span>03</span> Assemble <b>5 DOF</b></li>
+              <li><span>04</span> Program <b>RS485 · Modbus</b></li>
+              <li><span>05</span> Test <b>500 g target</b></li>
+            </ul>
 
-          <p class="drag-note mono" id="drag-note">⟨ drag to orbit ⟩</p>
+            <p class="drag-note process-note mono" id="process-cue">⟨ open the process ⟩</p>
+          </a>
         </div>
       </section>
 
