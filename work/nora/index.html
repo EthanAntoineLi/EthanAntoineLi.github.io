@@ -8,7 +8,7 @@
     <title>Sheet 02 — Nora · Ethan Antoine Li</title>
     <meta
       name="description"
-      content="Nora is a personal AI that runs 24/7 on a Mac of her own — long-term memory, reminders, a morning timetable and practice questions — with a pixel-art desk cat for a status window."
+      content="Nora is a personal AI running 24/7 on a Mac of her own — memory, reminders, a timetable, practice questions, and a pixel desk cat as her status window."
     />
     <meta property="og:title" content="Sheet 02 — Nora · Ethan Antoine Li" />
     <meta
@@ -22,7 +22,6 @@
     </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preload" href="/fonts/inter-tight-400.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/inter-tight-300.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/src/hub.css" />
     <link rel="stylesheet" href="/src/sheet.css" />
@@ -41,11 +40,12 @@
         <span class="brand-tag mono">portfolio</span>
       </a>
 
-      <p class="chrome-meta mono">Sheet 02 · Software · 2026</p>
+      <p class="chrome-meta mono">Sheet 02 / 05 · rev 2026.10</p>
 
       <nav class="nav mono" aria-label="Sheet sections">
         <a href="/">← index</a>
         <a href="#what" data-nav>Assistant</a>
+        <a href="#build" data-nav>Build</a>
         <a href="#cat" data-nav>Cat</a>
         <a href="#status" data-nav>Status</a>
       </nav>
@@ -55,23 +55,23 @@
       <!-- ============================================================ HERO -->
       <section class="sheet-hero" id="top" data-ghost="NOR">
         <div class="reveal">
-          <p class="eyebrow mono"><span class="dot"></span>02 / Software · personal AI</p>
+          <p class="eyebrow mono"><span class="dot"></span>Software · personal AI</p>
           <h1 class="sheet-name">Nora</h1>
           <p class="sheet-sub">A personal AI with <em>a desk cat.</em></p>
         </div>
 
         <div class="sheet-hero-foot">
           <p class="sheet-lede reveal">
-            Nora runs <strong>24/7</strong> on a Mac of her own. She keeps long-term memory, sets
-            reminders, sends my timetable every morning, and builds topic-specific practice
-            questions from my question bank. The cat is how I see what she’s doing.
+            Nora runs <strong>24/7</strong> on a Mac of her own — long-term memory, reminders, my
+            timetable every morning, and practice questions from my question bank. The cat is how I
+            see what she’s doing.
           </p>
 
           <dl class="sheet-meta reveal">
             <div><dt>Status</dt><dd><span class="state state--built">Running 24/7</span></dd></div>
             <div><dt>Base</dt><dd>OpenClaw core, plus my own layers</dd></div>
             <div><dt>Lives on</dt><dd>A dedicated Mac she controls</dd></div>
-            <div><dt>Updated</dt><dd>October 2026</dd></div>
+            <div><dt>Role</dt><dd>Design + build</dd></div>
           </dl>
         </div>
       </section>
@@ -96,10 +96,16 @@
           </picture>
         </div>
         <figcaption class="demo-caption">
-          <span class="mono">Fig. 01 — live demo · fake events, no agent connected</span>
-          <span class="mono">Click her to pet · six quick pokes make her grumpy</span>
-          <a class="demo-open mono" href="/work/nora/demo/?full" target="_blank" rel="noopener"
-            >Full demo ↗</a
+          <span class="mono live-only">Fig. 01 — live demo · fake events, no agent connected.</span>
+          <span class="mono still-only">Fig. 01 — still frame · animation off in this mode.</span>
+          <span class="mono live-only">Click her to pet · six quick pokes make her grumpy</span>
+          <a
+            class="demo-open mono"
+            href="/work/nora/demo/?full"
+            target="_blank"
+            rel="noopener"
+            aria-label="Full demo — opens in a new tab"
+            >Full demo <span aria-hidden="true">↗</span></a
           >
         </figcaption>
       </figure>
@@ -116,29 +122,25 @@
 
         <ol class="jobs">
           <li class="job reveal">
-            <p class="job-no mono">01</p>
             <h3 class="job-title">Long-term memory</h3>
             <p class="job-line">
-              Context carries across sessions. A project or a reminder can be picked up later
-              instead of explained again.
+              Context carries across sessions; a project or a reminder is picked up later, not
+              explained again.
             </p>
           </li>
           <li class="job reveal">
-            <p class="job-no mono">02</p>
             <h3 class="job-title">Reminders</h3>
             <p class="job-line">A sentence becomes a timed nudge. She comes back when it’s due.</p>
           </li>
           <li class="job reveal">
-            <p class="job-no mono">03</p>
             <h3 class="job-title">Morning timetable</h3>
-            <p class="job-line">The day’s timetable arrives every morning, before I ask for it.</p>
+            <p class="job-line">My timetable arrives every morning.</p>
           </li>
           <li class="job reveal">
-            <p class="job-no mono">04</p>
             <h3 class="job-title">Practice questions</h3>
             <p class="job-line">
-              Topic-specific questions pulled from my question bank. A dedicated question-maker
-              sub-agent drafts them; the main agent wakes it when needed.
+              Topic-specific questions from my question bank, drafted by a dedicated question-maker
+              sub-agent; the main agent wakes it when needed.
             </p>
           </li>
         </ol>
@@ -149,7 +151,7 @@
         <header class="section-head reveal">
           <div>
             <p class="eyebrow mono"><span class="dot"></span>02 / The build</p>
-            <h2 class="section-title">A framework, and<br /><em>everything around it.</em></h2>
+            <h2 class="section-title">A framework, and <br /><em>everything around it.</em></h2>
           </div>
           <p class="section-meta mono">Layered, not monolithic</p>
         </header>
@@ -157,14 +159,13 @@
         <div class="build-grid">
           <div class="build-copy reveal">
             <p>
-              OpenClaw is the base framework — the part that already existed. Everything that makes
-              Nora useful is built around it, one layer per need: memory, reminders, the timetable,
-              the question bank.
+              OpenClaw is the base framework — the agent machinery that already existed. I built the
+              layers on top: memory, reminders, the timetable, the question bank.
             </p>
             <p>
               Work that needs its own focus gets a specialist sub-agent; the main agent decides when
-              to wake it. <strong>Nora runs on a dedicated Mac, 24/7</strong> — the whole machine is
-              hers, not an app I open.
+              to wake it. <strong>Nora runs on a dedicated Mac</strong> — the whole machine is hers,
+              not an app I open.
             </p>
           </div>
 
@@ -180,7 +181,7 @@
               </li>
               <li class="stack-row is-accent">
                 <span class="stack-k">Sub-agents</span>
-                <p class="stack-v">question maker — woken on demand</p>
+                <p class="stack-v">question-maker — woken by the main agent</p>
               </li>
               <li class="stack-row is-machine">
                 <span class="stack-k">Machine</span>
@@ -197,7 +198,7 @@
         <header class="section-head reveal">
           <div>
             <p class="eyebrow mono"><span class="dot"></span>03 / The interface</p>
-            <h2 class="section-title">An agent needs<br /><em>a face.</em></h2>
+            <h2 class="section-title">An agent needs <br /><em>a face.</em></h2>
           </div>
           <p class="section-meta mono">160 × 90 px · 15 fps</p>
         </header>
@@ -216,7 +217,7 @@
           <li class="state-item state-item--idle">
             <span class="state-swatch" aria-hidden="true"></span>
             <span class="state-name">Idle</span>
-            <span class="state-desc">blinks, grooms, follows the cursor; naps after five minutes</span>
+            <span class="state-desc">blinks, grooms, follows the cursor; naps after a few quiet minutes</span>
           </li>
           <li class="state-item state-item--listening">
             <span class="state-swatch" aria-hidden="true"></span>
@@ -257,18 +258,17 @@
               src="/img/plates/nora-states.png"
               width="1600"
               height="926"
-              alt="Four states of the desk cat, left to right: listening, working, error and offline."
+              alt="Four states of the desk cat, in reading order: listening, working, error and offline."
               loading="lazy"
             />
           </picture>
-          <figcaption class="mono">Fig. 03 — listening, working, error, offline.</figcaption>
+          <figcaption class="mono">Fig. 03 — demo states: listening, working, error, offline.</figcaption>
         </figure>
 
         <p class="cat-copy reveal">
-          She also idles like a cat: grooming, yawning, chasing a butterfly, sitting in her box.
-          <strong>Click her to pet her</strong>; six quick pokes make her grumpy; poke her while
-          she’s working and she tells you she’s busy. The room is drawn in code on a 160 × 90 canvas
-          at 15 fps, and the sounds are synthesised 8-bit meows, purrs and hisses.
+          She idles like a cat: grooming, yawning, chasing a butterfly, sitting in her box. Poke her
+          mid-task and she says she’s busy. Sound is off in this embed — the full demo lets you turn
+          on the synthesised 8-bit meows, purrs and hisses. The room is pixel art drawn in code.
         </p>
       </section>
 
@@ -285,9 +285,8 @@
         <div class="status-band reveal">
           <p class="status-state mono"><span class="sq sq--built" aria-hidden="true"></span>Running · 24/7</p>
           <p class="status-copy">
-            <strong>All four jobs work today.</strong> The cat is the part you can play with on this
-            page; the assistant is the part running on its own Mac. The demo above is the same page
-            with fake events, so nothing from the real agent is shown.
+            <strong>All four jobs work today.</strong> The cat is the public half; the assistant runs
+            on her own Mac. The demo is scripted — nothing from the real agent is shown.
           </p>
         </div>
       </section>
@@ -307,9 +306,10 @@
         <div class="tb-cell"><span class="tb-k">Scale</span><span class="tb-v">1:1</span></div>
         <div class="tb-cell"><span class="tb-k">Status</span><span class="tb-v">running 24/7</span></div>
       </div>
-      <p class="colophon mono">Built with Nora · no tracking · no cookies</p>
+      <p class="colophon mono">Designed by me, built with Nora · no tracking · no cookies</p>
     </footer>
 
     <script type="module" src="/src/scroll.js"></script>
+    <script type="module" src="/src/nora-sheet.js"></script>
   </body>
 </html>

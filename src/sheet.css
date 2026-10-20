@@ -110,10 +110,29 @@
   border: 0;
 }
 
+/* Pointer/programmatic focus lands on the host, so :focus-within paints it.
+   Keyboard focus moves into the child document (no matching CSS there), so
+   src/nora-sheet.js sets `.is-focused` from the iframe window's focus events. */
+.demo-frame iframe:focus-within,
+.demo-frame iframe.is-focused {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .demo-fallback {
   display: none;
   width: 100%;
-  height: auto;
+  aspect-ratio: 160 / 90;
+  overflow: hidden;
+}
+
+/* The 16:10 plate carries a paper band top and bottom; cover trims it so the
+   no-JS / reduced-motion still matches the live 160:90 figure exactly. */
+.demo-fallback img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 html:not(.js) .demo-frame iframe {
@@ -122,6 +141,39 @@ html:not(.js) .demo-frame iframe {
 
 html:not(.js) .demo-fallback {
   display: block;
+}
+
+/* The caption tells the truth in each mode: live, still (no JS), still (reduced motion). */
+.demo-caption .still-only {
+  display: none;
+}
+
+html:not(.js) .demo-caption .live-only {
+  display: none;
+}
+
+html:not(.js) .demo-caption .still-only {
+  display: inline;
+}
+
+/* Reduced motion: the live canvas is replaced by one still frame instead of an
+   auto-playing animation. The full demo stays one click away. */
+@media (prefers-reduced-motion: reduce) {
+  html.js .demo-frame iframe {
+    display: none;
+  }
+
+  html.js .demo-fallback {
+    display: block;
+  }
+
+  html.js .demo-caption .live-only {
+    display: none;
+  }
+
+  html.js .demo-caption .still-only {
+    display: inline;
+  }
 }
 
 .demo-caption {
@@ -164,12 +216,7 @@ html:not(.js) .demo-fallback {
   border-bottom: 1px solid var(--line-soft);
 }
 
-.job-no {
-  color: var(--dim);
-}
-
 .job-title {
-  margin-top: 10px;
   font-weight: 400;
   font-size: clamp(22px, 2vw, 30px);
   line-height: 1.1;
@@ -481,6 +528,11 @@ html:not(.js) .demo-fallback {
     display: block;
     margin-top: 6px;
   }
+
+  /* 24 px minimum tap targets on phones. */
+  .demo-open {
+    padding-block: 6px;
+  }
 }
 
 /* The back link is redundant on phones (the brand goes home), and hiding it
@@ -492,6 +544,11 @@ html:not(.js) .demo-fallback {
 
   .nav {
     gap: 16px;
+  }
+
+  /* 24 px minimum tap targets on phones. */
+  .nav a {
+    padding-block: 6px;
   }
 }
 

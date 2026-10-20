@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="embed-demo">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,8 +7,9 @@
   <meta name="robots" content="noindex">
   <script>
     // Embedded on the portfolio sheet by default; ?full shows the complete page.
-    if (new URLSearchParams(location.search).has('full')) {
-      document.documentElement.classList.remove('embed-demo')
+    // The class is added here (not in the markup) so the page still works with JS off.
+    if (!new URLSearchParams(location.search).has('full')) {
+      document.documentElement.classList.add('embed-demo')
     }
   </script>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -17,14 +18,20 @@
 <body data-state="offline">
   <main class="wrap">
     <header class="top">
-      <div class="brand">
-        <span class="dot" aria-hidden="true"></span>
-        <h1>Nora</h1>
-        <span class="sub">OpenClaw's desk cat</span>
+      <div class="top-left">
+        <a class="back" href="/work/nora/">← Sheet 02</a>
+        <div class="brand">
+          <span class="dot" aria-hidden="true"></span>
+          <h1>Nora</h1>
+          <span class="sub">desk cat · status window</span>
+        </div>
       </div>
-      <button id="soundBtn" class="btn" type="button" aria-pressed="false">
-        <span class="btn-icon" aria-hidden="true">🔇</span><span class="btn-text">Sound off</span>
-      </button>
+      <div class="top-right">
+        <span class="demo-tag">demo</span>
+        <button id="soundBtn" class="btn" type="button" aria-pressed="false">
+          <span class="btn-icon" aria-hidden="true">🔇</span><span class="btn-text">Sound off</span>
+        </button>
+      </div>
     </header>
 
     <section class="room-card">
@@ -38,10 +45,10 @@
     <section class="panels">
       <article class="card status">
         <div class="state-row">
-          <span class="state-chip" id="stateChip">Connecting</span>
+          <span class="state-chip" id="stateChip">Demo</span>
           <span class="state-for" id="stateFor"></span>
         </div>
-        <p class="state-line" id="stateLine">Looking for Nora's server…</p>
+        <p class="state-line" id="stateLine">Scripted events — no agent connected.</p>
         <dl class="facts">
           <div><dt>Doing</dt><dd id="factDoing">—</dd></div>
           <div><dt>Agent</dt><dd id="factAgent">—</dd></div>
@@ -58,7 +65,7 @@
       </article>
     </section>
 
-    <footer class="foot" id="foot">Live from this Mac</footer>
+    <footer class="foot" id="foot">Demo mode: fake events, not connected to an agent</footer>
   </main>
   <script type="module" src="./nora.js"></script>
 </body>

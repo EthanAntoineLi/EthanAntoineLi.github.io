@@ -1,12 +1,14 @@
 /* Nora: a pixel-art desk cat that mirrors what an OpenClaw agent is doing.
    Plain JS, no dependencies.
 
-   Preview without a server:
-     ?demo                          looping fake conversation
-     ?demo&state=working            freeze one agent state: idle, listening, thinking, working,
+   This copy is the portfolio's demo build: it never talks to a server, and runs
+   a scripted fake event loop instead.
+     ?state=working                 freeze one agent state: idle, listening, thinking, working,
                                     replying, done, error, offline (or nap)
-     ?demo&activity=window          start idle with one activity: groom, yawn, look, flick, knead,
-                                    butterfly, spin, snack, window, plant, wander, nap */
+     ?activity=window               start idle with one activity: groom, yawn, look, flick, knead,
+                                    butterfly, spin, snack, window, plant, wander, nap
+     ?full                          show the whole pet page instead of the embed
+     ?tick                          keep animating with a timer (for automated previews) */
 (() => {
   'use strict';
 
@@ -20,10 +22,8 @@
   const WALK_SPEED = 16, RUN_SPEED = 48;   // logical px per second
 
   const qs = new URLSearchParams(location.search);
-  // This copy is the portfolio's demo build: it never talks to a server. The
-  // page is embedded by default (?full opens the whole pet page); ?state=... freezes
-  // one state for screenshots.
-  const DEMO = true;
+  // Embedded by default (?full opens the whole pet page); ?state=... freezes one
+  // state for screenshots. There is no server behind this copy.
   const EMBED = document.documentElement.classList.contains('embed-demo');
   const PIN = qs.get('state');
   const FORCE_ACT = PIN === 'nap' ? 'nap' : qs.get('activity');
@@ -729,12 +729,6 @@
     updateStatus();
   }
 
-  function setConnected(v) {
-    if (connected === v) return;
-    connected = v;
-    updateStatus();
-  }
-
   // ------------------------------------------------------------------ idle life: what Nora does on her own
 
   // Each activity is a short list of steps. 'walk' steps move her; the rest last `ms`.
@@ -1323,14 +1317,8 @@
       ? `${td.messages} messages · ${td.tools} tools · ${td.runs} runs${td.errors ? ` · ${td.errors} errors` : ''}`
       : '—';
 
-    if (!connected && !DEMO) {
-      ui.conn.hidden = false;
-      ui.conn.textContent = location.protocol === 'file:'
-        ? 'This page needs Nora’s server. Open http://localhost:7766 instead, or add ?demo to the address to preview.'
-        : 'Can’t reach Nora’s server. Retrying… (Is the ai.nora.pet service running?)';
-    } else {
-      ui.conn.hidden = true;
-    }
+    // This build never talks to a server, so there is nothing to report here.
+    ui.conn.hidden = true;
   }
 
   const ICON = { in: '📩', tool: '🔧', out: '💬', done: '✅', error: '⚠️', online: '🟢', offline: '💤', helper: '🐾', tidy: '🧹', note: '📝' };
@@ -1368,26 +1356,7 @@
     ui.logEmpty.hidden = true;
   }
 
-  // ------------------------------------------------------------------ live connection
-
-  function connect() {
-    if (location.protocol === 'file:') { updateStatus(); return; }
-    const es = new EventSource('/api/stream');
-    es.addEventListener('hello', (e) => {
-      const d = JSON.parse(e.data);
-      applyState(d.state);
-      setLog(d.log || []);
-      setConnected(true);
-    });
-    es.addEventListener('state', (e) => applyState(JSON.parse(e.data)));
-    es.addEventListener('log', (e) => addLog(JSON.parse(e.data)));
-    es.onerror = () => {
-      setConnected(false);
-      if (es.readyState === EventSource.CLOSED) { es.close(); setTimeout(connect, 5000); }
-    };
-  }
-
-  // ------------------------------------------------------------------ demo mode (no server needed)
+  // ------------------------------------------------------------------ demo loop
 
   function runDemo() {
     ui.foot.textContent = 'Demo mode: fake events, not connected to an agent'
@@ -1448,7 +1417,7 @@
   renderSoundBtn();
   ui.pets.textContent = petsText();
   setInterval(updateStatus, 1000);
-  if (DEMO) runDemo(); else connect();
+  runDemo();
   // ?tick keeps animating with a timer even when the page is hidden (handy for automated previews).
   if (qs.has('tick')) setInterval(() => render(performance.now()), 1000 / FPS);
   else requestAnimationFrame(loop);

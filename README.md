@@ -51,7 +51,7 @@ Requires Node 18+ (tested on Node 24). Ports are pinned in `vite.config.js`.
 | --- | --- | --- |
 | `public/models/arm-opt.glb` | 1.6 MB, 290k tris | EPQ 3.1 Design FINAL.step (Shapr3D) → articulated GLB via `HAVK/three-arm/tools` (meshopt + quantization), joints `J1…J5` |
 | `public/img/plates/arm-16x10.png/.webp` | 156 KB / 22 KB | 16:10 hub plate composed from a 1600×1000 render of the page's own `arm-viewer.js` at pose `[12, 38, 8, 52, 20]` |
-| `public/img/plates/nora-16x10.png/.webp` | 112 KB / 11 KB | Sheet 02's 16:10 room still (used as the demo figure's no-JS fallback) |
+| `public/img/plates/nora-16x10.png/.webp` | 112 KB / 11 KB | Sheet 02's 16:10 room still — the demo figure's no-JS *and* reduced-motion fallback (the 16:10 paper band is trimmed to 16:9 by CSS) |
 | `public/img/plates/nora-cat.png/.webp` | 5 KB / 5 KB | Transparent still of the cat alone — the exact hub canvas layout — shown when JS is off |
 | `public/img/plates/nora-states.png/.webp` | 178 KB / 63 KB | 2×2 contact sheet of four demo states (listening, working, error, offline) |
 | `public/img/arm-plate.png/.webp` | 193 / 46 KB | The film's own hero / no-WebGL still (portrait) |
@@ -61,11 +61,13 @@ Plate pipeline (local tooling, `dev/` is git-ignored): arm plate via `node dev/m
 plates by capturing `?state=<state>` from the demo at 1280×720 / 1600×900 and composing on paper.
 
 The desk cat itself is a copy of the Nora project's public page (`work/nora/demo/`, 58 KB JS + 7 KB
-CSS, all pixel art drawn in code) with two small changes for the portfolio: an embed mode that fills a
-160:90 iframe, and a scripted demo cycle rewritten around Nora's real jobs. It never connects to an
-agent server. For the hub, the room is removed: `src/nora-cat.js` redraws just the cat from the same
-sprites and plays the sitting part of her movement bank (blink, look, groom, yawn, tail flick, knead,
-nap) on a transparent canvas, with the eyes following the pointer.
+CSS, all pixel art drawn in code) adapted for the portfolio: an embed mode that fills a 160:90 iframe,
+a scripted demo cycle rewritten around Nora's real jobs, and no server code at all (the connect branch,
+event stream and infrastructure strings are gone). `?full` shows the complete pet page with a
+`← Sheet 02` back link and a persistent demo label. For the hub, the room is removed: `src/nora-cat.js`
+redraws just the cat from the same sprites and plays the sitting part of her movement bank (blink,
+look, groom, yawn, tail flick, knead, nap) on a transparent canvas, with the eyes following the
+pointer.
 
 The cat canvas runs at 15 fps, pauses off-screen, and renders one static frame under
 `prefers-reduced-motion`. Without JavaScript the plate shows the transparent still.
@@ -77,7 +79,8 @@ The cat canvas runs at 15 fps, pauses off-screen, and renders one static frame u
   loads ~16 KB gzip of its own JS/CSS + no images.
 - The film's hard 3D (≈167 KB gzip + 1.6 MB GLB) is still lazy and remains out of the hub's path.
 - Hub and sheets read fine with **JavaScript disabled** — the sheet falls back from the live demo to
-  the still plate. `prefers-reduced-motion` disables entrances.
+  the still plate. `prefers-reduced-motion` disables entrances and swaps the embedded demo for the
+  same still frame (caption switches with it).
 
 ## Deploy
 
@@ -120,5 +123,6 @@ personal-page/
   .github/workflows/deploy.yml
 ```
 
-QA captures and the iteration record for the hub + Sheet 02 are in `../review-v10/` (hub, phase 1)
-and `../review-v11/` (Nora sheet, demo states, production pass).
+QA captures and the iteration record for the hub + Sheet 02 are in `../review-v10/` (hub, phase 1),
+`../review-v11/` (Nora sheet, demo states, first production pass) and `../review-v12/` (Sheet 02 final
+pass: fresh capture set, QA report, independent critic notes).

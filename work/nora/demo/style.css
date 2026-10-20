@@ -59,6 +59,36 @@ body {
   margin-bottom: 14px;
 }
 
+.top-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.top-right { display: flex; align-items: center; gap: 10px; flex: none; }
+
+.back {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.back:hover { color: var(--ink); }
+
+.demo-tag {
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* The footer still states the demo, and the tag costs too much room on phones;
+   the ← Sheet 02 link stays. */
+@media (max-width: 640px) {
+  .demo-tag { display: none; }
+}
+
 .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 
 .brand h1 {

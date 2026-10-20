@@ -385,3 +385,52 @@ Hub-only change; Sheet 02 is untouched.
 - **Verified:** build green; hub at 1440/390 with no overflow; canvas animation changes between frames;
   reduced-motion canvas is stable; no-JS shows the still; screenshot QA for every movement (rest, nap,
   knead, groom, yawn, look); no console errors. Captures: `../review-v11/cat-plate-*`, `act-*`.
+
+## 2026-10-20 — Sheet 02 final pass (sign-off)
+
+Sheet 02 is frozen for sign-off; the hub is untouched. Production preview (4178) QA is green; the
+captures, QA report and an independent critique are in `../review-v12/`.
+
+- **Privacy.** The copied demo bundle still carried the pet project's dead server branch
+  (`EventSource('/api/stream')`, `http://localhost:7766`, the service name) even though demo mode made
+  it unreachable. Removed the branch, the reconnect loop and the unreachable "no server" copy;
+  `runDemo()` now runs unconditionally. No port, localhost or service strings ship in the demo JS.
+- **Attribution.** Ethan's call: footer `Designed by me, built with Nora · no tracking · no cookies`.
+  The hero meta gained `Role — Design + build` (the duplicated `Updated` row is gone; the Status
+  section keeps the date), and the build copy now says what he made in the first person
+  ("OpenClaw is the base framework … I built the layers on top").
+- **Facts.** "naps after five minutes" was wrong (the idle clock naps after 3 min) → "a few quiet
+  minutes". "its own Mac" → "her own Mac"; the unconfirmed "before I ask for it" timetable line is
+  gone; sub-agent row now says "woken by the main agent".
+- **Copy.** Prose trimmed to ~280 words by cutting the four-job list repeated in the hero lede, the
+  duplicated click/poke instructions, the duplicated 160×90/15fps line, and tightening the status
+  band. Cat copy now says sound is off in the embed and only the full demo has it. Meta description
+  cut from 179 to 151 chars.
+- **Numbering.** Chrome meta `Sheet 02 / 05 · rev 2026.10`, hero eyebrow `Software · personal AI`, job
+  items lost their 01–04 numbers (they collided with the section numbers). Headings got a space before
+  `<br>` so text extraction no longer reads "andeverything".
+- **Contrast.** Shared `--dim` `#6f7377` (4.42:1 at the 9px captions) darkened to `#666a6e` (~5.0:1)
+  in `tokens.css` and the film's mirrored block in `style.css` — also fixes the hub's plate captions.
+- **Reduced motion / no-JS.** The embedded demo becomes a still plate in both modes: iframe
+  `display:none`, `.demo-fallback` block, caption swapped to "still frame · animation off in this
+  mode". The 16:10 plate's paper bands are trimmed (`aspect-ratio: 160/90` + `object-fit: cover`) so
+  the figure is 1334×751 in every mode — the no-JS/reduced-motion layout is now identical to live.
+- **Demo page (`?full`).** It was blank with JS off because `html.embed-demo` sat in the markup and
+  only a script could remove it. Inverted: the class is added by the inline head script unless `?full`.
+  Static copy no longer advertises a server ("Demo", "Scripted events — no agent connected.", demo
+  footer), the brand subtitle is "desk cat · status window", and `?full` gained a `← Sheet 02` back
+  link plus a persistent `demo` chip. The embed itself is unchanged (160:90, no chrome, no scrollbars).
+- **Small a11y/SEO.** 24 px tap targets on the phone nav and Full-demo link; visible focus ring on the
+  demo iframe for pointer *and* keyboard focus (the keyboard path needs `src/nora-sheet.js`, because
+  focus lands inside the child document where `:focus` / `:focus-within` never match on the host);
+  new-tab link labelled for screen readers; Fig. 01/03 captions and alt fixed ("in reading order",
+  "demo states"); Inter Tight 300 preload removed from the hub and the sheet (never used there; the
+  film still preloads it).
+- **Verified on the production preview.** Build green (four entries); zero console errors / failed
+  requests; pet click 0 → 3 and the grumpy bubble after six pokes; no horizontal overflow at
+  390/768/1024/1280/1440; no-JS still figure exactly 16:9; reduced-motion static; `?full` renders with
+  JS off; nav anchors clear the fixed chrome; captions ≥5:1. Evidence: `../review-v12/`.
+- **Not done / open.** No deploy or push (per rule). `og:image` / `og:url` / canonical remain deferred
+  to the final URL (HUB-PLAN §8.2/§8.3) — the sheet is signed off *pre-deploy*. A "What's next" block
+  needs one honest sentence from Ethan; Q8 (must-say / never-say) is still "add later". The arm page
+  also still carries the pre-split absolute `og:url`/`og:image` — site-wide leftover, not touched here.

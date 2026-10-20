@@ -27,6 +27,7 @@ personal-page/
     scroll.js                 # shared: reveals, nav state, ghost word, hero-ready flag
     hub.js                    # hub-only: copy-email + cat plate init; imports scroll.js
     nora-cat.js               # hub's living cat plate (movement bank, no room)
+    nora-sheet.js             # sheet-only: iframe `.is-focused` marker for the keyboard focus ring
     style.css                 # film styling + tokens mirror
     main.js                   # film behaviour (loader, Lenis, stop blending, ghost, cursor, copy)
     arm-scene.js              # film three.js scene (GLB, six stops, point cloud, free view)
@@ -65,6 +66,7 @@ personal-page/
 | `src/scroll.js` | Shared reveals, nav active state, ghost word, `body.is-ready` | know anything about a specific page |
 | `src/hub.js` | Copy-email + cat-plate init (imports `scroll.js`) | duplicate scroll logic |
 | `src/nora-cat.js` | The hub's cat canvas: layout, movement bank, pointer look, visibility pause | know about the room, the demo page or a server |
+| `src/nora-sheet.js` | Sheet 02 only: marks the demo iframe `.is-focused` from its window focus/blur events (keyboard focus lands inside the child document, where `:focus`/`:focus-within` never match) | touch anything but the demo iframe |
 | `work/arm/index.html` + `src/style.css`, `main.js`, `arm-scene.js` | The film, unchanged (v4/v6 contracts) | be reused by the hub or sheets |
 | `work/nora/demo/*` | The desk-cat page (copied) + embed/demo adaptations | talk to a server or read real data |
 
@@ -85,8 +87,10 @@ viewport (the hub's hero status strip) must not wait for a scroll to become visi
 ## Sheet 02 structure
 
 - `.sheet-hero` — eyebrow, `h1.sheet-name`, serif subtitle, lede + `dl.sheet-meta`.
-- `.demo-figure` — iframe (`/work/nora/demo/`, 160:9 aspect) in a `plate-frame`; below it the caption
-  and `?full` link; `<picture class="demo-fallback">` shown when JS is off.
+- `.demo-figure` — iframe (`/work/nora/demo/`, 160:90 aspect) in a `plate-frame`; below it the caption
+  and `?full` link. `<picture class="demo-fallback">` replaces the iframe when JS is off **or**
+  `prefers-reduced-motion: reduce` is set (both modes swap the caption via `.live-only` /
+  `.still-only`; the 16:10 plate is trimmed to 16:9 with `aspect-ratio` + `object-fit: cover`).
 - `#what` — `.jobs` two-column list of four jobs.
 - `#build` — `.build-grid`: prose + `.stack` (base framework / my layers / sub-agents / machine).
 - `#cat` — `.states` table (state colour from the pet palette) + `state-figure` contact sheet + copy.
@@ -97,9 +101,12 @@ viewport (the hub's hero status strip) must not wait for a scroll to become visi
 
 Copied from the Nora project's `server/public/` and adapted for static hosting:
 
-- **No server.** `const DEMO = true`; the page never opens an EventSource or fetches an API.
-- **Embed mode (default).** `html.embed-demo` hides the header, status panels, hint and footer and
-  fills a 160:90 iframe. `?full` removes the class and shows the complete pet page.
+- **No server.** The server branch was removed from this copy: no `EventSource`, no API paths, no
+  ports or service names ship with the page. `runDemo()` always runs.
+- **Embed mode (default).** The inline script in `<head>` adds `html.embed-demo` unless `?full` is in
+  the URL (so the class is not in the markup and the page still renders with JS off). The class hides
+  the header, status panels, hint and footer and fills a 160:90 iframe; `?full` omits it, showing the
+  complete pet page with a `← Sheet 02` back link and a `demo` header chip.
 - **Fractional fit.** In embed mode `fit()` uses `scale = width / 160` instead of the integer-snapped
   scale, so the canvas fills the iframe exactly and bubble anchors stay aligned. Speech-bubble type and
   border scale with the room.
@@ -119,8 +126,8 @@ asset/model URLs made absolute / `BASE_URL`-derived, and a `← sheet 00` link i
 ## Build & deploy
 
 - `npm run dev` → 5178; `npm run build` → `dist/` with all four entries; `npm run preview` → 4178.
-- Chunks: `scroll.js` (~0.7 KB gzip), `hub.js` (~0.5 KB), demo chunk (~13.6 KB gzip), film chunk
-  (~167 KB gzip) + GLB. The film's 3D only loads on `/work/arm/`.
+- Chunks: `scroll.js` (~0.7 KB gzip), `nora-sheet.js` (~0.2 KB, Sheet 02 only), `hub.js` (~0.5 KB),
+  demo chunk (~13.6 KB gzip), film chunk (~167 KB gzip) + GLB. The film's 3D only loads on `/work/arm/`.
 - Pages deploy: `.github/workflows/deploy.yml` on push to `master`. Repo must be public on the free
   plan; the site expects the user-site root (HUB-PLAN §8).
 
