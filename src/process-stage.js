@@ -13,6 +13,10 @@
 //   printer — step 01: the printer alone, in its own framing.
 //   motors  — step 02: three motor types (big / shoulder-lift / small) hover in
 //             the free half of the screen, each with its own orientation + depth.
+//   print   — step 03: the printer again, closer, printing the J1 → J2 link:
+//             the head sweeps along the X arm, the bed shuttles under it, the
+//             gantry climbs a layer at a time and the part grows on the plate.
+//   compare — step 04: the finished link parked in Rev B's frame, turning.
 //
 // Every hand-off is scrubbed by the scroll (setTrack), never run on a timer:
 //   hero → 01  the turret holds still, the balloons clear, the other parts
@@ -21,16 +25,22 @@
 //              step-01 framing as the eye swings round.
 //   01 → 02    the printer rises out with step 01's copy while the motors come
 //              up with step 02's, in parallax, turning into place.
-// Scroll back and each one plays in reverse.
+//   02 → 03    the motors rise out; the printer comes back up from below.
+//   03 → 04    the printer rises out and the printed link lifts off the bed
+//              into Rev B's frame (setSlot), then leaves with that frame.
+// Scroll back and each one plays in reverse. Only the print itself runs on the
+// clock: once, the first time step 03 is reached (onPrint reports it).
 //
 // PUBLIC API
 //   const stage = await createProcessStage(canvas, {
-//     printerUrl, motorsUrl, reducedMotion, phone, onLoadProgress, onFrame
+//     printerUrl, motorsUrl, linkUrl, reducedMotion, phone, onLoadProgress,
+//     onFrame, onPrint
 //   })
+//   stage.printable                 false when the printed part did not load
 //   stage.ready                     model loaded + first frame drawn
 //   stage.play()                    run the turret's spin-up (call when the
 //                                   curtain lifts; until then the hub is empty)
-//   stage.setStage('ring'|'printer'|'motors'|'off')
+//   stage.setStage('ring'|'printer'|'motors'|'print'|'compare'|'off')
 //                                   which act owns the screen (bookkeeping only:
 //                                   the motion comes from setTrack)
 //   stage.setPointer(x, y)          pointer -1..1 for a little parallax
@@ -39,10 +49,14 @@
 //                                   spin the turret by hand; release() returns
 //                                   the part id when it was a click, not a drag
 //   stage.present(id)               index the turret until that part is in front
-//   stage.setTrack(printer, motors) where each step's act sits, in viewports
+//   stage.setTrack(printer, motors, print)
+//                                   where each step's act sits, in viewports
 //                                   from the top of the screen (0 = its act at
 //                                   the top, 1 = scrolled a viewport past it)
+//   stage.setSlot(x, y, w, h)       Rev B's frame on screen, viewport fractions
+//                                   (left, top, width, height)
 //   onFrame(hud)                    per-frame screen data for the part balloons
+//   onPrint({ progress, done })     the print's progress, 0..1; done once
 //   stage.setVisible(bool)          pause drawing
 //   stage.resize()
 //   stage.dispose()
@@ -152,6 +166,41 @@ const HOVER_ITEMS = {
 // and turning away as it goes. smooth = how closely the objects follow the
 // scroll (1/s) — a touch of lag reads as weight.
 const TRACK = { printerTravel: 1.08, printerTurn: [0.16, -0.55, 0.0], smooth: 9, hideBeyond: 1.7 }
+
+// Step 03: the printer comes back up with its own act and prints the J1 → J2
+// link. x/y = screen offset (viewport fractions), scale = size against its
+// step-01 framing, yaw/tilt = an extra turn toward the eye so the bed reads
+// from a little above.
+const PRINT_VIEW = {
+  desktop: { x: 0.235, y: -0.035, scale: 1.16, yaw: 0.16, tilt: 0.2 },
+  phone: { x: 0.02, y: -0.14, scale: 1.0, yaw: 0.12, tilt: 0.2 },
+}
+// The print runs on the scene clock once the printer has arrived (|track| <
+// start). approach = the gantry drops to the bed while the head and the bed run
+// out to the part; duration = the layers; settle = the head parks again.
+// layers = visible gantry steps; sweepHz = head passes across the part per
+// second, bedHz = the bed's slower shuttle under it; rush = how much faster a
+// print finishes when its act is scrolled away. flight = the slice of step
+// 03's exit over which the finished part lifts off the bed into Rev B's frame,
+// where it fills `fill` of the frame and turns at `spin` rad/s.
+const PRINT = {
+  travel: 1.0,
+  turn: [0.14, -0.5, 0.04],
+  start: 0.25,
+  approach: 0.9,
+  duration: 6.4,
+  settle: 0.9,
+  layers: 46,
+  sweepHz: 1.6,
+  bedHz: 0.23,
+  rush: 6,
+  flight: [0.1, 0.9],
+  fill: 0.62,
+  spin: 0.32,
+}
+// Rounded triangle wave in [-1, 1]: a print head's straight passes with a
+// quick turn at each end.
+const sweep = (x) => (2 / Math.PI) * Math.asin(0.985 * Math.sin(TAU * x))
 
 const MOTOR_NAMES = ['motor-J1', 'motor-J2', 'motor-J3', 'motor-J4', 'motor-J5']
 // The turret steps forward (angle increasing), and the part at ring index i is
@@ -304,10 +353,12 @@ export async function createProcessStage(canvas, opts = {}) {
   const settings = {
     printerUrl: typeof opts.printerUrl === 'string' ? opts.printerUrl : '',
     motorsUrl: typeof opts.motorsUrl === 'string' ? opts.motorsUrl : '',
+    linkUrl: typeof opts.linkUrl === 'string' ? opts.linkUrl : '',
     reducedMotion: opts.reducedMotion === true,
     phone: opts.phone === true,
     onLoadProgress: typeof opts.onLoadProgress === 'function' ? opts.onLoadProgress : null,
     onFrame: typeof opts.onFrame === 'function' ? opts.onFrame : null,
+    onPrint: typeof opts.onPrint === 'function' ? opts.onPrint : null,
   }
   if (!settings.printerUrl || !settings.motorsUrl) throw new Error('createProcessStage: model urls required')
   const mode = () => (settings.phone ? 'phone' : 'desktop')
@@ -347,10 +398,16 @@ export async function createProcessStage(canvas, opts = {}) {
       next: 0, // state.time of the next automatic index
       drag: null,
     },
-    // where steps 01/02 sit on the page (viewports past their act's top), as
+    // where steps 01/02/03 sit on the page (viewports past their act's top), as
     // reported by the page and as eased toward by the objects
-    track: { printer: -1, motors: -2, set: false },
-    trackLive: { printer: -1, motors: -2 },
+    track: { printer: -1, motors: -2, print: -3, set: false },
+    trackLive: { printer: -1, motors: -2, print: -3 },
+    // step 03's print: t = its clock, p = layers done (0..1), e = how far the
+    // head, bed and gantry are out of their parked pose (0..1)
+    print: { t: 0, p: 0, e: 0, done: settings.reducedMotion, started: false, reported: -1, flight: 0 },
+    // Rev B's frame, as reported by the page and as eased toward by the part
+    slot: null,
+    slotLive: null,
     angVel: 0, // measured ring speed, whatever drove it (spring, hand, exit)
     lastAngle: 0,
     present: new Array(6).fill(0),
@@ -384,6 +441,19 @@ export async function createProcessStage(canvas, opts = {}) {
   const _scratchRect = { l: 0, r: 0, t: 0, b: 0 }
   const _box = new THREE.Box3()
   const _corner = new THREE.Vector3()
+  // the print and the printed part (see updatePrint)
+  const PART_FLAT = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2)
+  const _partLocal = new THREE.Matrix4()
+  const _partWorld = new THREE.Matrix4()
+  const _bedPos = new THREE.Vector3()
+  const _bedQuat = new THREE.Quaternion()
+  const _bedScale = new THREE.Vector3()
+  const _slotPos = new THREE.Vector3()
+  const _slotQuat = new THREE.Quaternion()
+  const _cutPoint = new THREE.Vector3()
+  const _cutNormal = new THREE.Vector3()
+  const PRINT_TOTAL = PRINT.approach + PRINT.duration + PRINT.settle
+  const rigOffset = { dx: 0, dy: 0, dz: 0 } // the head, bed and gantry, out of their parked pose
 
   /* ------------------------------------------------------------- renderer */
   let renderer
@@ -405,6 +475,7 @@ export async function createProcessStage(canvas, opts = {}) {
     renderer.toneMappingExposure = 1.0
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.localClippingEnabled = true // the printed part grows under a plane
 
     scene = new THREE.Scene()
     // paper-coloured depth haze: the far side of the turret recedes into the
@@ -591,6 +662,8 @@ export async function createProcessStage(canvas, opts = {}) {
   const motorPivots = new Map()
   const ringItems = []
   let printer = null
+  let rig = null // the printer's moving assemblies (see rigPrinter)
+  let part = null // the printed J1 → J2 link (see makePrintPart)
 
   /* ------------------------------------------------------------ the dial */
   // Everything here is built at unit radius in the dial plane (XZ); the group
@@ -835,22 +908,259 @@ export async function createProcessStage(canvas, opts = {}) {
     return { pivot: holder, size, maxDim: Math.max(size.x, size.y, size.z) || 1 }
   }
 
+  /* ------------------------------------------------------------- print rig */
+  /** Move the triangles whose centroid passes `take` (in the holder's frame)
+      into a sibling mesh that shares the vertex buffers. Its box (holder
+      frame) is kept on userData: the shared buffers would give the whole. */
+  function splitMesh(mesh, take) {
+    const geo = mesh.geometry
+    const pos = geo.attributes.position
+    const idx = geo.index
+    if (!pos || !idx) return null
+    const a = new THREE.Vector3()
+    const b = new THREE.Vector3()
+    const c = new THREE.Vector3()
+    const centroid = new THREE.Vector3()
+    const box = new THREE.Box3()
+    const keep = []
+    const moved = []
+    for (let i = 0; i < idx.count; i += 3) {
+      const ia = idx.getX(i)
+      const ib = idx.getX(i + 1)
+      const ic = idx.getX(i + 2)
+      a.fromBufferAttribute(pos, ia).applyMatrix4(mesh.matrixWorld)
+      b.fromBufferAttribute(pos, ib).applyMatrix4(mesh.matrixWorld)
+      c.fromBufferAttribute(pos, ic).applyMatrix4(mesh.matrixWorld)
+      if (take(centroid.copy(a).add(b).add(c).divideScalar(3))) {
+        moved.push(ia, ib, ic)
+        box.expandByPoint(a).expandByPoint(b).expandByPoint(c)
+      } else {
+        keep.push(ia, ib, ic)
+      }
+    }
+    if (!moved.length || !keep.length) return null
+    const shared = new THREE.BufferGeometry()
+    for (const [name, attr] of Object.entries(geo.attributes)) shared.setAttribute(name, attr)
+    shared.setIndex(moved)
+    geo.setIndex(keep)
+    const out = new THREE.Mesh(shared, mesh.material)
+    out.userData.box = box
+    out.name = mesh.name + '-split'
+    out.position.copy(mesh.position)
+    out.quaternion.copy(mesh.quaternion)
+    out.scale.copy(mesh.scale)
+    out.castShadow = mesh.castShadow
+    out.receiveShadow = mesh.receiveShadow
+    mesh.parent.add(out)
+    return out
+  }
+
+  /** Box of the vertices of `mesh` (holder frame) that pass `pick`. */
+  function vertexBox(mesh, pick) {
+    const pos = mesh.geometry.attributes.position
+    const v = new THREE.Vector3()
+    const box = new THREE.Box3()
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld)
+      if (pick(v)) box.expandByPoint(v)
+    }
+    return box
+  }
+
+  // The A1 mini's glTF keeps one primitive per material, so its moving
+  // assemblies come apart cleanly: Toolhead (runs along the X arm), Motor (the
+  // X arm, its motor and the head's cable loop: the gantry that climbs the
+  // column) and Heatbed (the plate, which shuttles front to back on a rail that
+  // shares its primitive). Measured once in the printer's own frame, while the
+  // holder still sits at the origin. Units: the printer is ~1 tall.
+  function rigPrinter(holder, size) {
+    const byMat = {}
+    holder.traverse((o) => {
+      if (o.isMesh && o.material && !Array.isArray(o.material)) byMat[o.material.name] = o
+    })
+    const head = byMat.Toolhead
+    const arm = byMat.Motor
+    const bed = byMat.Heatbed
+    if (!head || !arm || !bed) return null
+    holder.updateMatrixWorld(true)
+    const h = size.y
+
+    const headBox = new THREE.Box3().setFromObject(head)
+    const tip = vertexBox(head, (v) => v.y < headBox.min.y + 0.006 * h).getCenter(new THREE.Vector3())
+    tip.y = headBox.min.y
+    const plateTop = new THREE.Box3().setFromObject(bed).max.y
+    const plateMid = vertexBox(bed, (v) => v.y > plateTop - 0.004 * h).getCenter(new THREE.Vector3())
+    // only the plate moves; the rail it rides on stays with the base
+    const plate = splitMesh(bed, (c) => c.y > plateTop - 0.03 * h) || bed
+    // the head's cable loop rises above the arm and lands on the X motor: it
+    // bends with the head instead of moving rigidly with it
+    const cable = splitMesh(arm, (c) => c.y > headBox.max.y - 0.15 * h)
+    const bend = { value: 0 }
+    if (cable) {
+      const cableBox = cable.userData.box
+      cable.updateWorldMatrix(true, false)
+      const inv = cable.matrixWorld.clone().invert()
+      const zLocal = (z) => new THREE.Vector3(tip.x, tip.y, z).applyMatrix4(inv).z
+      const z0 = zLocal(cableBox.min.z + 0.08 * h) // the X motor end: pinned
+      const z1 = zLocal(tip.z - 0.06 * h) // the head end: travels with the head
+      const mat = cable.material.clone()
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.uHeadDz = bend
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nuniform float uHeadDz;')
+          .replace(
+            '#include <begin_vertex>',
+            `#include <begin_vertex>\n\ttransformed.z += uHeadDz * smoothstep(${z0.toFixed(5)}, ${z1.toFixed(5)}, position.z);`,
+          )
+      }
+      mat.customProgramCacheKey = () => 'printer-cable-bend'
+      cable.material = mat
+      cable.castShadow = false // its shadow would stay where the cable was
+      holder.userData.mats.push(mat)
+    }
+
+    const mover = (mesh) => ({
+      mesh,
+      rest: mesh.position.clone(),
+      // holder-frame offsets → the mesh's parent frame
+      toLocal: new THREE.Matrix3().setFromMatrix4(mesh.parent.matrixWorld.clone().invert()),
+    })
+    const gap = tip.y - plateTop
+    return {
+      head: mover(head),
+      gantry: [mover(arm), cable && mover(cable)].filter(Boolean),
+      plate: mover(plate),
+      bend,
+      bendScale: cable ? new THREE.Vector3(0, 0, 1).applyMatrix3(mover(cable).toLocal).z : 0,
+      tip,
+      plateTop,
+      gap, // nozzle above the plate when parked: the part prints to this height
+      partX: plateMid.x,
+      partZ: plateMid.z,
+    }
+  }
+
+  const _offset = new THREE.Vector3()
+  function moveRig(dx, dy, dz) {
+    const place = (m, x, y, z) => {
+      _offset.set(x, y, z).applyMatrix3(m.toLocal)
+      m.mesh.position.copy(m.rest).add(_offset)
+    }
+    place(rig.head, 0, dy, dz)
+    for (const m of rig.gantry) place(m, 0, dy, 0)
+    place(rig.plate, dx, 0, 0)
+    rig.bend.value = dz * rig.bendScale
+  }
+
+  // FDM layer lines: a soft ridge per period, carried by the walls; a top or
+  // bottom face shows its infill passes instead.
+  function makeLayerTexture() {
+    const c = document.createElement('canvas')
+    c.width = 4
+    c.height = 16
+    const ctx = c.getContext('2d')
+    const g = ctx.createLinearGradient(0, 0, 0, 16)
+    g.addColorStop(0, '#4a4a4a')
+    g.addColorStop(0.5, '#e0e0e0')
+    g.addColorStop(1, '#4a4a4a')
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, 4, 16)
+    const tex = new THREE.CanvasTexture(c)
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+    return tex
+  }
+
+  function layerUVs(geometry, lines) {
+    const pos = geometry.attributes.position
+    const nrm = geometry.attributes.normal
+    if (!pos || !nrm) return
+    geometry.computeBoundingBox()
+    const bb = geometry.boundingBox
+    const k = lines / Math.max(1e-6, bb.max.z - bb.min.z) // the print's up is the part's z
+    const uv = new Float32Array(pos.count * 2)
+    for (let i = 0; i < pos.count; i++) {
+      const nx = Math.abs(nrm.getX(i))
+      const ny = Math.abs(nrm.getY(i))
+      const nz = Math.abs(nrm.getZ(i))
+      if (nz >= nx && nz >= ny) {
+        uv[i * 2] = pos.getY(i) * k
+        uv[i * 2 + 1] = (pos.getX(i) - bb.min.x) * k * 0.5
+      } else {
+        uv[i * 2] = (nx > ny ? pos.getY(i) : pos.getX(i)) * k
+        uv[i * 2 + 1] = (pos.getZ(i) - bb.min.z) * k
+      }
+    }
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+  }
+
+  // The printed link: printed-black PLA with layer lines, cut by a plane at the
+  // current layer while it prints. The band just under the cut glows signal
+  // red: the hot layer being laid. Double-sided, as its glTF asks — the CAD
+  // export's winding is not consistent.
+  function makePrintPart(model) {
+    const wrapped = wrapModel(model)
+    const plane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6)
+    const hot = { value: 0 } // 0..1, off when nothing is being cut
+    const band = { value: 0.01 } // world units under the cut that glow
+    const body = new THREE.MeshPhysicalMaterial({
+      color: 0x1d2024,
+      roughness: 0.56,
+      metalness: 0.0,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.5,
+      envMapIntensity: 1.15,
+      bumpMap: makeLayerTexture(),
+      bumpScale: 0.0004,
+      side: THREE.DoubleSide,
+      clippingPlanes: [plane],
+      clipShadows: true,
+    })
+    body.onBeforeCompile = (shader) => {
+      shader.uniforms.uHot = hot
+      shader.uniforms.uHotBand = band
+      shader.uniforms.uHotColor = { value: new THREE.Color(SIGNAL) }
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nuniform float uHot;\nuniform float uHotBand;\nuniform vec3 uHotColor;')
+        .replace(
+          '#include <emissivemap_fragment>',
+          `#include <emissivemap_fragment>
+	#if NUM_CLIPPING_PLANES > 0
+		float hotDepth = clippingPlanes[ 0 ].w - dot( vClipPosition, clippingPlanes[ 0 ].xyz );
+		float hotK = uHot * ( 1.0 - smoothstep( 0.0, uHotBand, hotDepth ) );
+		diffuseColor.rgb = mix( diffuseColor.rgb, uHotColor * 0.25, hotK );
+		totalEmissiveRadiance += uHotColor * 1.6 * hotK;
+	#endif`,
+        )
+    }
+    body.customProgramCacheKey = () => 'printed-link-hot'
+    wrapped.pivot.traverse((o) => {
+      if (!o.isMesh) return
+      layerUVs(o.geometry, 72)
+      o.material = body
+    })
+    wrapped.pivot.name = 'printed-link'
+    wrapped.pivot.visible = false
+    scene.add(wrapped.pivot)
+    return { ...wrapped, plane, hot, band }
+  }
+
   const loader = new GLTFLoader()
   let loadedBytes = 0
-  const weight = { printer: 2.68, motors: 1.77 }
-  const totalWeight = weight.printer + weight.motors
+  const weight = { printer: 2.68, motors: 1.77, link: 0.03 }
+  const totalWeight = weight.printer + weight.motors + weight.link
 
   try {
     await MeshoptDecoder.ready
     loader.setMeshoptDecoder(MeshoptDecoder)
-    const progress = { printer: 0, motors: 0 }
+    const progress = { printer: 0, motors: 0, link: 0 }
     const note = () => {
-      loadedBytes = weight.printer * progress.printer + weight.motors * progress.motors
+      loadedBytes = weight.printer * progress.printer + weight.motors * progress.motors + weight.link * progress.link
       settings.onLoadProgress?.(clamp(loadedBytes / totalWeight, 0, 1))
     }
     let printerGltf
     let motorsGltf
-    ;[printerGltf, motorsGltf] = await Promise.all([
+    let linkGltf
+    ;[printerGltf, motorsGltf, linkGltf] = await Promise.all([
       new Promise((resolve, reject) => {
         loader.load(
           settings.printerUrl,
@@ -877,12 +1187,40 @@ export async function createProcessStage(canvas, opts = {}) {
           reject,
         )
       }),
+      // the printed part is a garnish: without it the printer still runs and
+      // the page shows its download link straight away
+      new Promise((resolve) => {
+        if (!settings.linkUrl) return resolve(null)
+        loader.load(
+          settings.linkUrl,
+          resolve,
+          (e) => {
+            if (e && e.total) {
+              progress.link = e.loaded / e.total
+              note()
+            }
+          },
+          (err) => {
+            console.warn('[process-stage] printed part unavailable', err)
+            resolve(null)
+          },
+        )
+      }),
     ])
     if (state.disposed) return null
 
     printer = wrapModel(printerGltf.scene)
+    rig = rigPrinter(printer.pivot, printer.size)
     printerPivot.add(printer.pivot)
     printer.pivot.name = 'printer'
+    if (rig && linkGltf) {
+      part = makePrintPart(linkGltf.scene)
+      // it prints lying on a side plate, as tall as the nozzle's parked gap
+      part.bedScale = rig.gap / Math.max(1e-6, part.size.z)
+      part.footX = part.size.x * part.bedScale
+      part.footZ = part.size.y * part.bedScale
+    }
+    if (!part) state.print.done = true
 
     const container =
       motorsGltf.scene.children.find(
@@ -1120,10 +1458,14 @@ export async function createProcessStage(canvas, opts = {}) {
     if (settings.reducedMotion) {
       tl.printer = tr.printer
       tl.motors = tr.motors
+      tl.print = tr.print
     } else {
       tl.printer = ease(tl.printer, tr.printer, TRACK.smooth, dt)
       tl.motors = ease(tl.motors, tr.motors, TRACK.smooth, dt)
+      tl.print = ease(tl.print, tr.print, TRACK.smooth, dt)
     }
+    // the printer belongs to step 03 once step 02's act has passed the top
+    const onPrintTrack = tl.print > -1
     // hero → step 01: everything below is a function of this one number
     const hand = smooth(HANDOFF.from, HANDOFF.to, tl.printer)
     state.hand = hand
@@ -1356,16 +1698,36 @@ export async function createProcessStage(canvas, opts = {}) {
         const sway = settings.reducedMotion
           ? 0
           : Math.sin(state.time * 0.22) * 0.035 + state.pointer.liveX * 0.03
-        const stageQuat = new THREE.Quaternion().setFromAxisAngle(UP, sway)
-        if (!settings.reducedMotion && printerShift > 0) {
-          const pt = TRACK.printerTurn
-          _eTurn.set(pt[0] * printerShift, pt[1] * printerShift, pt[2] * printerShift)
-          stageQuat.multiply(_qTurn.setFromEuler(_eTurn))
+        const stageQuat = new THREE.Quaternion()
+        let goal = stagePos
+        let size = 1
+        let printerGone
+        if (onPrintTrack) {
+          // step 03 owns it (the switch happens with both framings off screen):
+          // the same eye, a closer framing, tipped toward the eye, on its own track
+          const pv = PRINT_VIEW[mode()]
+          const shift = clamp(tl.print, -TRACK.hideBeyond, TRACK.hideBeyond)
+          goal = pointOn(printerBasis, pv.x + px * 0.5, -pv.y + py * 0.5 + shift * PRINT.travel, 0)
+          stageQuat.setFromAxisAngle(printerBasis.right, pv.tilt)
+          stageQuat.multiply(_qTurn.setFromAxisAngle(UP, pv.yaw + sway))
+          if (!settings.reducedMotion && shift !== 0) {
+            _eTurn.set(PRINT.turn[0] * shift, PRINT.turn[1] * shift, PRINT.turn[2] * shift)
+            stageQuat.multiply(_qTurn.setFromEuler(_eTurn))
+          }
+          size = pv.scale
+          printerGone = Math.abs(shift * PRINT.travel) >= TRACK.hideBeyond - 0.05
+        } else {
+          stageQuat.setFromAxisAngle(UP, sway)
+          if (!settings.reducedMotion && printerShift > 0) {
+            const pt = TRACK.printerTurn
+            _eTurn.set(pt[0] * printerShift, pt[1] * printerShift, pt[2] * printerShift)
+            stageQuat.multiply(_qTurn.setFromEuler(_eTurn))
+          }
+          printerGone = k > 0.98 && printerShift * TRACK.printerTravel >= TRACK.hideBeyond - 0.05
         }
-        printerPivot.position.copy(ringPos).lerp(stagePos, k)
+        printerPivot.position.copy(ringPos).lerp(goal, k)
         printerPivot.quaternion.copy(ringQuat).slerp(stageQuat, k)
-        printerPivot.scale.setScalar(Math.max(1e-5, ringScale + (1 - ringScale) * k))
-        const printerGone = k > 0.98 && printerShift * TRACK.printerTravel >= TRACK.hideBeyond - 0.05
+        printerPivot.scale.setScalar(Math.max(1e-5, ringScale + (size - ringScale) * k))
         setAlpha(printer.pivot, printerGone ? 0 : state.printerFade * (k > 0.02 ? 1 : Math.min(1, grow * 4)))
         continue
       }
@@ -1393,6 +1755,135 @@ export async function createProcessStage(canvas, opts = {}) {
       pivot.scale.setScalar(Math.max(1e-5, scale))
       setAlpha(pivot, gone ? 0 : fade * Math.min(1, grow * 4))
     }
+
+    updatePrint(dt, basis, onPrintTrack)
+  }
+
+  /* ---------------------------------------------------------------- print */
+  function updatePrint(dt, basis, onTrack) {
+    const pr = state.print
+    if (!rig) {
+      // a printer without its moving parts: nothing to print, the link is free
+      if (pr.reported !== 2) {
+        pr.done = true
+        pr.reported = 2
+        settings.onPrint?.({ progress: 1, done: true })
+      }
+      return
+    }
+    const shift = state.trackLive.print
+
+    // Rev B's frame, eased like the other objects so the part has the same weight
+    const slot = state.slot
+    if (slot) {
+      if (!state.slotLive || settings.reducedMotion) state.slotLive = { ...slot }
+      else for (const key of ['x', 'y', 'w', 'h']) state.slotLive[key] = ease(state.slotLive[key], slot[key], TRACK.smooth, dt)
+    }
+    const flight = part && state.slotLive ? easeInOut(smooth(PRINT.flight[0], PRINT.flight[1], shift)) : 0
+    pr.flight = flight
+
+    // the clock: it runs once the printer has arrived, and hurries when step
+    // 03 is scrolled on before the print is finished
+    if (!pr.done && onTrack) {
+      const here = Math.abs(shift) < PRINT.start
+      const leaving = pr.started && shift > PRINT.flight[0] * 0.5
+      if (here || leaving) {
+        pr.started = true
+        pr.t += dt * (leaving ? PRINT.rush : 1)
+      }
+      if (pr.t >= PRINT_TOTAL || flight > 0.02) {
+        pr.done = true
+        pr.t = PRINT_TOTAL
+      }
+    }
+
+    // e: the head, bed and gantry run out to the part and park again;
+    // p: layers done, the gantry holding on each layer and then stepping up
+    const t = pr.t
+    const e =
+      t < PRINT.approach + PRINT.duration
+        ? smooth(0, PRINT.approach, t)
+        : 1 - smooth(PRINT.approach + PRINT.duration, PRINT_TOTAL, t)
+    const raw = clamp((t - PRINT.approach) / PRINT.duration, 0, 1)
+    const n = raw * PRINT.layers
+    const p = pr.done ? 1 : (Math.floor(n) + smooth(0.78, 1, n - Math.floor(n))) / PRINT.layers
+    pr.p = p
+    pr.e = e
+
+    if (part && !pr.done) {
+      const sz = sweep(t * PRINT.sweepHz) * part.footZ * 0.4
+      const sx = sweep(t * PRINT.bedHz + 0.25) * part.footX * 0.36
+      rigOffset.dz = e * (rig.partZ - rig.tip.z + sz) // the head runs along the arm …
+      rigOffset.dx = e * (rig.tip.x - rig.partX + sx) // … the bed brings the part under it …
+      rigOffset.dy = -rig.gap * (1 - p) * e // … and the gantry climbs a layer at a time
+    } else {
+      // done (or hurried to done): whatever is still out parks on a short spring
+      rigOffset.dx = ease(rigOffset.dx, 0, 7, dt)
+      rigOffset.dy = ease(rigOffset.dy, 0, 7, dt)
+      rigOffset.dz = ease(rigOffset.dz, 0, 7, dt)
+    }
+    // off its own act the printer always shows its parked pose
+    if (onTrack) moveRig(rigOffset.dx, rigOffset.dy, rigOffset.dz)
+    else moveRig(0, 0, 0)
+
+    const pct = pr.done ? 1 : Math.floor(raw * 100) / 100
+    const key = pr.done ? 2 : pct
+    if (key !== pr.reported) {
+      pr.reported = key
+      settings.onPrint?.({ progress: pct, done: pr.done })
+    }
+
+    if (!part) return
+    const pivot = part.pivot
+    const onBed = onTrack && (pr.started || pr.done)
+    const slotK = flight
+    if (!onBed && slotK <= 0) {
+      pivot.visible = false
+      return
+    }
+
+    // on the plate: the printer's frame, riding the bed
+    printerPivot.updateMatrixWorld()
+    _v.set(rig.partX + (onTrack ? rigOffset.dx : 0), rig.plateTop + rig.gap / 2, rig.partZ)
+    _partLocal.compose(_v, PART_FLAT, _bedScale.setScalar(part.bedScale))
+    _partWorld.multiplyMatrices(printerPivot.matrixWorld, _partLocal)
+    _partWorld.decompose(_bedPos, _bedQuat, _bedScale)
+
+    // the cut: a plane at the current layer, facing down, in world space
+    const cutting = slotK <= 0 && p < 1
+    if (cutting) {
+      _cutNormal.set(0, -1, 0).applyQuaternion(printerPivot.quaternion)
+      _cutPoint.set(rig.partX + rigOffset.dx, rig.plateTop + p * rig.gap, rig.partZ).applyMatrix4(printerPivot.matrixWorld)
+      part.plane.setFromNormalAndCoplanarPoint(_cutNormal, _cutPoint)
+    } else {
+      part.plane.normal.set(0, -1, 0)
+      part.plane.constant = 1e6
+    }
+    // the hot band is a few printed layers deep at the part's current size
+    part.hot.value = cutting ? 1 : 0
+    part.band.value = ((_bedScale.x * part.size.z) / PRINT.layers) * 3.5
+
+    let visible = onBed || slotK > 0
+    if (slotK > 0) {
+      // Rev B's frame: centre and fit in the current eye's view, turning slowly
+      const sl = state.slotLive
+      _slotPos.copy(pointOn(basis, sl.x + sl.w / 2 - 0.5, 0.5 - (sl.y + sl.h / 2), 0))
+      const fit = Math.min(sl.w * basis.viewW, sl.h * basis.viewH) * PRINT.fill
+      const slotScale = fit / part.maxDim
+      const turn = settings.reducedMotion ? 0 : state.time * PRINT.spin
+      _slotQuat.setFromAxisAngle(basis.right, 0.16).multiply(_qTurn.setFromAxisAngle(UP, state.camera.az + 0.7 + turn))
+      // lift off the plate on a gentle arc
+      pivot.position.copy(_bedPos).lerp(_slotPos, slotK).addScaledVector(basis.up, Math.sin(Math.PI * slotK) * 0.05 * basis.viewH)
+      pivot.quaternion.copy(_bedQuat).slerp(_slotQuat, slotK)
+      pivot.scale.setScalar(_bedScale.x + (slotScale - _bedScale.x) * slotK)
+      // gone once its frame has scrolled away
+      if (slotK >= 1) visible = sl.y + sl.h > -0.05 && sl.y < 1.05
+    } else {
+      pivot.position.copy(_bedPos)
+      pivot.quaternion.copy(_bedQuat)
+      pivot.scale.copy(_bedScale)
+    }
+    pivot.visible = visible
   }
 
   function frame() {
@@ -1445,6 +1936,7 @@ export async function createProcessStage(canvas, opts = {}) {
   /* ----------------------------------------------------------------- api */
   const api = {
     ready,
+    printable: Boolean(part),
     play() {
       if (state.intro.done || state.intro.playing) return
       if (settings.reducedMotion) finishIntro()
@@ -1508,20 +2000,30 @@ export async function createProcessStage(canvas, opts = {}) {
       spin.next = state.time + TURRET.move + TURRET.dwellAfterHand
       return true
     },
-    setTrack(printerShift, motorsShift) {
+    setTrack(printerShift, motorsShift, printShift) {
       const tr = state.track
       tr.printer = Number(printerShift) || 0
       tr.motors = Number(motorsShift) || 0
+      tr.print = Number.isFinite(Number(printShift)) ? Number(printShift) : -3
       if (!tr.set) {
         // first report (load / deep link): start where the page is
         tr.set = true
         state.trackLive.printer = tr.printer
         state.trackLive.motors = tr.motors
+        state.trackLive.print = tr.print
         state.cameraSnap = true
       }
     },
+    setSlot(x, y, w, h) {
+      const v = [x, y, w, h].map(Number)
+      if (!v.every(Number.isFinite) || v[2] <= 0 || v[3] <= 0) {
+        state.slot = null
+        return
+      }
+      state.slot = { x: v[0], y: v[1], w: v[2], h: v[3] }
+    },
     setStage(name) {
-      if (!['ring', 'printer', 'motors', 'off'].includes(name)) return false
+      if (!['ring', 'printer', 'motors', 'print', 'compare', 'off'].includes(name)) return false
       if (!state.loaded) {
         pendingStage = name
         return true
@@ -1578,7 +2080,22 @@ export async function createProcessStage(canvas, opts = {}) {
         out: state.out,
         ringAlpha: state.ringAlpha,
         motorsAlpha: state.motorsAlpha,
-        track: { printer: +state.trackLive.printer.toFixed(3), motors: +state.trackLive.motors.toFixed(3) },
+        track: {
+          printer: +state.trackLive.printer.toFixed(3),
+          motors: +state.trackLive.motors.toFixed(3),
+          print: +state.trackLive.print.toFixed(3),
+        },
+        print: {
+          t: +state.print.t.toFixed(2),
+          p: +state.print.p.toFixed(3),
+          e: +state.print.e.toFixed(3),
+          done: state.print.done,
+          flight: +state.print.flight.toFixed(3),
+          partVisible: part ? part.pivot.visible : null,
+          partRect: part && part.pivot.visible ? Object.values(screenRectFor(part.pivot, {}) || {}).map(Math.round) : null,
+          slot: state.slotLive ? Object.values(state.slotLive).map((v) => +v.toFixed(3)) : null,
+          gap: rig ? +rig.gap.toFixed(4) : null,
+        },
         camera: state.camera
           ? { az: state.camera.az, el: state.camera.el, dist: state.camera.dist }
           : null,

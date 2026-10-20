@@ -6,7 +6,7 @@ modules**. No framework, no backend, no runtime data. Everything ships as static
 ```
 /                → index.html                 Sheet 00, the hub
 /work/arm/       → work/arm/index.html        Sheet 01, the v6 film
-/work/arm/process/ → work/arm/process/index.html  Sheet 01 / process, steps 01-04 (printer 3D live)
+/work/arm/process/ → work/arm/process/index.html  Sheet 01 / process, steps 01-06 (3D on the hero + steps 01-04)
 /work/nora/      → work/nora/index.html       Sheet 02, Nora
 /work/nora/demo/ → work/nora/demo/index.html  the desk-cat demo (iframe target; ?full = full page)
 /work/drone/     → work/drone/index.html      Sheet 03, FPV drone (written; figures to come)
@@ -50,6 +50,10 @@ personal-page/
     models/printer-a1-mini.glb # 2.6 MB Bambu Lab A1 mini (287k tris, meshopt, WebP textures)
     img/arm-plate.*           # film hero / no-WebGL still (portrait)
     img/printer-plate.png     # process page no-WebGL / no-JS still (transparent crop)
+    img/link-j1-j2.png        # process page Rev B still (the J1 → J2 link, transparent)
+    models/arm-parts/         # the arm split into 9 parts (arm-parts.glb, parts/*.glb, manifest.json)
+    models/README.txt         # what each model file is (shipped inside the zip too)
+    downloads/3d-models.zip   # 5.2 MB: arm-opt, printer-a1-mini, arm-parts — process step 03's download
     img/plates/arm-16x10.*    # hub 16:10 plate
     img/plates/nora-16x10.*   # hub 16:10 plate (desk cat, working)
     img/plates/nora-states.*  # 2×2 contact sheet of four demo states
@@ -70,9 +74,12 @@ personal-page/
 - Film asset URLs are absolute (`/fonts/...`, `/img/...`); the GLB URL derives from
   `import.meta.env.BASE_URL + 'models/arm-opt.glb'`.
 - The Nora sheet iframes `/work/nora/demo/` (same origin, no server, demo events only).
-- The process page owns one scene at a time: an act that should show a 3D object carries
-  `data-stage="<name>"` and `data-preset="hero|step"`, and `process.js` hides the stage on every
-  other act. Only `stage="printer"` exists today; steps 02–04 have no object yet.
+- The process page owns one canvas (`src/process-stage.js`): an act that shows a 3D object carries
+  `data-stage="ring|printer|motors|print|compare"`, and `process.js` feeds the stage each act's
+  position (`setTrack`) plus Rev B's frame rect (`setSlot`) so every object rides its own act.
+  Step 03 (`print`) runs the A1 mini's print of the J1 → J2 link once and reports it through
+  `onPrint`; `body.print-done` then swaps the progress line for the download link. Step 04
+  (`compare`) parks that link in Rev B's frame; Rev A is a placeholder until its model exists.
 
 ## Ownership / what each file owns
 
@@ -91,7 +98,7 @@ personal-page/
 | `src/nora-sheet.js` | Sheet 02 only: marks the demo iframe `.is-focused` from its window focus/blur events (keyboard focus lands inside the child document, where `:focus`/`:focus-within` never match) | touch anything but the demo iframe |
 | `src/nora-loader.js` | Sheet 02 only: the readiness promise behind the curtain — fonts, the eight monitor frames decoded, the demo document loaded, then two frames for the projected hero | draw or animate the curtain (that is `film-loader.js`) |
 | `work/arm/index.html` + `src/style.css`, `main.js`, `arm-scene.js` | The film, unchanged (v4/v6 contracts) | be reused by the hub or sheets |
-| `work/arm/process/index.html` + `src/process.js` | The process page: film chrome, six acts (hero, steps 01–04, back), and the printer scene wiring; copy lives in the HTML | touch the arm scene |
+| `work/arm/process/index.html` + `src/process.js` | The process page: film chrome, eight acts (hero, steps 01–06, back), the stage wiring (tracks, Rev B slot, print status → `body.print-done`); copy lives in the HTML | touch the arm scene |
 | `src/film-loader.js` | The shared loading curtain: promise-based lift on the page's first real frame, real progress reporting, safety valve | know what the page renders |
 | `src/printer-scene.js` | The process page's A1 mini: framing presets, idle sway, pointer parallax, dispose | know the page layout |
 | `work/nora/demo/*` | The desk-cat page (copied) + embed/demo adaptations | talk to a server or read real data |

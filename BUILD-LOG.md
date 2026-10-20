@@ -805,3 +805,43 @@ ring and enlarges straight into its step-01 framing on one gentle curve that sta
 (`out` 0.02 → 0.96, smoothstep only), while the camera swings round with it. To keep the eye on the
 printer, the other parts no longer fly into it: they shrink away on their own stations, J1 first, as
 the dial rewinds. Checked with the printer at the front and at the back of the ring, both directions.
+
+## 2026-10-20 — process: step 03 prints the J1 → J2 link, step 04 compares its revisions
+
+Ethan: between the motors and "six axes, drawn in CAD", add the 3D printing — the A1 mini's nozzle
+moving left and right as if printing, then a link to the 3D models — and a comparison slide for the
+one design he changed, the link between joint 1 and joint 2 (base → shoulder). He sent the models as
+a zip (`arm-opt.glb`, `printer-a1-mini.glb`, `arm-parts/` with each part on its own + manifest).
+
+**Files.** The zip ships as `public/downloads/3d-models.zip` (the download) and unzipped under
+`public/models/` (`arm-parts/`, `README.txt`) so the same files can be browsed on GitHub;
+`arm-opt.glb` and `printer-a1-mini.glb` in the zip are byte-identical to the ones already here.
+
+**03 / Printing** (`data-stage="print"`). The A1 mini comes back up from below as the motors leave,
+closer than on step 01 and tipped toward the eye so the bed reads. The printer's glTF keeps one
+primitive per material, so the rig comes apart at load: Toolhead runs along the X arm, Motor (arm,
+X motor, cable loop) is the gantry, Heatbed's plate is split from its rail by height, and the cable
+loop is split from the arm and bent in the vertex shader so its head end follows the head. Once the
+printer has arrived the print runs once on the scene clock (~8 s): the gantry drops to the plate,
+the head sweeps across the part while the bed shuttles under it, and the gantry climbs a layer at a
+time (46 visible steps) with the nozzle exactly on the top layer. The part is the real
+`parts/link-J1-J2.glb`, lying on a side plate and scaled to the nozzle's parked gap, grown under a
+clipping plane; the few layers under the cut glow signal red. A progress line under the copy
+(`PRINTING LINK J1 → J2 ── 42%`) becomes **Download the 3D models ↓** + **Browse on GitHub ↗** when
+the print is done (`body.print-done`). Scrolled on mid-print, it finishes fast; reduced motion,
+no WebGL, a failed part load or no JS all show the link straight away.
+
+**04 / Revision** (`data-stage="compare"`). Two drawing frames: Rev A (dashed, "model to come" — the
+first design's model is not in the zip, so it waits for Ethan's file) and Rev B. As step 03 scrolls
+away the printed link lifts off the bed on a short arc into Rev B's frame and turns there; the page
+hands the stage the frame's live screen rect every frame (`setSlot`), so it lands inside it through
+the entrance and reveal transforms. Caption: on the arm now, 99 × 116 × 59 mm (manifest size).
+`img/link-j1-j2.png` stands in until the scene is up.
+
+**Renumbered** design → 05, assemble → 06, back → 07; index panel and progress ticks (8) follow.
+
+Verified on dev (5178) with scroll-scrubbed captures at 1440×900, 1280×720 and 390×844: motors → 03,
+the print at several points (head on the top layer, cable bent, hot layer), 03 → 04 flight, Rev B
+centred in its frame, 04 → 05, back to 01 (rig parked, no part); reduced motion; JS off; the
+`BASE=/personal-page/` build under preview (zip link 200, no failed requests, no console errors);
+build green.

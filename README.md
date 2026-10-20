@@ -17,7 +17,7 @@ project site). The direction and the open decisions live in [`HUB-PLAN.md`](HUB-
 | --- | --- | --- |
 | `/` | 00 — index | Name, one line, current state, works register (01 and 02 published, 03–05 in prep), mission band carrying **the grand plan copy + its `The grand plan ↗` button** (rust→ink, same component as the sheet CTAs), system diagram, built/in build/next, record, contact, title block. No 3D. The Nora plate is a live canvas: the cat alone on paper, idling through her movement bank. |
 | `/work/arm/` | 01 — the arm | The v6 **product film**: fixed 3D stage, six camera stops, the real articulated `arm-opt.glb`, mesh/points/x-ray modes, free view with part details. Unchanged except a back link to the index. |
-| `/work/arm/process/` | 01 — process | How the arm got made, in order. The hero is an indexing turret of the six parts (A1 mini + five motors) on a drawn dial, presenting each in build order with a drawing-sheet balloon — drag to spin it, click a part to bring it round. Step 01 (the Bambu Lab A1 mini) is a live 3D model; steps 02–04 (motors, design, assemble) are written and wait on their own models. Same film chrome as the arm sheet. |
+| `/work/arm/process/` | 01 — process | How the arm got made, in order. The hero is an indexing turret of the six parts (A1 mini + five motors) on a drawn dial, presenting each in build order with a drawing-sheet balloon — drag to spin it, click a part to bring it round. Step 01 (the Bambu Lab A1 mini) and step 02 (the motors) are live 3D; step 03 has the A1 mini print the J1 → J2 link (head along the gantry, bed shuttling, gantry climbing a layer at a time), then shows the **Download the 3D models** link; step 04 compares that link's two revisions (Rev B live in its frame, Rev A waiting on its model); steps 05–06 (design, assemble) are written. Same film chrome as the arm sheet. |
 | `/work/nora/` | 02 — Nora | The personal AI that runs 24/7 on a Mac of her own, with an **interactive pixel-art desk cat** as its status window. Same loading curtain and top-bar shell as Sheet 01. Argument, state table, build diagram, and the live demo. |
 | `/work/nora/demo/` | — | The actual desk-cat page, copied into the site and permanently in demo mode (fake events, no server). Embedded on Sheet 02; `?full` opens the complete pet page. |
 | `/work/drone/` | 03 — FPV drone | The rescue system's eye, built and not flying. Hero, the build and its parts table (no part but the airframe has a CAD model), the five-stage chain (video link works; flight not solved; recognition / position fix / handoff not built), the two test flights, and the design lesson. **Figures pending**: the airframe model and photographs are marked "to come"; the sheet is not linked from the hub yet. |
@@ -61,6 +61,9 @@ Requires Node 18+ (tested on Node 24). Ports are pinned in `vite.config.js`.
 | `public/img/plates/nora-cat.png/.webp` | 5 KB / 5 KB | Transparent still of the cat alone — the exact hub canvas layout — shown when JS is off |
 | `public/img/plates/nora-states.png/.webp` | 178 KB / 63 KB | 2×2 contact sheet of four demo states (listening, working, error, offline) |
 | `public/img/arm-plate.png/.webp` | 193 / 46 KB | The film's own hero / no-WebGL still (portrait) |
+| `public/models/arm-parts/` | 1.7 MB + 9 parts | The same arm split into its nine parts (five motors, four printed links), one GLB each + `manifest.json`; `parts/link-J1-J2.glb` is the part printed on the process page |
+| `public/downloads/3d-models.zip` | 5.2 MB | `arm-opt.glb`, `printer-a1-mini.glb` and `arm-parts/` with a README — the process page's download (browsable unzipped under `public/models/`) |
+| `public/img/link-j1-j2.png` | 121 KB | Transparent still of the J1 → J2 link, Rev B's stand-in before the scene is up |
 | `public/fonts/*.woff2` | 48 KB total | Inter Tight 300/400, Instrument Serif italic — latin subsets, self-hosted |
 
 Plate pipeline (local tooling, `dev/` is git-ignored): arm plate via `node dev/make-plate.mjs`; Nora
@@ -107,7 +110,7 @@ the site moves to <https://ethanantoineli.github.io/> (OG/canonical then need th
 personal-page/
   index.html               # Sheet 00 — hub
   work/arm/index.html      # Sheet 01 — the v6 film (verbatim, + back link)
-  work/arm/process/        # Sheet 01 / process — step 01, A1 mini 3D
+  work/arm/process/        # Sheet 01 / process — turret, A1 mini, motors, the print, the J1 → J2 revision
   work/nora/index.html     # Sheet 02 — Nora
   work/nora/demo/          # the desk-cat page, demo-only (iframe target; ?full = full page)
     index.html nora.js style.css
