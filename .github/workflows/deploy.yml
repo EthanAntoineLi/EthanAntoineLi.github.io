@@ -30,6 +30,11 @@ jobs:
 
       - name: Build
         run: npm run build
+        # Project-page deploy at https://ethanantoineli.github.io/personal-page/.
+        # Drop this env (base becomes '/') when the repo is renamed to
+        # EthanAntoineLi.github.io and moves to the user-site root.
+        env:
+          BASE: /personal-page/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
