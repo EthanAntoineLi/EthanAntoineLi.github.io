@@ -280,3 +280,14 @@ five 100vh acts, ~171 words on the whole page (v2 had ~1,100).
   always starts from the same framing; idle spin restarts from there.
 - Boot/reload at the Free section no longer counts as "leaving" (direction is
   only known after real scroll input).
+
+## 2026-10-20 — every slide arrives at its preset
+
+- Root cause of "moved it on slide 1, slide 2 looks different": the clamped drag
+  orbit is global, so a nudge on one slide leaked into every following slide.
+- Fixed with preset hygiene in `measure()`: a one-shot `releaseManual()` when a
+  slide's transition starts (local t > 0.5) and again when a new slide is
+  reached. Orbit/zoom are reset (damped) so every slide settles on its own
+  framing, no matter how the previous slide was left.
+- Verified: dragging payload/geometry/scan then moving on gives Δaz/Δel ≤ 0.003
+  rad and Δdistance ≤ 0.002 vs a clean pass (free view hand-over already exact).

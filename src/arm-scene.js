@@ -1497,6 +1497,15 @@ export async function createArmScene(canvas, opts = {}) {
     return true
   }
 
+  function releaseManual() {
+    if (state.disposed) return false
+    state.orbit.az = 0
+    state.orbit.el = 0
+    state.zoom.target = 1
+    state.idle = 0
+    return true
+  }
+
   function resetView() {
     if (state.disposed) return false
     state.zoom.target = 1
@@ -1724,6 +1733,7 @@ export async function createArmScene(canvas, opts = {}) {
     setControlMode,
     zoomBy,
     resetView,
+    releaseManual,
     pick,
     setHighlight,
     setOrbit,

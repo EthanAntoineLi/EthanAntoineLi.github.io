@@ -145,6 +145,11 @@ let scene = null
 let activeAct = 0
 let scrollPrev = typeof window !== 'undefined' ? window.scrollY : 0
 let scrollDir = 1
+// Preset hygiene: the camera is only "borrowed" by a slide. A one-shot reset
+// when a slide's transition starts (t > 0.5) and when a new slide is reached
+// makes every arrival identical, however the visitor left the previous slide.
+let stopIndex = -1
+let resetMark = -1
 
 const canvas = document.getElementById('arm-canvas')
 const phone = window.matchMedia('(max-width: 820px)').matches
@@ -361,6 +366,18 @@ function measure() {
   const start = act.el.offsetTop
   const end = next ? next.el.offsetTop : start + act.el.offsetHeight
   const t = Math.min(1, Math.max(0, (y - start) / Math.max(1, end - start)))
+
+  // every slide must arrive in its preset framing: wipe any borrowed orbit /
+  // zoom when the transition into the next slide starts, and again on arrival
+  if (i !== stopIndex) {
+    stopIndex = i
+    resetMark = -1
+    if (scene && ACTS[i].stop !== 'free') scene.releaseManual?.()
+  }
+  if (scene && ACTS[i].stop !== 'free' && t > 0.5 && resetMark !== i) {
+    scene.releaseManual?.()
+    resetMark = i
+  }
 
   const shown = t > 0.5 && next ? i + 1 : i
   if (shown !== activeAct) {
