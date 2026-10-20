@@ -328,3 +328,40 @@ what was built.
   all content. Captures + JSON report: `../review-v10/`.
 - **Not done:** deploy/Pages (repo visibility + URL rename still open), Astro migration, sheets 02–04
   (need real assets), OG image/URL, custom domain, About page.
+
+## 2026-10-20 — v7 Sheet 02: Nora (personal AI + desk cat)
+
+Second published sheet, built from the `nora-pet` delivery package (OpenClaw plugin, Node server, the
+pixel-cat page, launchd setup, agent-facing install instructions) plus Ethan's answers about what Nora
+actually does.
+
+- **Content.** `work/nora/index.html`: hero (Nora, 24/7 on a Mac of her own, OpenClaw as the base
+  framework with custom layers), an interactive demo, the four jobs (long-term memory, reminders,
+  morning timetable, question-bank practice questions via a specialist question-maker sub-agent), the
+  layered build diagram, the eight-state interface table with the pet's own state colours, a four-state
+  contact sheet, and a status band. English, builder's-logbook voice, ~380 words.
+- **Demo, not screenshots.** The real desk-cat page is copied to `work/nora/demo/` and embedded as a
+  160:90 iframe on the sheet. It is static-hosted and **permanently in demo mode**: `DEMO = true`, no
+  server, no EventSource. Added an embed mode (chrome hidden, fractional canvas fit so the room and
+  bubbles fill the frame) and `?full` for the complete page; `?state=` freezes one state.
+- **Scripted demo content.** The demo loop was rewritten around Nora's real jobs — a reminder, then a
+  question-bank request handled by the question-maker sub-agent — keeping every original state and idle
+  action (groom, yawn, butterfly, box, nap). It remains clearly labelled fake: "fake events, no agent
+  connected".
+- **Privacy boundary** (per Ethan): no ports, localhost, launchd/plist or repository links are
+  published; the zip's real `data/nora.json` (100 recent activity lines, message snippets) is not used.
+  The page explicitly says the demo shows nothing from the real agent.
+- **Plates.** `nora-16x10` hub plate from a 1600×900 capture of the working state on paper; `nora-states`
+  2×2 contact sheet of listening / working / error / offline. Demo capture uses `?state=` so the art is
+  deterministic.
+- **Hub integration.** Works register now lists 05 sheets / 02 published: arm (01) and Nora (02) as
+  full-width sheet rows, with drone / AI interviewer / physics renumbered 03–05 and still `SHEET IN
+  PREP`. Hero line and meta description now include the software half; title block reads `00 / 05`.
+- **Shared behaviour.** `hub.js` split into `scroll.js` (reveals, nav/ghost state) + `hub.js` (copy
+  email). Reveal threshold changed from 92% of the viewport to the viewport edge after the new hub hero
+  status strip sat just below the old threshold and stayed hidden on a 1000px-tall window.
+- **Verified.** `npm run build` green with all four entries; production preview QA: hub, Nora sheet,
+  demo iframe (pet/click interaction increments the pet counter), full demo page, no-JS fallback plate,
+  fast PageDown reveals, film scene still `scene-ready`; 1440/390 no horizontal overflow; **zero console
+  errors, zero failed requests**. Captures + report: `../review-v11/`.
+- **Not done:** deploy, sheets 03–05, About page, OG image/URL, any public repo for the Nora source.

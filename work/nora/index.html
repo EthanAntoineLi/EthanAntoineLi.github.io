@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f6f6f4" />
+    <title>Sheet 02 — Nora · Ethan Antoine Li</title>
+    <meta
+      name="description"
+      content="Nora is a personal AI that runs 24/7 on a Mac of her own — long-term memory, reminders, a morning timetable and practice questions — with a pixel-art desk cat for a status window."
+    />
+    <meta property="og:title" content="Sheet 02 — Nora · Ethan Antoine Li" />
+    <meta
+      property="og:description"
+      content="A personal AI with a desk cat: always on, built around one person's week, and honest about what is a demo."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="author" content="Ethan Antoine Li" />
+    <script>
+      document.documentElement.classList.add('js')
+    </script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/inter-tight-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-tight-300.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/src/hub.css" />
+    <link rel="stylesheet" href="/src/sheet.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <div class="ghost-wrap" aria-hidden="true">
+      <span class="ghost" id="ghost">NOR</span>
+    </div>
+
+    <header class="chrome">
+      <a class="brand" href="/" aria-label="Ethan Antoine Li — home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">ethan antoine li</span>
+        <span class="brand-tag mono">portfolio</span>
+      </a>
+
+      <p class="chrome-meta mono">Sheet 02 · Software · 2026</p>
+
+      <nav class="nav mono" aria-label="Sheet sections">
+        <a href="/">← index</a>
+        <a href="#what" data-nav>Assistant</a>
+        <a href="#cat" data-nav>Cat</a>
+        <a href="#status" data-nav>Status</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <!-- ============================================================ HERO -->
+      <section class="sheet-hero" id="top" data-ghost="NOR">
+        <div class="reveal">
+          <p class="eyebrow mono"><span class="dot"></span>02 / Software · personal AI</p>
+          <h1 class="sheet-name">Nora</h1>
+          <p class="sheet-sub">A personal AI with <em>a desk cat.</em></p>
+        </div>
+
+        <div class="sheet-hero-foot">
+          <p class="sheet-lede reveal">
+            Nora runs <strong>24/7</strong> on a Mac of her own. She keeps long-term memory, sets
+            reminders, sends my timetable every morning, and builds topic-specific practice
+            questions from my question bank. The cat is how I see what she’s doing.
+          </p>
+
+          <dl class="sheet-meta reveal">
+            <div><dt>Status</dt><dd><span class="state state--built">Running 24/7</span></dd></div>
+            <div><dt>Base</dt><dd>OpenClaw core, plus my own layers</dd></div>
+            <div><dt>Lives on</dt><dd>A dedicated Mac she controls</dd></div>
+            <div><dt>Updated</dt><dd>October 2026</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- ============================================================ DEMO -->
+      <figure class="demo-figure reveal" id="demo">
+        <div class="demo-frame">
+          <span class="plate-frame" aria-hidden="true"></span>
+          <iframe
+            src="/work/nora/demo/"
+            title="Nora, the pixel desk cat — interactive demo with fake events"
+            loading="lazy"
+          ></iframe>
+          <picture class="demo-fallback">
+            <source srcset="/img/plates/nora-16x10.webp" type="image/webp" />
+            <img
+              src="/img/plates/nora-16x10.png"
+              width="1280"
+              height="800"
+              alt="Nora, a grey pixel cat, sitting at a tiny laptop in a dark room — the working state."
+            />
+          </picture>
+        </div>
+        <figcaption class="demo-caption">
+          <span class="mono">Fig. 01 — live demo · fake events, no agent connected</span>
+          <span class="mono">Click her to pet · six quick pokes make her grumpy</span>
+          <a class="demo-open mono" href="/work/nora/demo/?full" target="_blank" rel="noopener"
+            >Full demo ↗</a
+          >
+        </figcaption>
+      </figure>
+
+      <!-- ====================================================== 01 ASSISTANT -->
+      <section class="section" id="what" data-ghost="AI">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>01 / The assistant</p>
+            <h2 class="section-title">What she <em>actually does.</em></h2>
+          </div>
+          <p class="section-meta mono">Built around my needs</p>
+        </header>
+
+        <ol class="jobs">
+          <li class="job reveal">
+            <p class="job-no mono">01</p>
+            <h3 class="job-title">Long-term memory</h3>
+            <p class="job-line">
+              Context carries across sessions. A project or a reminder can be picked up later
+              instead of explained again.
+            </p>
+          </li>
+          <li class="job reveal">
+            <p class="job-no mono">02</p>
+            <h3 class="job-title">Reminders</h3>
+            <p class="job-line">A sentence becomes a timed nudge. She comes back when it’s due.</p>
+          </li>
+          <li class="job reveal">
+            <p class="job-no mono">03</p>
+            <h3 class="job-title">Morning timetable</h3>
+            <p class="job-line">The day’s timetable arrives every morning, before I ask for it.</p>
+          </li>
+          <li class="job reveal">
+            <p class="job-no mono">04</p>
+            <h3 class="job-title">Practice questions</h3>
+            <p class="job-line">
+              Topic-specific questions pulled from my question bank. A dedicated question-maker
+              sub-agent drafts them; the main agent wakes it when needed.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ========================================================== 02 BUILD -->
+      <section class="section" id="build" data-ghost="HOW">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>02 / The build</p>
+            <h2 class="section-title">A framework, and<br /><em>everything around it.</em></h2>
+          </div>
+          <p class="section-meta mono">Layered, not monolithic</p>
+        </header>
+
+        <div class="build-grid">
+          <div class="build-copy reveal">
+            <p>
+              OpenClaw is the base framework — the part that already existed. Everything that makes
+              Nora useful is built around it, one layer per need: memory, reminders, the timetable,
+              the question bank.
+            </p>
+            <p>
+              Work that needs its own focus gets a specialist sub-agent; the main agent decides when
+              to wake it. <strong>Nora runs on a dedicated Mac, 24/7</strong> — the whole machine is
+              hers, not an app I open.
+            </p>
+          </div>
+
+          <figure class="stack reveal">
+            <ol class="stack-rows">
+              <li class="stack-row is-base">
+                <span class="stack-k">Base</span>
+                <p class="stack-v">OpenClaw — the framework</p>
+              </li>
+              <li class="stack-row is-mine">
+                <span class="stack-k">My layers</span>
+                <p class="stack-v">memory · reminders · timetable · question bank</p>
+              </li>
+              <li class="stack-row is-accent">
+                <span class="stack-k">Sub-agents</span>
+                <p class="stack-v">question maker — woken on demand</p>
+              </li>
+              <li class="stack-row is-machine">
+                <span class="stack-k">Machine</span>
+                <p class="stack-v">one Mac · running 24/7</p>
+              </li>
+            </ol>
+            <figcaption class="mono">Fig. 02 — where the framework stops and my layers start.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ============================================================ 03 CAT -->
+      <section class="section" id="cat" data-ghost="CAT">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>03 / The interface</p>
+            <h2 class="section-title">An agent needs<br /><em>a face.</em></h2>
+          </div>
+          <p class="section-meta mono">160 × 90 px · 15 fps</p>
+        </header>
+
+        <p class="cat-lede reveal">
+          An always-on assistant is invisible when it’s working. The cat makes the state readable
+          from across the room: what she’s doing, and whether she’s even there.
+        </p>
+
+        <ul class="states reveal">
+          <li class="state-item state-item--offline">
+            <span class="state-swatch" aria-hidden="true"></span>
+            <span class="state-name">Offline</span>
+            <span class="state-desc">asleep in a cardboard box; the room dims</span>
+          </li>
+          <li class="state-item state-item--idle">
+            <span class="state-swatch" aria-hidden="true"></span>
+            <span class="state-name">Idle</span>
+            <span class="state-desc">blinks, grooms, follows the cursor; naps after five minutes</span>
+          </li>
+          <li class="state-item state-item--listening">
+            <span class="state-swatch" aria-hidden="true"></span>
+            <span class="state-name">Listening</span>
+            <span class="state-desc">ears up; the message appears in a bubble</span>
+          </li>
+          <li class="state-item state-item--thinking">
+            <span class="state-swatch" aria-hidden="true"></span>
+            <span class="state-name">Thinking</span>
+            <span class="state-desc">looks up, thought bubble</span>
+          </li>
+          <li class="state-item state-item--working">
+            <span class="state-swatch" aria-hidden="true"></span>
+            <span class="state-name">Working</span>
+            <span class="state-desc">types on a tiny laptop; the bubble names the tool</span>
+          </li>
+          <li class="state-item state-item--replying">
+            <span class="state-swatch" aria-hidden="true"></span>
+            <span class="state-name">Replying</span>
+            <span class="state-desc">talks; the answer appears in a bubble</span>
+          </li>
+          <li class="state-item state-item--done">
+            <span class="state-swatch" aria-hidden="true"></span>
+            <span class="state-name">Done</span>
+            <span class="state-desc">hops with sparkles</span>
+          </li>
+          <li class="state-item state-item--error">
+            <span class="state-swatch" aria-hidden="true"></span>
+            <span class="state-name">Error</span>
+            <span class="state-desc">puffs up, ears flat, hisses</span>
+          </li>
+        </ul>
+
+        <figure class="state-figure reveal">
+          <picture>
+            <source srcset="/img/plates/nora-states.webp" type="image/webp" />
+            <img
+              src="/img/plates/nora-states.png"
+              width="1600"
+              height="926"
+              alt="Four states of the desk cat, left to right: listening, working, error and offline."
+              loading="lazy"
+            />
+          </picture>
+          <figcaption class="mono">Fig. 03 — listening, working, error, offline.</figcaption>
+        </figure>
+
+        <p class="cat-copy reveal">
+          She also idles like a cat: grooming, yawning, chasing a butterfly, sitting in her box.
+          <strong>Click her to pet her</strong>; six quick pokes make her grumpy; poke her while
+          she’s working and she tells you she’s busy. The room is drawn in code on a 160 × 90 canvas
+          at 15 fps, and the sounds are synthesised 8-bit meows, purrs and hisses.
+        </p>
+      </section>
+
+      <!-- ========================================================= 04 STATUS -->
+      <section class="section" id="status" data-ghost="NOW">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow mono"><span class="dot"></span>04 / Status</p>
+            <h2 class="section-title"><em>Running.</em></h2>
+          </div>
+          <p class="section-meta mono">Last updated — October 2026</p>
+        </header>
+
+        <div class="status-band reveal">
+          <p class="status-state mono"><span class="sq sq--built" aria-hidden="true"></span>Running · 24/7</p>
+          <p class="status-copy">
+            <strong>All four jobs work today.</strong> The cat is the part you can play with on this
+            page; the assistant is the part running on its own Mac. The demo above is the same page
+            with fake events, so nothing from the real agent is shown.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========================================================== NEXT/FOOT -->
+    <nav class="sheet-next" aria-label="Sheet navigation">
+      <a class="mono" href="/">← Sheet index</a>
+      <p class="mono">Next sheet — 03 FPV drone · in prep</p>
+    </nav>
+
+    <footer class="title-block">
+      <div class="tb-grid mono">
+        <div class="tb-cell"><span class="tb-k">Project</span><span class="tb-v">Nora</span></div>
+        <div class="tb-cell"><span class="tb-k">Sheet</span><span class="tb-v">02 / 05</span></div>
+        <div class="tb-cell"><span class="tb-k">Rev</span><span class="tb-v">2026.10</span></div>
+        <div class="tb-cell"><span class="tb-k">Scale</span><span class="tb-v">1:1</span></div>
+        <div class="tb-cell"><span class="tb-k">Status</span><span class="tb-v">running 24/7</span></div>
+      </div>
+      <p class="colophon mono">Built with Nora · no tracking · no cookies</p>
+    </footer>
+
+    <script type="module" src="/src/scroll.js"></script>
+  </body>
+</html>

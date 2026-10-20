@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" class="embed-demo">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nora — demo</title>
+  <meta name="robots" content="noindex">
+  <script>
+    // Embedded on the portfolio sheet by default; ?full shows the complete page.
+    if (new URLSearchParams(location.search).has('full')) {
+      document.documentElement.classList.remove('embed-demo')
+    }
+  </script>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body data-state="offline">
+  <main class="wrap">
+    <header class="top">
+      <div class="brand">
+        <span class="dot" aria-hidden="true"></span>
+        <h1>Nora</h1>
+        <span class="sub">OpenClaw's desk cat</span>
+      </div>
+      <button id="soundBtn" class="btn" type="button" aria-pressed="false">
+        <span class="btn-icon" aria-hidden="true">🔇</span><span class="btn-text">Sound off</span>
+      </button>
+    </header>
+
+    <section class="room-card">
+      <div class="room" id="room">
+        <canvas id="scene" width="160" height="90" role="img" aria-label="Nora the cat"></canvas>
+        <div class="bubble" id="bubble" hidden></div>
+      </div>
+      <p class="hint">Click Nora to pet her. Poke her too much and she gets grumpy.</p>
+    </section>
+
+    <section class="panels">
+      <article class="card status">
+        <div class="state-row">
+          <span class="state-chip" id="stateChip">Connecting</span>
+          <span class="state-for" id="stateFor"></span>
+        </div>
+        <p class="state-line" id="stateLine">Looking for Nora's server…</p>
+        <dl class="facts">
+          <div><dt>Doing</dt><dd id="factDoing">—</dd></div>
+          <div><dt>Agent</dt><dd id="factAgent">—</dd></div>
+          <div><dt>Today</dt><dd id="factToday">—</dd></div>
+          <div><dt>Pets</dt><dd id="factPets">0</dd></div>
+        </dl>
+        <p class="conn" id="conn" hidden></p>
+      </article>
+
+      <article class="card activity">
+        <h2>Activity</h2>
+        <ul class="log" id="log"></ul>
+        <p class="empty" id="logEmpty">Nothing yet. Nora will note what the agent does here.</p>
+      </article>
+    </section>
+
+    <footer class="foot" id="foot">Live from this Mac</footer>
+  </main>
+  <script type="module" src="./nora.js"></script>
+</body>
+</html>

@@ -18,8 +18,12 @@ Phase 1 is implemented on the `hub` branch, locally only (no deploy, no push):
 - Hub plate is a fresh 16:10 render from `arm-viewer.js` (no new asset pipeline).
 - Verified: desktop/laptop/mobile, no-JS, fast-scroll reveals, production build + preview, and the
   film scene still loads with zero console errors. Captures in `../review-v10/`.
-- Sheets 02–04 remain `SHEET IN PREP` in the register until real assets/facts exist (§7). The open
-  decisions in §10 are unchanged, particularly the repo/URL rename and deployment.
+- **Sheet 02 — Nora** was built on 2026-10-20 (personal AI + desk cat, with the real pet page embedded
+  as a demo). The register is now `05 sheets · 02 published`: 01 arm, 02 Nora, with drone / AI
+  interviewer / physics renumbered 03–05 and still `SHEET IN PREP`.
+- Per Ethan's privacy call, the Nora page publishes no ports, localhost/launchd details or repo links,
+  and uses only the demo mode with scripted fake events — the real activity log is never used.
+- The remaining open decisions in §10 are unchanged, particularly the repo/URL rename and deployment.
 
 ---
 
@@ -75,9 +79,11 @@ against a normal student portfolio, and it is already the voice of the film.
 ```
 /                        Sheet 00 — title, works index, mission band, record, contact
 /work/arm/               Sheet 01 — the current film, verbatim (flagship)
-/work/drone/             Sheet 02 — FPV drone prototype
-/work/perception/        Sheet 03 — AI interviewer / emotion-dataset study  (name TBD)
-/work/physics/           Sheet 04 — lab investigations (PASCO centripetal, diode I-V)  (name TBD)
+/work/nora/              Sheet 02 — Nora, the personal AI, with the desk-cat demo
+/work/nora/demo/         the desk-cat page, demo-only (iframe target; ?full)
+/work/drone/             Sheet 03 — FPV drone prototype
+/work/perception/        Sheet 04 — AI interviewer / emotion-dataset study  (name TBD)
+/work/physics/           Sheet 05 — lab investigations (PASCO centripetal, diode I-V)  (name TBD)
 /about/                  optional — bio, toolchain, CV PDF, record
 /404.html
 ```
@@ -244,6 +250,7 @@ warm first person; the sheets stay technical.
 | **Physics investigations** | PASCO centripetal-force experiment, diode I-V / Shockley equation | Graphs, data tables, photos of the setup | Strong "studies" sheet; publishable as lab notes if the data can be exported |
 | **ASDAN Senior Physics Challenge** | Finalist, 2026-06-27 (confirm details before publishing) | Certificate/photo optional | Record row, not a sheet |
 | **EPQ report** | Exists (P304) | Permission/copyright check, PDF size | Optional download from Sheet 01 — strong evidence, cheap to add |
+| **Nora — personal AI + desk cat** | `nora-pet` delivery package (plugin, server, pixel page, install docs); real activity log 10/17–10/20 | Nothing blocking — Ethan confirmed it runs 24/7, all functions work | **Sheet 02, published 2026-10-20**; demo embedded, no infra details published |
 | **Mech sandbox / web toys** | `games/mech-sandbox` in the workspace (28 engine tests, single-file build) | Confirm authorship/framing | If it is his to show, a "web experiments" sheet is the most fun exhibit and needs no photography |
 | **HAVK visualiser** | Built, deployed, linked | — | Link from Sheet 01 + contact; not a project |
 | **GitHub profile README** | Profile currently empty per the 2026-10-19 snapshot | Needs writing | Second front door — quick win, links to the hub |

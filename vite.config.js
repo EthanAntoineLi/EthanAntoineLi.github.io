@@ -29,6 +29,8 @@ export default defineConfig({
       input: {
         hub: 'index.html',
         arm: 'work/arm/index.html',
+        nora: 'work/nora/index.html',
+        noraDemo: 'work/nora/demo/index.html',
       },
     },
   },

@@ -426,6 +426,11 @@ main,
   color: var(--muted);
 }
 
+/* two published sheets stack without a doubled rule */
+.sheet-row + .sheet-row {
+  border-top: 0;
+}
+
 .sheet-title {
   font-weight: 400;
   font-size: clamp(32px, 4.2vw, 60px);
