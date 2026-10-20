@@ -5,26 +5,45 @@
    layout lives here.
    ========================================================================== */
 
-/* ------------------------------------------------------------------- hero */
-.sheet-hero {
+/* --------------------------------------------------- hero: the device shot */
+/* First screen: the title, then a laptop running Nora's live interface.
+   Scrolling pins the shot, fades the title and scales the screen up until it
+   fills the viewport (src/nora-sheet.js drives the transform). No-JS,
+   reduced-motion and phones get the same composition as a static shot. */
+.hero-zoom {
+  --device-w: min(48vw, 760px, calc((100svh - 360px) * 1.3));
   position: relative;
   z-index: 1;
-  padding: calc(var(--chrome-h) + clamp(40px, 7vh, 88px)) var(--gutter) 0;
-  scroll-margin-top: calc(var(--chrome-h) + 16px);
+  height: calc(100vh + 72vh);
+  height: calc(100svh + 72svh);
+}
+
+.hero-pin {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  height: 100svh;
+  padding: calc(var(--chrome-h) + clamp(16px, 3.4vh, 42px)) var(--gutter) 0;
+  /* the scaled screen is clipped to the viewport: no document overflow */
+  overflow: hidden;
+  overflow: clip;
+}
+
+.hero-copy {
+  width: 100%;
 }
 
 .sheet-name {
-  margin-top: clamp(16px, 3vh, 30px);
   font-weight: 400;
-  font-size: clamp(96px, 15.5vw, 232px);
   line-height: 0.8;
   letter-spacing: -0.06em;
 }
 
 .sheet-sub {
-  margin-top: clamp(12px, 2vh, 22px);
   color: var(--ink-soft);
-  font-size: clamp(24px, 3vw, 44px);
   line-height: 1.08;
   letter-spacing: -0.025em;
 }
@@ -35,14 +54,190 @@
   letter-spacing: -0.005em;
 }
 
-.sheet-hero-foot {
+.hero-zoom .sheet-name {
+  margin-top: clamp(12px, 2.2vh, 26px);
+  font-size: clamp(68px, 10.6vw, 150px);
+}
+
+.hero-zoom .sheet-sub {
+  margin-top: clamp(8px, 1.6vh, 18px);
+  font-size: clamp(20px, 2.2vw, 34px);
+}
+
+/* the laptop */
+.device {
+  position: relative;
+  width: min(48vw, 760px);
+  width: var(--device-w);
+  margin-top: clamp(18px, 3vh, 34px);
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.device-lid {
+  position: relative;
+  padding: clamp(6px, 0.7vw, 10px);
+  padding-bottom: clamp(7px, 0.8vw, 12px);
+  background: #141619;
+  border-radius: clamp(8px, 0.9vw, 14px) clamp(8px, 0.9vw, 14px) 2px 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 3px rgba(16, 18, 20, 0.2),
+    0 26px 50px -30px rgba(16, 18, 20, 0.45);
+}
+
+.device-cam {
+  position: absolute;
+  top: clamp(2px, 0.28vw, 4px);
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #34373b;
+  transform: translateX(-50%);
+}
+
+.device-screen {
+  position: relative;
+  border-radius: 2px;
+  overflow: hidden;
+  background: #2a2436;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.device-screen iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 160 / 90;
+  height: auto;
+  border: 0;
+  background: #2a2436;
+}
+
+/* The base: a shallow deck with keys and a trackpad, so the object reads as a
+   laptop before it zooms. Key rows are a background pattern, not markup. */
+.device-base {
+  position: relative;
+  width: 112%;
+  height: 0;
+  padding-bottom: 17.5%;
+  margin: -1px auto 0;
+  background: linear-gradient(180deg, #1c1f23 0%, #131619 34%, #090a0c 100%);
+  clip-path: polygon(1.4% 0, 98.6% 0, 100% 100%, 0 100%);
+  box-shadow: 0 28px 46px -26px rgba(16, 18, 20, 0.6);
+}
+
+.device-base::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: #060708;
+  opacity: 0.9;
+}
+
+.device-keyboard {
+  position: absolute;
+  left: 8.5%;
+  top: 13%;
+  width: 83%;
+  height: 50%;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(90deg, #0b0d0f 0 0.55%, transparent 0.55% 2.7%),
+    repeating-linear-gradient(0deg, #0b0d0f 0 5.5%, transparent 5.5% 25%),
+    #262b31;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* one wide key reads as the spacebar */
+.device-keyboard::after {
+  content: '';
+  position: absolute;
+  left: 31%;
+  bottom: 4%;
+  width: 38%;
+  height: 20%;
+  border-radius: 2px;
+  background: #262b31;
+}
+
+.device-trackpad {
+  position: absolute;
+  left: 50%;
+  top: 69%;
+  width: 25%;
+  height: 22%;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: #171a1e;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.hero-cue {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(12px, 2.4vh, 24px);
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.hero-cue-arrow {
+  display: inline-block;
+  margin-left: 6px;
+  animation: hero-cue-pulse 1.9s ease-in-out infinite;
+}
+
+@keyframes hero-cue-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(3px);
+  }
+}
+
+/* ----------------------------------------------------------- intro block */
+.sheet-intro {
+  position: relative;
+  z-index: 1;
+  padding: clamp(54px, 9vh, 108px) var(--gutter) clamp(18px, 3.4vh, 36px);
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+  scroll-margin-top: calc(var(--chrome-h) + 16px);
+}
+
+.intro-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   align-items: start;
   gap: clamp(28px, 5vw, 80px);
-  margin-top: clamp(34px, 6vh, 64px);
-  padding-top: clamp(20px, 3vh, 28px);
+}
+
+.intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px 26px;
+  margin-top: clamp(26px, 4vh, 46px);
+  padding-top: 14px;
   border-top: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 0.14em;
 }
 
 .sheet-lede {
@@ -90,44 +285,18 @@
   font-size: 15px;
 }
 
-/* --------------------------------------------------------------- the demo */
-.demo-figure {
-  margin: clamp(44px, 7vh, 80px) var(--gutter) 0;
-  scroll-margin-top: calc(var(--chrome-h) + 24px);
-}
-
-.demo-frame {
-  position: relative;
-  background: #2a2436;
-  border: 1px solid var(--line-soft);
-}
-
-.demo-frame iframe {
-  display: block;
-  width: 100%;
-  aspect-ratio: 160 / 90;
-  height: auto;
-  border: 0;
-}
-
-/* Pointer/programmatic focus lands on the host, so :focus-within paints it.
-   Keyboard focus moves into the child document (no matching CSS there), so
-   src/nora-sheet.js sets `.is-focused` from the iframe window's focus events. */
-.demo-frame iframe:focus-within,
-.demo-frame iframe.is-focused {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
+/* ---------------------------------------------------- the demo / still modes */
+/* The screen shows the live demo; the 16:10 plate covers no-JS and reduced
+   motion. `object-fit: cover` trims the plate's paper band so the still is
+   exactly the live 160:90 geometry. */
 .demo-fallback {
   display: none;
   width: 100%;
   aspect-ratio: 160 / 90;
   overflow: hidden;
+  border-radius: 2px;
 }
 
-/* The 16:10 plate carries a paper band top and bottom; cover trims it so the
-   no-JS / reduced-motion still matches the live 160:90 figure exactly. */
 .demo-fallback img {
   display: block;
   width: 100%;
@@ -135,59 +304,56 @@
   object-fit: cover;
 }
 
-html:not(.js) .demo-frame iframe {
+html:not(.js) .device-screen iframe {
   display: none;
 }
 
-html:not(.js) .demo-fallback {
+html:not(.js) .device .demo-fallback {
   display: block;
 }
 
-/* The caption tells the truth in each mode: live, still (no JS), still (reduced motion). */
-.demo-caption .still-only {
+/* The copy tells the truth in each mode: live, still (no JS), still (reduced motion). */
+.still-only {
   display: none;
 }
 
-html:not(.js) .demo-caption .live-only {
+html:not(.js) .live-only {
   display: none;
 }
 
-html:not(.js) .demo-caption .still-only {
+html:not(.js) .still-only {
   display: inline;
 }
 
-/* Reduced motion: the live canvas is replaced by one still frame instead of an
-   auto-playing animation. The full demo stays one click away. */
 @media (prefers-reduced-motion: reduce) {
-  html.js .demo-frame iframe {
+  html.js .device-screen iframe {
     display: none;
   }
 
-  html.js .demo-fallback {
+  html.js .device .demo-fallback {
     display: block;
   }
 
-  html.js .demo-caption .live-only {
+  html.js .live-only {
     display: none;
   }
 
-  html.js .demo-caption .still-only {
+  html.js .still-only {
     display: inline;
+  }
+
+  .hero-cue-arrow {
+    animation: none;
   }
 }
 
-.demo-caption {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 10px 26px;
-  margin-top: 14px;
-  color: var(--dim);
-}
-
-.demo-caption .mono {
-  font-size: 9px;
-  letter-spacing: 0.14em;
+/* Pointer/programmatic focus lands on the host, so :focus-within paints it.
+   Keyboard focus moves into the child document (no matching CSS there), so
+   src/nora-sheet.js sets `.is-focused` from the iframe window's focus events. */
+.device-screen iframe:focus-within,
+.device-screen iframe.is-focused {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .demo-open {
@@ -198,6 +364,67 @@ html:not(.js) .demo-caption .still-only {
 
 .demo-open:hover {
   color: var(--ink);
+}
+
+/* ------------------------------------------- static composition (no zoom) */
+/* Phones, no-JS and reduced motion keep the same first screen without the
+   pinned scroll move: the laptop simply sits under the title. */
+@media (max-width: 900px), (prefers-reduced-motion: reduce), (pointer: coarse) {
+  .hero-zoom {
+    height: auto;
+  }
+
+  .hero-pin {
+    position: relative;
+    height: auto;
+    padding-bottom: clamp(30px, 6vh, 56px);
+  }
+
+  .device {
+    width: min(100%, 600px);
+  }
+
+  .device-base {
+    width: 104%;
+  }
+
+  .hero-cue {
+    display: none;
+  }
+
+  .hero-zoom .sheet-name {
+    font-size: clamp(64px, 21vw, 118px);
+  }
+
+  .hero-zoom .sheet-sub {
+    font-size: clamp(20px, 6vw, 28px);
+  }
+
+  .intro-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+html:not(.js) .hero-zoom {
+  height: auto;
+}
+
+html:not(.js) .hero-pin {
+  position: relative;
+  height: auto;
+  padding-bottom: clamp(30px, 6vh, 56px);
+}
+
+html:not(.js) .device {
+  width: min(100%, 600px);
+}
+
+html:not(.js) .device-base {
+  width: 104%;
+}
+
+html:not(.js) .hero-cue {
+  display: none;
 }
 
 /* ------------------------------------------------------------------ jobs */
@@ -474,7 +701,7 @@ html:not(.js) .demo-caption .still-only {
 
 /* -------------------------------------------------------------- responsive */
 @media (max-width: 900px) {
-  .sheet-hero-foot,
+  .intro-grid,
   .build-grid {
     grid-template-columns: 1fr;
   }
@@ -518,15 +745,6 @@ html:not(.js) .demo-caption .still-only {
 
   .stack-k {
     margin-bottom: 1px;
-  }
-
-  .demo-caption {
-    display: block;
-  }
-
-  .demo-caption > * {
-    display: block;
-    margin-top: 6px;
   }
 
   /* 24 px minimum tap targets on phones. */

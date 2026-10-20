@@ -52,15 +52,48 @@
     </header>
 
     <main id="main">
-      <!-- ============================================================ HERO -->
-      <section class="sheet-hero" id="top" data-ghost="NOR">
-        <div class="reveal">
-          <p class="eyebrow mono"><span class="dot"></span>Software · personal AI</p>
-          <h1 class="sheet-name">Nora</h1>
-          <p class="sheet-sub">A personal AI with <em>a desk cat.</em></p>
-        </div>
+      <!-- ===================================================== HERO / ZOOM -->
+      <section class="hero-zoom" id="top" data-ghost="NOR">
+        <div class="hero-pin">
+          <div class="hero-copy">
+            <p class="eyebrow mono reveal"><span class="dot"></span>Software · personal AI</p>
+            <h1 class="sheet-name reveal">Nora</h1>
+            <p class="sheet-sub reveal">A personal AI with <em>a desk cat.</em></p>
+          </div>
 
-        <div class="sheet-hero-foot">
+          <figure class="device" id="demo">
+            <div class="device-lid">
+              <span class="device-cam" aria-hidden="true"></span>
+              <div class="device-screen">
+                <iframe
+                  src="/work/nora/demo/"
+                  title="Nora, the pixel desk cat — interactive demo with fake events"
+                  loading="lazy"
+                ></iframe>
+                <picture class="demo-fallback">
+                  <source srcset="/img/plates/nora-16x10.webp" type="image/webp" />
+                  <img
+                    src="/img/plates/nora-16x10.png"
+                    width="1280"
+                    height="800"
+                    alt="Nora, a grey pixel cat, sitting at a tiny laptop in a dark room — the working state."
+                  />
+                </picture>
+              </div>
+            </div>
+            <div class="device-base" aria-hidden="true">
+              <span class="device-keyboard"></span>
+              <span class="device-trackpad"></span>
+            </div>
+          </figure>
+
+          <p class="hero-cue mono" aria-hidden="true">Scroll to step inside <span class="hero-cue-arrow">↓</span></p>
+        </div>
+      </section>
+
+      <!-- ============================================================ INTRO -->
+      <section class="sheet-intro" id="intro">
+        <div class="intro-grid">
           <p class="sheet-lede reveal">
             Nora runs <strong>24/7</strong> on a Mac of her own — long-term memory, reminders, my
             timetable every morning, and practice questions from my question bank. The cat is how I
@@ -74,31 +107,11 @@
             <div><dt>Role</dt><dd>Design + build</dd></div>
           </dl>
         </div>
-      </section>
 
-      <!-- ============================================================ DEMO -->
-      <figure class="demo-figure reveal" id="demo">
-        <div class="demo-frame">
-          <span class="plate-frame" aria-hidden="true"></span>
-          <iframe
-            src="/work/nora/demo/"
-            title="Nora, the pixel desk cat — interactive demo with fake events"
-            loading="lazy"
-          ></iframe>
-          <picture class="demo-fallback">
-            <source srcset="/img/plates/nora-16x10.webp" type="image/webp" />
-            <img
-              src="/img/plates/nora-16x10.png"
-              width="1280"
-              height="800"
-              alt="Nora, a grey pixel cat, sitting at a tiny laptop in a dark room — the working state."
-            />
-          </picture>
-        </div>
-        <figcaption class="demo-caption">
-          <span class="mono live-only">Fig. 01 — live demo · fake events, no agent connected.</span>
-          <span class="mono still-only">Fig. 01 — still frame · animation off in this mode.</span>
-          <span class="mono live-only">Click her to pet · six quick pokes make her grumpy</span>
+        <div class="intro-actions reveal mono">
+          <span>Fig. 01 — the desk cat · fake events, no agent connected.</span>
+          <span class="live-only">Click her to pet · six quick pokes make her grumpy</span>
+          <span class="still-only">Still frame — animation off in this mode.</span>
           <a
             class="demo-open mono"
             href="/work/nora/demo/?full"
@@ -107,8 +120,8 @@
             aria-label="Full demo — opens in a new tab"
             >Full demo <span aria-hidden="true">↗</span></a
           >
-        </figcaption>
-      </figure>
+        </div>
+      </section>
 
       <!-- ====================================================== 01 ASSISTANT -->
       <section class="section" id="what" data-ghost="AI">
