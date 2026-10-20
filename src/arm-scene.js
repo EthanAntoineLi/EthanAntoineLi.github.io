@@ -10,12 +10,19 @@
 // ---------------------------------------------------------------------------
 //   const scene = await createArmScene(canvas, {
 //     modelUrl: './models/arm-opt.glb',   // default
-//     reducedMotion: false                // default (auto-detects the media query)
+//     reducedMotion: false,               // default (auto-detects the media query)
+//     deferEntry: true,                   // hold the entry reveal until playEntry()
+//     onLoadProgress: (p) => {}           // 0..1 GLB transfer progress, for a loader
 //   })
 //
 //   scene.ready                    Promise<void> — GLB loaded, point cloud built,
-//                                   first frame drawn (the entry reveal then keeps
-//                                   running for ~2.2 s; see "scan reveal" below)
+//                                   first frame drawn. With `deferEntry` the
+//                                   entry reveal is held at its first frame until
+//                                   playEntry() (the page calls it when its
+//                                   loading curtain lifts); otherwise it runs for
+//                                   ~2.2 s from load.
+//   scene.playEntry()              start / restart the entry reveal (no-op under
+//                                   reduced motion, or until the model exists)
 //   scene.setStop(name, t = 1)     name: 'hero' | 'joints' | 'profile' | 'scan' | 'outro'
 //   scene.setMode(mode)            'mesh' | 'points' | 'xray'
 //                                  xray = translucent shell + crisp black edges
@@ -314,11 +321,16 @@ function createPointsMaterial(uniforms, texture, baseSize) {
 // Load + rig the GLB. Mount transform, joint axes and end-effector point are
 // copied from the validated src/arm-viewer.js implementation.
 // ---------------------------------------------------------------------------
-async function loadArm(modelUrl) {
+async function loadArm(modelUrl, onProgress) {
   await MeshoptDecoder.ready
   const loader = new GLTFLoader()
   loader.setMeshoptDecoder(MeshoptDecoder)
-  const gltf = await loader.loadAsync(modelUrl)
+  const gltf = await loader.loadAsync(modelUrl, (event) => {
+    // Transfer progress only: GLB bytes. Parsing and the point-cloud build are
+    // reported by `ready`, not here.
+    if (!onProgress || !event || !event.total) return
+    onProgress(Math.min(1, event.loaded / event.total))
+  })
   const gltfRoot = gltf.scene
   gltfRoot.name = 'EPQ_ARM'
 
@@ -625,7 +637,16 @@ export async function createArmScene(canvas, opts = {}) {
           : false,
     // Portrait/phone layout: the object sits in the upper half (the page puts
     // its copy at the bottom), so the stop offsets are re-composed here.
-    phone: opts.phone === true
+    phone: opts.phone === true,
+    // The page keeps a loading curtain up until `ready`. Two options make that
+    // curtain honest instead of decorative:
+    //   deferEntry      hold the entry reveal at 0 until playEntry() is called,
+    //                   so the assembly is seen from its first frame (otherwise
+    //                   most of it plays while the curtain still covers it).
+    //   onLoadProgress  transfer progress 0..1 of the GLB itself, so the
+    //                   curtain's counter can be real bytes, not a timer.
+    deferEntry: opts.deferEntry === true,
+    onLoadProgress: typeof opts.onLoadProgress === 'function' ? opts.onLoadProgress : null
   }
 
   const state = {
@@ -703,6 +724,7 @@ export async function createArmScene(canvas, opts = {}) {
     entryRaw: 1,
     entryFrozen: null,
     entryDone: true,
+    entryDeferred: settings.deferEntry,
     // uniforms
     uniforms: {
       uProgress: { value: 1 },
@@ -1122,6 +1144,11 @@ export async function createArmScene(canvas, opts = {}) {
     if (state.entryFrozen != null) {
       state.entryRaw = clamp(state.entryFrozen, 0, 1)
       state.entryDone = state.entryRaw >= 1
+    } else if (state.entryDeferred) {
+      // The page still has its loading curtain up: keep the cloud scattered and
+      // wait for playEntry(), so none of the assembly happens under cover.
+      state.entryRaw = 0
+      state.entryDone = false
     } else if (!state.entryDone) {
       const raw = (now - state.entryStart) / ENTRY_MS
       if (raw >= 1) {
@@ -1723,8 +1750,24 @@ export async function createArmScene(canvas, opts = {}) {
     return true
   }
 
+  // Start (or restart) the entry reveal. The page calls this the moment its
+  // loading curtain lifts, so the assembly is seen from frame 0. Safe to call
+  // before the GLB has loaded: the deferred branch then starts on load instead.
+  function playEntry() {
+    if (state.disposed) return false
+    state.entryDeferred = false
+    if (state.settings.reducedMotion || !state.arm) return false
+    state.entryFrozen = null
+    state.entryStart = performance.now()
+    state.entryRaw = 0
+    state.entryDone = false
+    state.uniforms.uProgress.value = 0
+    return true
+  }
+
   const api = {
     ready,
+    playEntry,
     setStop,
     setMode,
     setScan,
@@ -1760,6 +1803,7 @@ export async function createArmScene(canvas, opts = {}) {
         mode: state.mode,
         entryRaw: state.entryRaw,
         entryDone: state.entryDone,
+        entryDeferred: state.entryDeferred,
         frame: {
           samples: count,
           avgMs: count ? sum / count : 0,
@@ -1922,7 +1966,7 @@ export async function createArmScene(canvas, opts = {}) {
 
   async function load() {
     try {
-      const arm = await loadArm(settings.modelUrl)
+      const arm = await loadArm(settings.modelUrl, settings.onLoadProgress)
       if (state.disposed) return
       state.arm = arm
       state.materials = installMaterials(arm.meshes)
@@ -1956,6 +2000,13 @@ export async function createArmScene(canvas, opts = {}) {
         state.entryRaw = 1
         state.entryDone = true
         state.uniforms.uProgress.value = 1
+      } else if (state.entryDeferred) {
+        // Held at the first frame of the reveal until the page lifts its
+        // loading curtain and calls playEntry().
+        state.entryStart = 0
+        state.entryRaw = 0
+        state.entryDone = false
+        state.uniforms.uProgress.value = 0
       } else {
         state.entryStart = performance.now()
         state.entryRaw = 0

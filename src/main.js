@@ -15,41 +15,107 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
 const body = document.body
 
 /* ------------------------------------------------------------- loader */
-function initLoader(onDone) {
+// The curtain is a promise, not a timer. It lifts when the 3D scene reports its
+// first real frame (GLB parsed, point cloud built, camera placed), so the still
+// plate — and the model's assembly reveal — never flash through mid-swap.
+const MODEL_MIN_MS = reducedMotion ? 300 : 1200 // never flash the curtain away
+const MODEL_MAX_WAIT_MS = 15000 // a stuck GLB must not trap the page
+
+let modelProgress = 0 // 0..1, GLB transfer progress reported by the scene
+let curtainLifted = false
+
+function initLoader(sceneReady) {
   const countEl = document.getElementById('loader-count')
   const barEl = document.getElementById('loader-bar')
   const asciiEl = document.getElementById('loader-ascii')
-  const finish = () => {
-    body.classList.remove('is-loading')
-    body.classList.add('loaded')
-    if (onDone) onDone()
+
+  const paint = (value) => {
+    const v = Math.min(1, Math.max(0, value))
+    if (countEl) countEl.textContent = String(Math.round(v * 100)).padStart(3, '0')
+    if (barEl) barEl.style.width = `${(v * 100).toFixed(2)}%`
+    if (asciiEl) {
+      const filled = Math.round(v * 10)
+      asciiEl.textContent = '='.repeat(filled) + '-'.repeat(10 - filled)
+    }
   }
 
-  if (!countEl || !barEl || reducedMotion) {
-    if (countEl) countEl.textContent = '100'
-    if (barEl) barEl.style.width = '100%'
-    if (asciiEl) asciiEl.textContent = '=========='
-    setTimeout(finish, 120)
-    return
+  let finished = false
+  const finish = () => {
+    if (finished) return
+    finished = true
+    paint(1)
+    curtainLifted = true
+    body.classList.remove('is-loading')
+    body.classList.add('loaded')
+    // The film's entry reveal starts with the curtain, not under it.
+    scene?.playEntry?.()
   }
 
   body.classList.add('is-loading')
   const start = performance.now()
-  const DURATION = 1400
-  // Wall-clock driven: the GLB parse blocks the main thread for a moment, so a
-  // frame-count animation would stretch the loader. The curtain lifts on time.
-  setTimeout(finish, DURATION + 300)
+
+  // No animation (reduced motion / missing nodes): still wait for the scene, so
+  // the hand-off stays a hand-off and not a plate-to-model pop.
+  if (!countEl || !barEl || reducedMotion) {
+    paint(1)
+    Promise.race([sceneReady, new Promise((r) => setTimeout(r, MODEL_MAX_WAIT_MS))]).then(() => {
+      setTimeout(finish, Math.max(0, MODEL_MIN_MS - (performance.now() - start)))
+    })
+    return
+  }
+
+  let ready = false
+  sceneReady.then(() => {
+    ready = true
+    // Timer safety, not the normal path: rAF can be throttled (background tab,
+    // exhausted GPU) and the curtain must never become a dead end.
+    setTimeout(() => {
+      paint(1)
+      finish()
+    }, MODEL_MIN_MS + 1200)
+  })
+  setTimeout(() => {
+    ready = true
+  }, MODEL_MAX_WAIT_MS)
+
+  // Wall-clock driven on purpose: a frame-count animation stretches on a slow
+  // GPU, which is exactly where the model takes longest and the curtain matters
+  // most. The last 10 % is a short ramp from wherever the bar actually is.
+  let shown = 0
+  let transferSeen = 0
+  let last = 0
+  let completeAt = 0
+  let completeFrom = 0
+  const paintShown = (v) => {
+    shown = Math.min(1, Math.max(0, v))
+    paint(shown)
+  }
   const tick = (now) => {
-    const t = Math.min(1, (now - start) / DURATION)
-    const eased = 1 - Math.pow(1 - t, 3)
-    const n = Math.round(eased * 100)
-    countEl.textContent = String(n).padStart(3, '0')
-    barEl.style.width = `${eased * 100}%`
-    if (asciiEl) {
-      const filled = Math.round(eased * 10)
-      asciiEl.textContent = '='.repeat(filled) + '-'.repeat(10 - filled)
+    const elapsed = now - start
+    const dt = last ? Math.min(100, now - last) : 16
+    last = now
+
+    if (ready && elapsed >= MODEL_MIN_MS) {
+      if (!completeAt) {
+        completeAt = now
+        completeFrom = shown
+      }
+      const p = Math.min(1, (now - completeAt) / 350)
+      paintShown(completeFrom + (1 - completeFrom) * (1 - Math.pow(1 - p, 3)))
+      if (p < 1) requestAnimationFrame(tick)
+      else finish()
+      return
     }
-    if (t < 1) requestAnimationFrame(tick)
+
+    // 0 -> 35 %: a short ease out while the bundle and the scene boot, so the
+    // counter moves before the model has reported any bytes.
+    const sweep = 0.35 * (1 - Math.pow(1 - Math.min(1, elapsed / 1000), 3))
+    // 35 -> 90 %: the GLB's real transfer, damped so jumpy progress events
+    // still read as a smooth scan. 100 % (parse + first frame) is the last 10 %.
+    const transferTarget = modelProgress > 0 ? 0.35 + 0.55 * modelProgress : 0
+    transferSeen += (transferTarget - transferSeen) * (1 - Math.exp(-dt / 120))
+    paintShown(Math.min(0.9, Math.max(sweep, transferSeen)))
+    requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
 }
@@ -156,30 +222,54 @@ let resetMark = -1
 const canvas = document.getElementById('arm-canvas')
 const phone = window.matchMedia('(max-width: 820px)').matches
 
-// Scene creation is deferred until the loading curtain has lifted: parsing the
-// GLB and building the 90k-point cloud is several hundred ms of main-thread
-// work, and it must not hold the first paint hostage. Phones keep the still
-// render (the stage is desktop-tuned).
-let sceneReady = Promise.resolve(null)
+// Old GPUs / blocked WebGL are an expected environment, not an error: probe
+// before importing three.js so the still plate wins without console errors.
+function hasWebGL() {
+  try {
+    const probe = document.createElement('canvas')
+    return Boolean(probe.getContext('webgl2') || probe.getContext('webgl'))
+  } catch {
+    return false
+  }
+}
+
+// Scene creation is kicked off one frame after boot (so the loader paints
+// first), in parallel with the loader. Parsing the GLB and building the
+// 90k-point cloud is several hundred ms of main-thread work; the curtain is
+// what covers it. The loader then waits for `scene.ready` — the first frame
+// with the real model — so the still plate is never seen as a preview.
+let sceneTask = null
 function startScene() {
-  if (!canvas) return
-  sceneReady = (async () => {
+  if (sceneTask) return sceneTask
+  if (!canvas) return Promise.resolve(null)
+  if (!hasWebGL()) {
+    console.warn('[scene] WebGL unavailable, keeping still render')
+    return Promise.resolve(null)
+  }
+  sceneTask = (async () => {
     try {
       scene = await createArmScene(canvas, {
         modelUrl: MODEL_URL,
         reducedMotion,
         phone,
+        deferEntry: !reducedMotion,
+        onLoadProgress: (p) => {
+          modelProgress = p
+        },
       })
       await scene.ready
       window.__scene = scene // dev/QA handle (harmless)
       body.classList.add('scene-ready')
       applyStop(activeAct, 1)
+      // Curtain already up (slow load past the safety valve): play it now.
+      if (curtainLifted) scene.playEntry?.()
       return scene
     } catch (err) {
       console.warn('[scene] unavailable, keeping still render:', err)
       return null
     }
   })()
+  return sceneTask
 }
 
 function applyStop(i, t = 1, dir = 0) {
@@ -684,7 +774,13 @@ function initDrag() {
 }
 
 /* -------------------------------------------------------------- boot */
-initLoader(startScene)
+// The curtain needs the scene's promise before the scene exists: settle it once
+// startScene() runs on the next frame.
+let settleScene = () => {}
+const sceneReady = new Promise((resolve) => {
+  settleScene = resolve
+})
+initLoader(sceneReady)
 initReveals()
 initCursor()
 initClock()
@@ -696,6 +792,12 @@ initFreeView()
 
 initScroll()
 measure()
+
+// Next frame: the loader has painted, so the heavy scene work no longer delays
+// the first visible frame.
+requestAnimationFrame(() => {
+  startScene().then(settleScene)
+})
 
 // Keep the scene in sync if fonts or images change layout.
 window.addEventListener('load', () => {
