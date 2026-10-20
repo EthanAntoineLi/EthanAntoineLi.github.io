@@ -15,9 +15,10 @@
 //             the free half of the screen, each with its own orientation + depth.
 //
 // Every hand-off is scrubbed by the scroll (setTrack), never run on a timer:
-//   hero → 01  the balloons clear, the turret winds the printer round to the
-//              front, the motors fly into the printer, the dial rewinds, and
-//              the printer steps out to its framing as the eye swings round.
+//   hero → 01  the turret holds still, the balloons clear, the other parts
+//              shrink away where they are, the dial rewinds, and the printer —
+//              wherever it sits on the ring — enlarges straight into its
+//              step-01 framing as the eye swings round.
 //   01 → 02    the printer rises out with step 01's copy while the motors come
 //              up with step 02's, in parallax, turning into place.
 // Scroll back and each one plays in reverse.
@@ -79,14 +80,13 @@ const TURRET = {
 const HANDOFF = {
   from: -0.86,
   to: -0.1,
-  balloons: [0, 0.16], // the balloons and the name tag clear first
-  spin: [0.02, 0.55], // the turret winds the printer round to the front (a turn and the rest)
-  absorb: [0.2, 0.66], // the motors fly into the printer, J1 first …
-  absorbStagger: 0.045, // … J5 last
-  undraw: [0.1, 0.62], // the dial rewinds into the front station
-  ring: [0.05, 0.75], // haze, shadow and speed lines go with it
-  out: [0.38, 1], // the printer steps out to its step-01 framing
-  camera: [0.3, 1], // and the eye swings round to the printer's view
+  balloons: [0, 0.14], // the balloons and the name tag clear first
+  recede: [0.04, 0.46], // the other parts shrink away where they are, J1 first …
+  recedeStagger: 0.04, // … J5 last
+  undraw: [0.06, 0.55], // the dial rewinds into the front station
+  ring: [0.04, 0.65], // haze and shadow go with it
+  out: [0.02, 0.96], // the printer enlarges straight into its step-01 framing
+  camera: [0.06, 1], // and the eye swings round to the printer's view
 }
 
 // The printer's existing framings (az/el radians; fill = viewport share;
@@ -323,8 +323,8 @@ export async function createProcessStage(canvas, opts = {}) {
     stage: 'ring',
     appliedStage: 'ring',
     hand: 0, // hero → step 01 progress, from the scroll
-    // the turret's angle while the hand-off owns it: from → from + delta
-    scrub: { active: false, from: 0, delta: 0 },
+    // the angle the turret was held at when the hand-off began
+    scrub: { active: false, from: 0 },
     cameraSnap: false,
     ringAngle: 0,
     // derived from the scroll every frame (kept on state for debug())
@@ -557,7 +557,7 @@ export async function createProcessStage(canvas, opts = {}) {
   }
   /** The eye follows the hand-off: the ring's view, the printer's, or between. */
   function goalCamera() {
-    const k = easeInOut(smooth(HANDOFF.camera[0], HANDOFF.camera[1], state.hand))
+    const k = smooth(HANDOFF.camera[0], HANDOFF.camera[1], state.hand)
     if (k <= 0) return ringCamera()
     if (k >= 1) return printerCamera()
     const a = ringCamera()
@@ -958,7 +958,8 @@ export async function createProcessStage(canvas, opts = {}) {
     spin.next = state.time + TURRET.dwell
   }
 
-  /** While the hero → 01 hand-off is under way, the scroll owns the turret. */
+  /** While the hero → 01 hand-off is under way the turret holds still, so the
+      printer leaves from wherever it is. */
   function syncScrub(hand) {
     const sc = state.scrub
     if (hand > 0.0005) {
@@ -967,17 +968,8 @@ export async function createProcessStage(canvas, opts = {}) {
         finishIntro(true)
         sc.active = true
         sc.from = spin.angle
-        // forward to the printer's station, wound up to about one turn
-        const forward = ((-spin.angle % TAU) + TAU) % TAU
-        sc.delta = settings.reducedMotion ? wrapPi(-spin.angle) : forward < Math.PI ? forward + TAU : forward
+        settleSpin(sc.from)
       }
-      // set the angle directly (not settleSpin) so the measured speed still
-      // drives the lean and the speed lines while the scroll turns it
-      const angle = sc.from + sc.delta * easeInOut(smooth(HANDOFF.spin[0], HANDOFF.spin[1], hand))
-      spin.angle = spin.target = spin.from = spin.to = angle
-      spin.vel = 0
-      spin.moveT = 1
-      spin.mode = 'index'
       spin.drag = null
     } else if (sc.active) {
       // back on the hero: the turret picks up where the hand-off found it
@@ -1143,12 +1135,13 @@ export async function createProcessStage(canvas, opts = {}) {
     state.lastAngle = spin.angle
     const speed = Math.abs(state.angVel)
 
-    const outK = easeInOut(smooth(HANDOFF.out[0], HANDOFF.out[1], hand))
+    // one gentle curve, so the printer starts to grow as soon as the scroll does
+    const outK = smooth(HANDOFF.out[0], HANDOFF.out[1], hand)
     const ringVis = 1 - smooth(HANDOFF.ring[0], HANDOFF.ring[1], hand)
     const dialK = 1 - smooth(HANDOFF.undraw[0], HANDOFF.undraw[1], hand)
     state.out = outK
     state.ringAlpha = ringVis
-    // the step-02 motors join the scroll track once they are inside the printer
+    // the step-02 motors join the scroll track once they have shrunk away
     state.motorsAlpha = hand >= 0.999 ? 1 : 0
 
     // camera eases toward the framing the hand-off wants (tighter mid-scrub)
@@ -1277,15 +1270,12 @@ export async function createProcessStage(canvas, opts = {}) {
       const partK = intro.done ? 1 : clamp((introT - INTRO.partsAt - order * INTRO.partStagger) / INTRO.partDur, 0, 1)
       const reach = intro.done ? 1 : easeOutCubic(partK)
       const grow = intro.done ? 1 : Math.max(0, easeOutBack(partK))
-      // hand-off: the motors fly into the printer, J1 first
-      const a0 = HANDOFF.absorb[0] + HANDOFF.absorbStagger * (order - 1)
-      const absorb = id === 'printer' ? 0 : easeInOut(smooth(a0, a0 + HANDOFF.absorb[1] - HANDOFF.absorb[0], hand))
+      // hand-off: the other parts shrink away where they are, J1 first
+      const r0 = HANDOFF.recede[0] + HANDOFF.recedeStagger * (order - 1)
+      const recede = id === 'printer' ? 0 : easeInOut(smooth(r0, r0 + HANDOFF.recede[1] - HANDOFF.recede[0], hand))
 
       // the part at the front station is presented: bigger, lifted, turned
-      let presentTarget = 1 - smooth(0.0, STEP * 0.62, Math.abs(rel))
-      // through the hand-off the printer keeps growing toward its step-01 size,
-      // even while the wind-up whirls it past the front
-      if (id === 'printer') presentTarget = Math.max(presentTarget, smooth(HANDOFF.spin[0], HANDOFF.spin[0] + 0.12, hand))
+      const presentTarget = 1 - smooth(0.0, STEP * 0.62, Math.abs(rel))
       state.present[index] = settings.reducedMotion ? presentTarget : ease(state.present[index], presentTarget, 9, dt)
       const pres = state.present[index] * (intro.done ? 1 : smooth(1.2, 2.4, introT))
 
@@ -1344,7 +1334,7 @@ export async function createProcessStage(canvas, opts = {}) {
       tu.uGap.value = ((ringScale * item.maxDim) / Math.max(1e-4, ringRadius)) * 0.24
       tu.uWidth.value = 0.0058
       tu.uAlpha.value =
-        trailAlpha * fade * (1 - absorb) * (id === 'printer' ? 1 - outK : 1) * (0.55 + 0.45 * (1 - (1 - Math.cos(rel)) / 2))
+        trailAlpha * fade * (1 - recede) * (id === 'printer' ? 1 - outK : 1) * (0.55 + 0.45 * (1 - (1 - Math.cos(rel)) / 2))
       trail.visible = tu.uAlpha.value > 0.003
 
       // screen data for the part balloons
@@ -1357,7 +1347,7 @@ export async function createProcessStage(canvas, opts = {}) {
         hud.depth = (1 - Math.cos(rel)) / 2
         hud.present = pres
         hud.order = order
-        hud.alpha = fade * Math.min(1, grow) * (1 - absorb)
+        hud.alpha = fade * Math.min(1, grow) * (1 - recede)
         hudFrame.items.push(hud)
       }
 
@@ -1393,11 +1383,10 @@ export async function createProcessStage(canvas, opts = {}) {
         quat = hp.quaternion
         scale = hp.scale
         gone = hp.gone
-      } else if (absorb > 0) {
-        // into the printer: drawn toward it, shrinking, gone as it arrives
-        pos = ringPos.lerp(printerPivot.position, absorb)
-        scale *= Math.pow(1 - absorb, 1.4)
-        gone = absorb > 0.985
+      } else if (recede > 0) {
+        // shrinking away on its station
+        scale *= 1 - recede
+        gone = recede > 0.985
       }
       pivot.position.copy(pos)
       pivot.quaternion.copy(quat)

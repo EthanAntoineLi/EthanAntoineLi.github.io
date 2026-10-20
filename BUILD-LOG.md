@@ -796,3 +796,12 @@ drives the hand-off instead. A deep link to a step snaps straight to that framin
 
 Verified with scroll-scrubbed captures (even and eased scrolls) at 1440×900 and 390×844: hero → 01,
 01 → hero, 01 → 02 unchanged; drag / click on the turret unchanged; build green.
+
+### Follow-up: no wind-up — the printer just enlarges
+
+Ethan: no spinning first; wherever the printer is, it should simply enlarge into the next slide. The
+turret now holds still the moment the hand-off begins. The printer leaves from wherever it sits on the
+ring and enlarges straight into its step-01 framing on one gentle curve that starts with the scroll
+(`out` 0.02 → 0.96, smoothstep only), while the camera swings round with it. To keep the eye on the
+printer, the other parts no longer fly into it: they shrink away on their own stations, J1 first, as
+the dial rewinds. Checked with the printer at the front and at the back of the ring, both directions.
