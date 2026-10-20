@@ -751,3 +751,24 @@ presented and its tag shown.
 spin-up, index, mid-move trails and settled frames at 1440×900 and 390×844; hero → step 01 (spin-out,
 printer leaves) → step 02 (motors) → back to the hero; click-to-present (J4 via the short way), drag
 fling → coast → snap, scroll nudge → next station; reduced motion; zero console errors; build green.
+
+## 2026-10-20 — process: steps 01 → 02 ride the scroll
+
+Ethan: the hand-off between step 01 and step 02 did not feel natural. It was a threshold swap on a
+timer: the printer went see-through and faded where it stood, the camera swung ~63°, the stage sat
+empty for a beat, then the motors faded in as ghosts — none of it tied to the scroll the copy follows.
+
+- **One camera for 01 and 02.** The motors now use the printer's camera; their resting rotations
+  are turned by the old camera difference so step 02 reads exactly as before.
+- **A scroll track** (`stage.setTrack`, fed by `process.js` on every scroll): each object belongs
+  to its act and moves with it. The printer stays solid and rises out with step 01's copy, tipping
+  back and turning away; the motors come up from below with step 02's copy in parallax (nearer parts
+  travel further) and turn into their resting pose — then leave the same way into step 03. A little
+  easing on the track gives them weight. Nothing fades on the 01 ↔ 02 ↔ 03 boundaries any more.
+- After the turret's spin-out the three step-02 motors are parked on the track below the fold;
+  scrolling back to the hero they fly up from there into the ring.
+- Copy matches the motion: step 01 exits and step 02 enters/exits with the vertical `rise` treatment
+  (was a sideways `swing` exit and a `curtain` wipe).
+
+Verified with scroll-scrubbed captures at 1440×900 and 390×844: 01 → 02, 02 → 03, 02 → 01,
+hero → 01, 01 → hero; final step-02 pose identical to before; build green.
