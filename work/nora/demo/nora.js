@@ -28,6 +28,14 @@
   const PIN = qs.get('state');
   const FORCE_ACT = PIN === 'nap' ? 'nap' : qs.get('activity');
 
+  // The portfolio sheet pauses the demo while the page is being scrolled, so
+  // the cat holds its pose during the camera move; it resumes shortly after.
+  let demoPaused = false;
+  window.__noraPause = (v) => {
+    demoPaused = Boolean(v);
+    if (!demoPaused) lastTick = 0;
+  };
+
   const $ = (id) => document.getElementById(id);
   const canvas = $('scene');
   const g = canvas.getContext('2d');
@@ -1187,6 +1195,7 @@
   let lastFrame = 0;
   function loop(ts) {
     requestAnimationFrame(loop);
+    if (demoPaused) return;
     if (ts - lastFrame < 1000 / FPS - 2) return;
     lastFrame = ts;
     render(ts);
@@ -1416,6 +1425,10 @@
     }
     let i = 0;
     const next = () => {
+      if (demoPaused) {
+        setTimeout(next, 120);
+        return;
+      }
       const [state, ms, tool = '', text = '', entry] = steps[i++ % steps.length];
       applyState({ ...base(), state, since: Date.now(), tool, text, online: state !== 'offline' });
       if (entry) log(...entry);

@@ -357,12 +357,16 @@ html.embed-demo #scene {
 
 /* the room is scaled up in the iframe, so the speech bubble scales with it */
 html.embed-demo .bubble {
-  max-width: min(31%, 430px);
+  max-width: min(28%, 430px);
   padding: 0.42em 0.7em;
   border-width: 0.16em;
   border-radius: 0.28em;
   box-shadow: 0.22em 0.22em 0 rgba(0, 0, 0, 0.28);
   font-size: clamp(16px, 1.7vw, 26px);
+}
+
+html.embed-demo .bubble .txt {
+  -webkit-line-clamp: 5;
 }
 
 html.embed-demo .bubble::after {

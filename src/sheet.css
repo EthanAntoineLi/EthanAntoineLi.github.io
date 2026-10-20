@@ -11,7 +11,7 @@
    fills the viewport (src/nora-sheet.js drives the transform). No-JS,
    reduced-motion and phones get the same composition as a static shot. */
 .hero-zoom {
-  --device-w: min(60vw, 980px, calc((100svh - 350px) * 1.71));
+  --device-w: min(52vw, 820px, calc((100svh - 360px) * 1.524));
   position: relative;
   z-index: 1;
   height: calc(100vh + 72vh);
@@ -32,7 +32,19 @@
   overflow: clip;
 }
 
+/* the page background fades to ink as the screen takes over */
+.hero-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #0b0c0e;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .hero-copy {
+  position: relative;
+  z-index: 1;
   width: 100%;
 }
 
@@ -67,20 +79,23 @@
 /* the monitor: a 3D render of the screen hardware, with the live demo laid
    over the glass. The aspect ratio and screen rect come from dev/monitor/;
    the PNG fallback is only for browsers without WebP. */
+/* the monitor: an angled 3D render of the screen hardware, with the live demo
+   projected onto its glass. The screen quad geometry comes from dev/monitor/;
+   src/nora-sheet.js maps the iframe onto it and animates it to full bleed. */
 .device {
   position: relative;
-  width: min(60vw, 980px);
+  z-index: 1;
+  width: min(52vw, 820px);
   width: var(--device-w);
   margin-top: clamp(18px, 3vh, 34px);
-  transform-origin: 50% 50%;
-  will-change: transform;
 }
 
 .device-shell {
   display: block;
   width: 100%;
   height: auto;
-  filter: drop-shadow(0 32px 42px rgba(16, 18, 20, 0.2));
+  filter: drop-shadow(0 34px 46px rgba(16, 18, 20, 0.22));
+  transition: opacity 0.18s linear;
 }
 
 .device-shell img {
@@ -91,14 +106,13 @@
 
 .device-screen {
   position: absolute;
-  left: 2.12%;
-  top: 2.89%;
-  width: 95.76%;
-  aspect-ratio: 2.2617;
+  top: 0;
+  left: 0;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 2px;
   background: #2a2436;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+  transform-origin: 0 0;
+  will-change: transform;
 }
 
 .device-screen iframe {
@@ -109,8 +123,65 @@
   background: #2a2436;
 }
 
+/* Without JS the shell's baked glass is the whole shot. */
+html:not(.js) .device-screen {
+  display: none;
+}
+
+/* words rise from the bottom of the screen as it fills */
+.zoom-scrim {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  height: 62vh;
+  background: linear-gradient(
+    to top,
+    rgba(8, 9, 11, 0.94) 0%,
+    rgba(8, 9, 11, 0.62) 42%,
+    rgba(8, 9, 11, 0) 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+.zoom-words {
+  position: absolute;
+  right: var(--gutter);
+  bottom: clamp(42px, 10vh, 110px);
+  left: var(--gutter);
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.zoom-kicker {
+  margin: 0 0 18px;
+  color: var(--accent-on-ink);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.zoom-line {
+  max-width: 15ch;
+  margin: 0;
+  color: var(--paper);
+  font-size: clamp(40px, 6vw, 96px);
+  line-height: 0.96;
+  letter-spacing: -0.035em;
+}
+
+.zoom-line em {
+  font-family: var(--serif);
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
 .hero-cue {
   position: absolute;
+  z-index: 3;
   left: 50%;
   bottom: clamp(12px, 2.4vh, 24px);
   color: var(--muted);
@@ -298,9 +369,7 @@ html:not(.js) .still-only {
 
 /* ------------------------------------------- static composition (no zoom) */
 /* No-JS, reduced motion and phones keep the same first screen without the
-   pinned scroll move: the laptop simply sits under the title. Only the pin
-   and the cue are dropped in every static mode; the shot keeps the live rest
-   geometry, so a wide reduced-motion desktop is the same composition as live. */
+   pinned move or the 3D angle: the monitor just sits under the title. */
 @media (max-width: 900px), (prefers-reduced-motion: reduce), (pointer: coarse) {
   .hero-zoom {
     height: auto;
@@ -312,17 +381,15 @@ html:not(.js) .still-only {
     padding-bottom: clamp(30px, 6vh, 56px);
   }
 
+  .device {
+    width: min(100%, 560px);
+  }
+
+  .hero-dim,
+  .zoom-scrim,
+  .zoom-words,
   .hero-cue {
     display: none;
-  }
-}
-
-/* Narrow/coarse screens also size the shot down (the live rest width formula
-   is too small for a static shot there); wide reduced motion keeps live type
-   and width so the two compositions match pixel for pixel. */
-@media (max-width: 900px), (pointer: coarse) {
-  .device {
-    width: min(100%, 720px);
   }
 
   .hero-zoom .sheet-name {
@@ -344,28 +411,15 @@ html:not(.js) .hero-pin {
   padding-bottom: clamp(30px, 6vh, 56px);
 }
 
-html:not(.js) .hero-cue {
-  display: none;
+html:not(.js) .device {
+  width: min(100%, 560px);
 }
 
-/* Without JS the shot must not shrink below the live rest geometry on a wide
-   screen; narrow/coarse keeps the same sized-down static composition. */
-@media (max-width: 900px), (pointer: coarse) {
-  html:not(.js) .device {
-    width: min(100%, 600px);
-  }
-
-  html:not(.js) .device-base {
-    width: 104%;
-  }
-
-  html:not(.js) .hero-zoom .sheet-name {
-    font-size: clamp(64px, 21vw, 118px);
-  }
-
-  html:not(.js) .hero-zoom .sheet-sub {
-    font-size: clamp(20px, 6vw, 28px);
-  }
+html:not(.js) .hero-dim,
+html:not(.js) .zoom-scrim,
+html:not(.js) .zoom-words,
+html:not(.js) .hero-cue {
+  display: none;
 }
 
 /* ------------------------------------------------------------------ jobs */
