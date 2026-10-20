@@ -136,16 +136,6 @@ const PART_INFO = {
       ['Role', 'orients the end effector'],
     ],
   },
-  chassis: {
-    id: 'BASE',
-    title: 'Chassis + controller',
-    rows: [
-      ['Controller', 'STM32F407'],
-      ['Bus', 'RS485 / Modbus-RTU'],
-      ['Payload target', '500 g'],
-      ['Printed on', 'Bambu Lab H2S'],
-    ],
-  },
 }
 
 let hoverPartId = null

@@ -1413,12 +1413,15 @@ export async function createArmScene(canvas, opts = {}) {
 
   // ------------------------------------------------------- part picking / x-ray
   // One id per GLB mesh. The page owns the copy for each id.
+  // The CAD's "Static" primitive is the base-yaw assembly (J1); the numbered
+  // primitives below it are one joint lower (J2..J5). The tip and the wrist
+  // body share the J5 card.
   const PART_BY_MESH = {
-    Static_mesh: 'chassis',
-    J1_mesh: 'j1',
-    J2_mesh: 'j2',
-    J3_mesh: 'j3',
-    J4_mesh: 'j4',
+    Static_mesh: 'j1',
+    J1_mesh: 'j2',
+    J2_mesh: 'j3',
+    J3_mesh: 'j4',
+    J4_mesh: 'j5',
     J5_mesh: 'j5'
   }
   const _ray = new THREE.Raycaster()
