@@ -47,7 +47,10 @@ const ACTS = [...document.querySelectorAll('.act')].map((el) => ({
 const SCAN_INDEX = ACTS.findIndex((a) => a.stop === 'scan')
 const FREE_INDEX = ACTS.findIndex((a) => a.stop === 'free')
 const SCAN_BOUNDARY = SCAN_INDEX - 1
-const isFree = () => activeAct === FREE_INDEX
+// Part hover / click are live only while the visitor owns the camera: from
+// arriving in the free view until the scroll hand-off takes it back.
+let freeControl = false
+const isFree = () => activeAct === FREE_INDEX && freeControl
 
 // Copy for the click-through details in the Free view. Facts only — the same
 // numbers the tables and the EPQ report use.
@@ -188,6 +191,8 @@ function applyStop(i, t = 1, dir = 0) {
   if (!act || !scene) return
   try {
     const next = ACTS[i + 1]
+    freeControl = act.stop === 'free' && (dir === 0 || t < SCAN_TIMELINE.hand)
+    if (!freeControl) hoverPartId = null
     if (dir === 0) {
       // Scene-ready arrival: show this act's preset now, and let a full
       // measure() on the next frame place the camera, hand-off and scan
