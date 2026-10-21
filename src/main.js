@@ -233,22 +233,29 @@ let vel = 0
 let lastY = window.scrollY
 let specsCounted = false
 
+// The spec figures count up on the same scroll progress as the body of their
+// slide (--in-1), so they scrub both ways instead of running a one-shot timer.
+// updateTransitions() calls this every frame; with reduced motion the figures
+// keep their final values.
 function countSpecs() {
-  if (specsCounted || reducedMotion) return
-  specsCounted = true
-  const nums = [...document.querySelectorAll('.spec-num')]
-  if (!nums.length) return
-  const targets = nums.map((el) => Number(el.textContent) || 0)
-  const start = performance.now()
-  const tick = (now) => {
-    const t = Math.min(1, (now - start) / 900)
-    const e = 1 - Math.pow(1 - t, 3)
-    nums.forEach((el, n) => {
-      el.textContent = String(Math.round(targets[n] * e))
-    })
-    if (t < 1) requestAnimationFrame(tick)
+  if (reducedMotion) return
+  if (!specsCounted) {
+    specsCounted = true
+    for (const el of document.querySelectorAll('.spec-num')) {
+      el.dataset.value = el.textContent
+      const a = ACTS.find((x) => x.el.contains(el))
+      if (!a) continue
+      if (!a.specNums) a.specNums = []
+      a.specNums.push(el)
+    }
   }
-  requestAnimationFrame(tick)
+  for (const a of ACTS) {
+    if (!a.specNums || !a.textIn) continue
+    for (const el of a.specNums) {
+      const v = String(Math.round((Number(el.dataset.value) || 0) * a.textIn[1]))
+      if (el.textContent !== v) el.textContent = v
+    }
+  }
 }
 
 // Which named joint a transition dives into. Boundary 3 (free view -> scan) is
@@ -304,13 +311,92 @@ function updateStage(y, vh) {
 function updateTransitions(y, vh) {
   if (reducedMotion) return
   updateStage(y, vh)
-  for (const a of ACTS) {
-    const top = a.el.offsetTop
-    const enter = Math.min(1, Math.max(0, (y - (top - vh * 0.8)) / (vh * 0.8)))
-    const exit = Math.min(1, Math.max(0, (y - (top + vh * 0.2)) / (vh * 0.6)))
-    a.el.style.setProperty('--enter', enter.toFixed(3))
-    a.el.style.setProperty('--exit', exit.toFixed(3))
+  // The text hand-off (styled in src/arm-film.css). Every value is a pure
+  // function of scroll position, so scrolling up plays it backwards.
+  const hold = Boolean(lenis) && TEXT_HOLD_MQ.matches
+  const tops = ACTS.map((a) => a.el.offsetTop) // read layout once, before any writes
+  let shownText = 0
+  for (let n = 0; n < ACTS.length; n++) {
+    const a = ACTS[n]
+    const top = tops[n]
+    const prevTop = n > 0 ? tops[n - 1] : null
+    const nextTop = n < ACTS.length - 1 ? tops[n + 1] : null
+    // Scroll progress from the previous slide to this one, and from this one
+    // to the next (the same 0..1 the camera blends over).
+    const pIn = prevTop === null ? 1 : (y - prevTop) / Math.max(1, top - prevTop)
+    const pOut = nextTop === null ? 0 : (y - top) / Math.max(1, nextTop - top)
+    const enter = textRamp(pIn, TEXT.fade.in)
+    const exit = textRamp(pOut, TEXT.fade.out)
+    const f = textSmooth(enter) * (1 - textSmooth(exit))
+    const in0 = textEaseOut(textRamp(pIn, TEXT.in[0]))
+    const in1 = textEaseOut(textRamp(pIn, TEXT.in[1]))
+    const out0 = textEaseIn(textRamp(pOut, TEXT.out[0]))
+    const out1 = textEaseIn(textRamp(pOut, TEXT.out[1]))
+
+    // Hold the copy near its rest position while the page scrolls, so it
+    // fades where it was read instead of sliding under the chrome or across
+    // the arm. An act taller than the viewport scrolls its overflow first.
+    let dy = y - top
+    if (dy > 0) {
+      const span = nextTop === null ? 0 : nextTop - top
+      dy = Math.min(Math.max(0, dy - Math.max(0, span - vh)), span * 0.5)
+    } else if (prevTop !== null) {
+      dy = Math.max(dy, -(top - prevTop) * 0.5)
+    }
+    const pin = hold ? dy * (1 - TEXT.drift) : 0
+
+    a.f = f
+    a.textIn = [in0, in1]
+    setTextVar(a, '--enter', enter.toFixed(3))
+    setTextVar(a, '--exit', exit.toFixed(3))
+    setTextVar(a, '--f', f.toFixed(3))
+    setTextVar(a, '--in-0', in0.toFixed(3))
+    setTextVar(a, '--in-1', in1.toFixed(3))
+    setTextVar(a, '--out-0', out0.toFixed(3))
+    setTextVar(a, '--out-1', out1.toFixed(3))
+    setTextVar(a, '--pin', `${pin.toFixed(1)}px`)
+    // fully handed-off copy must not catch clicks or drags meant for the arm
+    a.el.classList.toggle('is-off', f === 0)
+    shownText = Math.max(shownText, f)
   }
+  rootStyle.setProperty('--film-text', shownText.toFixed(3))
+  countSpecs()
+}
+
+// Text hand-off timing, as fractions of the scroll between two slides. The
+// outgoing copy is gone by 40% and the incoming copy starts at 60%, so only one
+// slide's text is ever readable and the arm has the middle to itself.
+//   fade  the whole slide's opacity (--f)
+//   in    entrance of the head (eyebrow + title, --in-0) and body (--in-1)
+//   out   exit of the head (--out-0) and body (--out-1). The head leads both
+//         ways, so a slide's title goes first and its button goes last.
+//   drift share of the scroll that held copy still follows (see --pin)
+const TEXT = {
+  fade: { in: [0.6, 0.84], out: [0.1, 0.4] },
+  in: [
+    [0.6, 0.8],
+    [0.68, 0.88],
+  ],
+  out: [
+    [0.1, 0.3],
+    [0.18, 0.4],
+  ],
+  drift: 0.12,
+}
+// Holding the copy is a scroll-linked transform. It only stays in step with the
+// page when Lenis drives the scroll from the main thread (desktop wheel); on
+// phones the native, threaded scroll would make held copy shake, so it scrolls
+// normally there and only fades.
+const TEXT_HOLD_MQ = window.matchMedia('(min-width: 821px)')
+const textRamp = (p, [a, b]) => Math.min(1, Math.max(0, (p - a) / (b - a)))
+const textSmooth = (t) => t * t * (3 - 2 * t)
+const textEaseOut = (t) => 1 - (1 - t) ** 3
+const textEaseIn = (t) => t ** 3
+function setTextVar(a, name, value) {
+  if (!a.textVars) a.textVars = {}
+  if (a.textVars[name] === value) return
+  a.textVars[name] = value
+  a.el.style.setProperty(name, value)
 }
 
 function updateVelocity(y) {
@@ -330,13 +416,8 @@ function measure() {
   scrollPrev = y
   if (Math.abs(delta) > 0.5) scrollDir = delta > 0 ? 1 : -1
 
-  // Cross-fade each act's copy with the fold so two sections' text never shout
-  // over each other during a transition.
-  for (const a of ACTS) {
-    const top = a.el.getBoundingClientRect().top
-    const f = Math.min(1, Math.max(0.04, 1 - Math.abs(top) / (vh * 0.82)))
-    a.el.style.setProperty('--f', f.toFixed(3))
-  }
+  // Each act's copy fade (--f) is part of the text hand-off, set with the rest
+  // of it in updateTransitions(); with reduced motion it stays at 1.
   updateVelocity(y)
 
   // Stops sit at the top of each 100vh act. Scroll progress between two act
@@ -395,16 +476,22 @@ window.addEventListener('resize', () => {
 })
 
 /* --------------------------------------------------------------- reveals */
+// The copy's reveal is scrubbed by scroll (updateTransitions + arm-film.css),
+// not fired once by a timer, so every act is handed to that driver at boot:
+// `is-in` is style.css's at-rest state, and the scroll values sit on top of it.
+// Keyboard focus landing in a slide whose copy is faded brings that slide to
+// rest, so a focused control is never invisible.
 function initReveals() {
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting) e.target.classList.add('is-in')
-      }
-    },
-    { rootMargin: '0px 0px -18% 0px', threshold: 0.12 },
-  )
-  ACTS.forEach((a) => io.observe(a.el))
+  ACTS.forEach((a) => a.el.classList.add('is-in'))
+  document.addEventListener('focusin', (e) => {
+    const target = e.target instanceof Element ? e.target : null
+    if (!target || !target.matches(':focus-visible')) return
+    const a = ACTS.find((x) => x.el.contains(target))
+    if (!a || !(a.f < 0.98)) return
+    const top = a.el.offsetTop
+    if (lenis) lenis.scrollTo(top)
+    else window.scrollTo({ top, behavior: 'smooth' })
+  })
 }
 
 /* ------------------------------------------------------------------ cursor */
