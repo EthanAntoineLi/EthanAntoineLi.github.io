@@ -1113,7 +1113,7 @@ html.is-turning * {
     transform: scale(calc(1 + var(--bump, 0) * 0.05));
   }
   .scan-line {
-    display: none;
+    display: block; /* it rides the exact cut, so phones keep it too */
   }
 }
 
@@ -1221,7 +1221,8 @@ html.is-turning * {
   }
 }
 
-/* hairline drawn exactly on the x-ray scan cut */
+/* hairline drawn exactly on the x-ray scan cut: main.js moves it (transform)
+   and fades it (opacity) on every rendered frame while the cut is on the arm */
 .scan-line {
   position: fixed;
   left: 0;
@@ -1232,6 +1233,7 @@ html.is-turning * {
   opacity: 0;
   pointer-events: none;
   z-index: 4;
+  will-change: transform, opacity;
 }
 .scan-line::after {
   content: "";
