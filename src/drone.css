@@ -41,6 +41,40 @@
   width: 100%;
 }
 
+/* The hero carries the concept render on the right: a 5:6 plate in the same
+   mount the /plan/ figures use. The build's own airframe model and photographs
+   are still to come — the caption says this is the concept, not the build. */
+.drone-hero-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.28fr) minmax(250px, 0.72fr);
+  align-items: end;
+  gap: clamp(22px, 4vw, 64px);
+}
+
+.drone-hero-plate {
+  justify-self: end;
+  width: 100%;
+  max-width: clamp(300px, 30vw, 430px);
+  margin: 0;
+}
+
+.drone-hero-plate img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 5 / 6;
+  object-fit: cover;
+  border: 1px solid var(--line-soft);
+  background: var(--paper-2);
+}
+
+.drone-hero-plate figcaption {
+  margin-top: 12px;
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
 /* ------------------------------------------------------- empty figure slots */
 /* Same drafting-placeholder language as /plan/: a dashed frame, paper tint, a
    mono label and one honest line saying what will land there. */
@@ -401,6 +435,18 @@
 @media (max-width: 860px) {
   .drone-hero .sheet-name .line--indent {
     padding-left: 0;
+  }
+
+  /* the render drops under the title instead of crowding it */
+  .drone-hero-top {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: clamp(26px, 5vh, 44px);
+  }
+
+  .drone-hero-plate {
+    justify-self: start;
+    max-width: min(100%, 380px);
   }
 
   .drone-hero .hero-foot {

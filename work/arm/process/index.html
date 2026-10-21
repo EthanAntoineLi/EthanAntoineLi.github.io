@@ -85,9 +85,11 @@
         <li><a href="#top"><span class="mono">00</span>How it got made</a></li>
         <li><a href="#start"><span class="mono">01</span>How it all started</a></li>
         <li><a href="#motors"><span class="mono">02</span>Motors</a></li>
-        <li><a href="#design"><span class="mono">03</span>Design</a></li>
-        <li><a href="#assemble"><span class="mono">04</span>Assemble</a></li>
-        <li><a href="#back"><span class="mono">05</span>Back to the arm</a></li>
+        <li><a href="#printing"><span class="mono">03</span>Printing</a></li>
+        <li><a href="#revision"><span class="mono">04</span>Revision</a></li>
+        <li><a href="#design"><span class="mono">05</span>Design</a></li>
+        <li><a href="#assemble"><span class="mono">06</span>Assemble</a></li>
+        <li><a href="#back"><span class="mono">07</span>Back to the arm</a></li>
       </ol>
       <p class="index-foot mono">ethan.li.1@outlook.com</p>
     </nav>
@@ -97,6 +99,8 @@
       <p class="progress-num" id="progress-num">01</p>
       <ol class="progress-ticks" id="progress-ticks">
         <li class="on"></li>
+        <li></li>
+        <li></li>
         <li></li>
         <li></li>
         <li></li>
@@ -134,7 +138,7 @@
       </section>
 
       <!-- =========================================================== START -->
-      <section class="act act--step" id="start" data-ghost="PRINT" data-index="2" data-stage="printer" data-preset="step" data-ent="rise" data-ex="swing">
+      <section class="act act--step" id="start" data-ghost="PRINT" data-index="2" data-stage="printer" data-preset="step" data-ent="rise" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
             <p class="eyebrow mono"><span class="dot"></span>01 / How it all started</p>
@@ -157,7 +161,7 @@
       </section>
 
       <!-- ========================================================== MOTORS -->
-      <section class="act act--step" id="motors" data-ghost="DRIVE" data-index="3" data-stage="motors" data-ent="curtain" data-ex="swing">
+      <section class="act act--step" id="motors" data-ghost="DRIVE" data-index="3" data-stage="motors" data-ent="rise" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
             <p class="eyebrow mono"><span class="dot"></span>02 / Motors</p>
@@ -178,11 +182,95 @@
         </div>
       </section>
 
-      <!-- ========================================================== DESIGN -->
-      <section class="act act--step" id="design" data-ghost="DRAW" data-index="4" data-ent="rise" data-ex="swing">
+      <!-- ======================================================== PRINTING -->
+      <!-- The A1 mini comes back and prints the J1 → J2 link; the download
+           link only shows once the print is done (body.print-done). -->
+      <section class="act act--step act--print" id="printing" data-ghost="LAYER" data-index="4" data-stage="print" data-ent="rise" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>03 / Design</p>
+            <p class="eyebrow mono"><span class="dot"></span>03 / Printing</p>
+            <h2 class="act-title">
+              Printed here,<br />
+              <em>layer by layer.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <p class="act-copy">
+              The arm’s printed parts came off this A1 mini, one layer at a time — on screen,
+              the link between joint 1 and joint 2. The models are free to download: the whole
+              arm, the printer, and every part on its own.
+            </p>
+            <div class="print-get">
+              <p class="print-status mono" id="print-status" aria-hidden="true">
+                <span class="print-status-label" id="print-status-label">Printing link J1 → J2</span>
+                <span class="print-meter"><span id="print-meter"></span></span>
+                <span class="print-status-pct" id="print-status-pct">0%</span>
+              </p>
+              <div class="print-links">
+                <a class="print-cta mono" href="../../../downloads/3d-models.zip" download data-cursor="download">
+                  Download the 3D models <span class="print-cta-arrow" aria-hidden="true">↓</span>
+                </a>
+                <a
+                  class="print-repo mono"
+                  href="https://github.com/EthanAntoineLi/personal-page/tree/master/public/models"
+                  target="_blank"
+                  rel="noopener"
+                  >Browse on GitHub ↗</a
+                >
+              </div>
+            </div>
+            <p class="act-note mono">glTF 2.0 · arm · printer · 9 parts · 5.2 MB zip</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== REVISION -->
+      <!-- Rev B's frame (#compare-slot) is where the stage parks the printed
+           link; Rev A waits for its model. -->
+      <section class="act act--step act--revision" id="revision" data-ghost="REV" data-index="5" data-stage="compare" data-ent="rise" data-ex="rise">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>04 / Revision</p>
+            <h2 class="act-title">
+              One link,<br />
+              <em>drawn twice.</em>
+            </h2>
+          </div>
+
+          <figure class="compare" aria-label="The link between joint 1 and joint 2: the first design beside the one on the arm now">
+            <div class="compare-cell">
+              <div class="compare-frame compare-frame--todo">
+                <span class="compare-rev mono">Rev A</span>
+                <span class="compare-todo mono">Model to come</span>
+              </div>
+              <p class="compare-cap mono"><span>Rev A</span> · first design</p>
+            </div>
+            <span class="compare-arrow mono" aria-hidden="true">→</span>
+            <div class="compare-cell">
+              <div class="compare-frame" id="compare-slot">
+                <span class="compare-rev mono">Rev B</span>
+                <img class="compare-still" src="/img/link-j1-j2.png" alt="" />
+              </div>
+              <p class="compare-cap mono"><span>Rev B</span> · on the arm now · 99 × 116 × 59 mm</p>
+            </div>
+          </figure>
+
+          <div class="act-bottom">
+            <p class="act-copy">
+              One part changed on the way: the link between joint 1 and joint 2, from the base
+              to the shoulder. The first design is on the left, the one on the arm now on the right.
+            </p>
+            <p class="act-note mono">Link J1 → J2 · base → shoulder · rev A → rev B</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================== DESIGN -->
+      <section class="act act--step" id="design" data-ghost="DRAW" data-index="6" data-ent="rise" data-ex="swing">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>05 / Design</p>
             <h2 class="act-title">
               Six axes,<br />
               <em>drawn in CAD.</em>
@@ -201,10 +289,10 @@
       </section>
 
       <!-- ======================================================== ASSEMBLE -->
-      <section class="act act--step" id="assemble" data-ghost="BUILD" data-index="5" data-ent="curtain" data-ex="swing">
+      <section class="act act--step" id="assemble" data-ghost="BUILD" data-index="7" data-ent="curtain" data-ex="swing">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>04 / Assemble</p>
+            <p class="eyebrow mono"><span class="dot"></span>06 / Assemble</p>
             <h2 class="act-title">
               Five joints,<br />
               <em>one arm.</em>
@@ -226,7 +314,7 @@
       <section class="act act--contact" id="back" data-ghost="HI" data-index="3" data-ent="dolly">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>05 / Back to the arm</p>
+            <p class="eyebrow mono"><span class="dot"></span>07 / Back to the arm</p>
           </div>
 
           <h2 class="act-title contact-title">That’s the process<br /><em>so far.</em></h2>

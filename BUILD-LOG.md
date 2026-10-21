@@ -751,3 +751,194 @@ presented and its tag shown.
 spin-up, index, mid-move trails and settled frames at 1440×900 and 390×844; hero → step 01 (spin-out,
 printer leaves) → step 02 (motors) → back to the hero; click-to-present (J4 via the short way), drag
 fling → coast → snap, scroll nudge → next station; reduced motion; zero console errors; build green.
+
+## 2026-10-20 — process: steps 01 → 02 ride the scroll
+
+Ethan: the hand-off between step 01 and step 02 did not feel natural. It was a threshold swap on a
+timer: the printer went see-through and faded where it stood, the camera swung ~63°, the stage sat
+empty for a beat, then the motors faded in as ghosts — none of it tied to the scroll the copy follows.
+
+- **One camera for 01 and 02.** The motors now use the printer's camera; their resting rotations
+  are turned by the old camera difference so step 02 reads exactly as before.
+- **A scroll track** (`stage.setTrack`, fed by `process.js` on every scroll): each object belongs
+  to its act and moves with it. The printer stays solid and rises out with step 01's copy, tipping
+  back and turning away; the motors come up from below with step 02's copy in parallax (nearer parts
+  travel further) and turn into their resting pose — then leave the same way into step 03. A little
+  easing on the track gives them weight. Nothing fades on the 01 ↔ 02 ↔ 03 boundaries any more.
+- After the turret's spin-out the three step-02 motors are parked on the track below the fold;
+  scrolling back to the hero they fly up from there into the ring.
+- Copy matches the motion: step 01 exits and step 02 enters/exits with the vertical `rise` treatment
+  (was a sideways `swing` exit and a `curtain` wipe).
+
+Verified with scroll-scrubbed captures at 1440×900 and 390×844: 01 → 02, 02 → 03, 02 → 01,
+hero → 01, 01 → hero; final step-02 pose identical to before; build green.
+
+## 2026-10-20 — process: the turret → printer hand-off follows the scroll
+
+Ethan meant the hero → step 01 hand-off (the ring giving way to the printer). It was the old timed
+sequence: once a scroll threshold passed, the turret spun a forced turn and more on its own clock,
+balloons still up, and only then did the printer jump out — about two seconds after step 01's copy had
+already arrived. The scroll had no say in it.
+
+Now it is scrubbed by the scroll, like 01 → 02. One number, `hand` (0 → 1 while step 01's act climbs
+from 0.86 to 0.1 viewports below the top), drives every beat, overlapping so it never stalls:
+- the balloons and the name tag clear first;
+- the turret winds the printer round to the front (about one turn, so the speed lines and the lean
+  read), the printer growing steadily toward its step-01 size;
+- the motors fly into the printer, J1 first — "a printer first, everything else followed" — and the
+  step-02 motors wait on the scroll track below the fold from there;
+- the dial rewinds into the front station (rail, ticks, centre lines, mark), haze and shadow go with it;
+- the printer steps out to its step-01 framing as the eye swings round (camera blended by the scroll).
+
+Scroll back and it all plays in reverse; on the hero the turret picks up where it was found. The timed
+exit (spin rate, tweens, exit/return sequences) and the scroll "flick" are gone — the scroll now
+drives the hand-off instead. A deep link to a step snaps straight to that framing.
+
+Verified with scroll-scrubbed captures (even and eased scrolls) at 1440×900 and 390×844: hero → 01,
+01 → hero, 01 → 02 unchanged; drag / click on the turret unchanged; build green.
+
+### Follow-up: no wind-up — the printer just enlarges
+
+Ethan: no spinning first; wherever the printer is, it should simply enlarge into the next slide. The
+turret now holds still the moment the hand-off begins. The printer leaves from wherever it sits on the
+ring and enlarges straight into its step-01 framing on one gentle curve that starts with the scroll
+(`out` 0.02 → 0.96, smoothstep only), while the camera swings round with it. To keep the eye on the
+printer, the other parts no longer fly into it: they shrink away on their own stations, J1 first, as
+the dial rewinds. Checked with the printer at the front and at the back of the ring, both directions.
+
+## 2026-10-20 — process: step 03 prints the J1 → J2 link, step 04 compares its revisions
+
+Ethan: between the motors and "six axes, drawn in CAD", add the 3D printing — the A1 mini's nozzle
+moving left and right as if printing, then a link to the 3D models — and a comparison slide for the
+one design he changed, the link between joint 1 and joint 2 (base → shoulder). He sent the models as
+a zip (`arm-opt.glb`, `printer-a1-mini.glb`, `arm-parts/` with each part on its own + manifest).
+
+**Files.** The zip ships as `public/downloads/3d-models.zip` (the download) and unzipped under
+`public/models/` (`arm-parts/`, `README.txt`) so the same files can be browsed on GitHub;
+`arm-opt.glb` and `printer-a1-mini.glb` in the zip are byte-identical to the ones already here.
+
+**03 / Printing** (`data-stage="print"`). The A1 mini comes back up from below as the motors leave,
+closer than on step 01 and tipped toward the eye so the bed reads. The printer's glTF keeps one
+primitive per material, so the rig comes apart at load: Toolhead runs along the X arm, Motor (arm,
+X motor, cable loop) is the gantry, Heatbed's plate is split from its rail by height, and the cable
+loop is split from the arm and bent in the vertex shader so its head end follows the head. Once the
+printer has arrived the print runs once on the scene clock (~8 s): the gantry drops to the plate,
+the head sweeps across the part while the bed shuttles under it, and the gantry climbs a layer at a
+time (46 visible steps) with the nozzle exactly on the top layer. The part is the real
+`parts/link-J1-J2.glb`, lying on a side plate and scaled to the nozzle's parked gap, grown under a
+clipping plane; the few layers under the cut glow signal red. A progress line under the copy
+(`PRINTING LINK J1 → J2 ── 42%`) becomes **Download the 3D models ↓** + **Browse on GitHub ↗** when
+the print is done (`body.print-done`). Scrolled on mid-print, it finishes fast; reduced motion,
+no WebGL, a failed part load or no JS all show the link straight away.
+
+**04 / Revision** (`data-stage="compare"`). Two drawing frames: Rev A (dashed, "model to come" — the
+first design's model is not in the zip, so it waits for Ethan's file) and Rev B. As step 03 scrolls
+away the printed link lifts off the bed on a short arc into Rev B's frame and turns there; the page
+hands the stage the frame's live screen rect every frame (`setSlot`), so it lands inside it through
+the entrance and reveal transforms. Caption: on the arm now, 99 × 116 × 59 mm (manifest size).
+`img/link-j1-j2.png` stands in until the scene is up.
+
+**Renumbered** design → 05, assemble → 06, back → 07; index panel and progress ticks (8) follow.
+
+Verified on dev (5178) with scroll-scrubbed captures at 1440×900, 1280×720 and 390×844: motors → 03,
+the print at several points (head on the top layer, cable bent, hot layer), 03 → 04 flight, Rev B
+centred in its frame, 04 → 05, back to 01 (rig parked, no part); reduced motion; JS off; the
+`BASE=/personal-page/` build under preview (zip link 200, no failed requests, no console errors);
+build green.
+
+## 2026-10-21 — `/plan/`: the concept figures land
+
+Ethan generated the three plates from `plan/FIGURE-PROMPTS.md` and said "好了你都加上去吧". The
+dashed figure slots are replaced with real concept plates; the copy slots stay "to come".
+
+- **Robot** — the accepted humanoid (not the rejected tracked chassis): charcoal printed shells,
+silver stepper motors, five-axis arm language, sensor head, backpack. 1145 × 1374.
+- **Drone** — the 3-inch FPV quad with the downward search pod. 1145 × 1374.
+- **Parallel** — 16:6 scene: the humanoid reaches toward the marker flag while the drone holds above.
+2048 × 768.
+
+**Files** — `public/img/plates/plan-{robot,drone}-5x6.webp` (126 / 114 KB) and
+`plan-parallel-16x6.webp` (138 KB), all WebP q88 from Ethan's PNGs. `plan/index.html` —
+`<figure class="plan-plate">` with a 5:6 media frame for the portrait renders and a 16:6 frame for the
+scene, captions `Fig. 01 — concept` / `Not built`, descriptive alt text, lazy loading. Meta description
+and footer status corrected ("concept figures in — copy to come"). `src/plan.css` — plate rules replace
+the unused `.slot--figure` / `.slot--wide` / `.slot-figure-mark`; the flip rule moved to `.plan-plate`.
+
+**Honesty** — every figure is captioned concept / not built; the arm is still a 500 g bench prototype,
+the humanoid and the drone's search pod are plan, not hardware.
+
+**Verified** — build green; dev 5178 at 1440 / 1024 / 390: three images at their natural ratios, no
+horizontal overflow, no console errors / failed requests; no-JS and reduced-motion render all three
+plates. Evidence in `../review-plan-figures/`. Committed in this push.
+
+**Open** — section copy for all three; the parallel plate is only 129 px tall at 390 (inherent to
+16:6) — revisit if it reads too small on a phone; hub entry remains the Mission button only.
+
+## 2026-10-21 — Sheet 03 joins the hub (published; figures still pending)
+
+Ethan's call: keep the drone sheet's existing copy and wire it into the hub like 01 and 02 — not a
+strip-back to an empty template, and not a second sheet. So the Sheet 03 page itself is untouched;
+only the hub, one shared CSS component and Sheet 02's next-sheet line changed.
+
+- **Hub work register** (`index.html`) — a third `.sheet-row--lead`, `03 FPV drone`, linking
+  `./work/drone/`: title split `FPV / drone`; the sheet's own honest line (three-inch quad built as
+  the eye of the rescue system; the video link reaches the goggles; nothing past the pilot solved);
+  tags `Hardware / FPV 2026 / Not flying` (muted outline chip, not the rust `.state--built`); the
+  shared `Open sheet ↗` CTA. The drone is removed from the `.register`; 04 AI interviewer and
+  05 Physics at the bench stay in prep.
+- **Meta line** — `05 sheets · 02 published` → `05 sheets · 03 published`.
+- **Plate** (`src/hub.css`) — no airframe model or photographs exist yet, so the row's plate is
+  `.plate-media--todo`: the same dashed, paper-tint figure-pending frame the sheet and `/plan/` use,
+  with `Fig. 03 — the airframe`, a dim `Airframe` mark, `3D model + photographs to come`, and the
+  caption `Fig. 03 — the airframe · figures to come`. Border darkens on row hover/focus; no image
+  zoom, because there is no image to zoom. The `/plan/` drone concept plate was not borrowed at this
+  point — it is a concept, not this build. (Replaced the same day with a crop of the concept render;
+  see the next entry.)
+- **Sheet 02** — `.sheet-next` now reads `Next sheet — 03 FPV drone ↗` and links `../drone/`
+  (was `03 FPV drone · in prep`, unlinked).
+- **Docs** — README (three sheets published; register rules), ARCHITECTURE (hub plate contract +
+  Sheet 03 hub entry), this log.
+
+**Verified** — `_qa/qa-drone-hub.mjs`, **37/37** on dev 5190 (the shared 5178 was left to the
+concurrent `/plan/` session): three `.sheet-row`s in source order; the drone row is the third link;
+dashed plate at 16:10 with the pending copy; register only 04–05; `03 published` meta; reveal and
+ghost state; CTA fills ink on row hover; keyboard Tab reaches the row with a visible focus ring;
+click-through to `/work/drone/` with the back link intact; Sheet 02's next link resolves; no
+horizontal overflow at 1440 / 1280 / 1024 / 860 / 700 / 560 / 390; no-JS renders all three rows and
+the pending plate; zero console errors / failed requests. Build green with seven entries (hub
+17.8 kB / 4.3 kB gzip). Evidence in `../review-drone-hub/` (`qa-drone-hub.json`, hub work section at
+1440 and 390, row hover/focus, no-JS, Nora's sheet-next).
+
+**Open** — the airframe model and photographs are still Ethan's to supply; the sheet is reachable
+from the hub in the local build only. Committed in this push.
+
+## 2026-10-21 — the search-drone concept render lands on Sheet 03
+
+Ethan sent the concept render — “put this on” — and it now carries Sheet 03: the sheet hero and the
+hub row's plate. It is the **same 1145×1374 render** as `/plan/`'s Fig. 02 (the search drone with the
+downward sensor pod), so every caption says **concept render, not the build**; the build's own
+airframe model and photographs are still pending, and the sheet's existing dashed slots stay.
+
+- **Assets** — `public/img/plates/drone-search-5x6.webp` (1145×1374, q88, 117 KB) for the sheet
+  hero; `public/img/plates/drone-16x10.webp` (1145×716 crop of the same render, 98 KB) for the hub
+  plate. The crop keeps the hub's three plate rows full-bleed instead of shrinking a portrait into a
+  landscape frame.
+- **Sheet 03** (`work/drone/index.html` + `src/drone.css`) — the hero becomes a two-column
+  `.drone-hero-top`: copy left, 5:6 `.drone-hero-plate` right (max 430 px, hairline mount like
+  `/plan/`'s plates), caption `Concept render — the search drone. Not the build.` At ≤860 px the
+  render drops under the title, left-aligned, max 380 px. The hero-foot (lede + meta table) is
+  unchanged, and the page still fits the first viewport at 1440×1000.
+- **Hub** (`index.html`) — the dashed pending plate is replaced by the 16:10 crop, caption
+  `Fig. 03 — the search drone · concept render`; the row's copy, `Not flying` chip and CTA are
+  unchanged. The `.plate-media--todo` rules added earlier the same day were removed — no row uses
+  them now, and `src/hub.css` is back to its original rules.
+- **Honesty** — no caption calls the render the build; the sheet's Fig. 01 airframe slot and Fig. 03
+  photo slot stay dashed “to come”; nothing claims the search pod exists. The state chip still says
+  `Not flying`.
+
+**Verified** — `_qa/qa-drone-hub.mjs`, **67/67** on dev 5190: both images decode (1145×1374 /
+1145×716), the hub plate stays 16:10 and the hero plate 5:6 from 1440 down to 390, the hero stacks at
+≤860, hover zoom + CTA ink, keyboard focus, click-through, no-JS images, no horizontal overflow, zero
+console errors / failed requests. Production build green (seven entries); the preview build serves
+the new plates. Captures in `../review-drone-hub/` (`hub-drone-row-1440.png`,
+`drone-1440-hero.png`, `drone-390-hero-render.png`, `qa-drone-hub.json`). **Committed in this push.**

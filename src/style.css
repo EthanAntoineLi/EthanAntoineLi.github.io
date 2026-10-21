@@ -487,6 +487,8 @@ main {
 .js .act .joints,
 .js .act .act-copy,
 .js .act .process-cta,
+.js .act .print-get,
+.js .act .compare-cell,
 .js .act .email,
 .js .act .links,
 .js .act .colophon {
@@ -505,11 +507,16 @@ main {
 .js .act.is-in .joints,
 .js .act.is-in .act-copy,
 .js .act.is-in .process-cta,
+.js .act.is-in .print-get,
+.js .act.is-in .compare-cell,
 .js .act.is-in .email,
 .js .act.is-in .links,
 .js .act.is-in .colophon {
   opacity: 1;
   transform: none;
+}
+.js .act.is-in .compare-cell + .compare-arrow + .compare-cell {
+  transition-delay: 0.12s;
 }
 .js .act.is-in .hero-name {
   transition-delay: 0.06s;
@@ -801,6 +808,194 @@ html.is-turning * {
   max-width: 64ch;
 }
 
+/* ------------------------------------------------------- process: printing */
+/* While the A1 mini prints, the slot under the copy is a progress line; when
+   the print is done (body.print-done, set by process.js) the download link
+   takes its place. Without JS the links are simply there. */
+.print-get {
+  display: grid;
+  justify-items: start;
+  align-items: center;
+  min-height: 42px;
+}
+.print-get > * {
+  grid-area: 1 / 1;
+}
+.print-status {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  transition: opacity 0.35s var(--ease);
+}
+.js .print-status {
+  display: flex;
+}
+.print-meter {
+  position: relative;
+  width: clamp(90px, 9vw, 150px);
+  height: 2px;
+  overflow: hidden;
+  background: var(--line);
+}
+.print-meter span {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--p, 0));
+}
+.print-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 24px;
+}
+.js .print-links {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease), visibility 0s linear 0.7s;
+}
+body.print-done .print-status {
+  opacity: 0;
+}
+body.print-done .print-links {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0.15s, 0.15s, 0s;
+}
+.print-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px 12px;
+  background: var(--accent);
+  color: var(--paper);
+  border-radius: 2px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+  transition: background 0.25s var(--ease);
+}
+.print-cta-arrow {
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.25s var(--ease);
+}
+.print-cta:hover,
+.print-cta:focus-visible {
+  background: var(--ink);
+}
+.print-cta:hover .print-cta-arrow,
+.print-cta:focus-visible .print-cta-arrow {
+  transform: translateY(2px);
+}
+.print-repo {
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-soft);
+  transition: color 0.2s, border-color 0.2s;
+}
+.print-repo:hover,
+.print-repo:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ------------------------------------------------------- process: revision */
+/* Two drawing frames side by side: Rev A (still to come) and Rev B, whose frame
+   the stage parks the printed link in. The copy is kept narrow so it never
+   runs under the figure. */
+.act--revision .act-copy {
+  max-width: 36ch;
+}
+.compare {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: min(58vw, 880px);
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(14px, 1.8vw, 28px);
+  transform: translateY(-54%);
+}
+.compare-cell {
+  display: grid;
+  gap: 12px;
+}
+.compare-frame {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  max-height: 46vh;
+  border: 1px solid var(--line);
+  /* corner ticks, drawn like a title block's registration marks */
+  background:
+    linear-gradient(var(--ink), var(--ink)) top left / 12px 1px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) top left / 1px 12px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) top right / 12px 1px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) top right / 1px 12px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) bottom left / 12px 1px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) bottom left / 1px 12px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) bottom right / 12px 1px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) bottom right / 1px 12px no-repeat;
+}
+.compare-frame--todo {
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+  background-color: color-mix(in srgb, var(--paper-2) 60%, transparent);
+}
+.compare-frame--todo::before {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border: 1px dashed var(--line);
+  border-radius: 50%;
+  opacity: 0.8;
+}
+.compare-rev {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  color: var(--ink);
+}
+.compare-todo {
+  position: relative;
+  color: var(--dim);
+}
+.compare-cap {
+  color: var(--dim);
+  line-height: 1.5;
+}
+.compare-cap span {
+  color: var(--accent);
+}
+.compare-arrow {
+  font-size: 18px;
+  letter-spacing: 0;
+  color: var(--ink-soft);
+}
+/* the still stands in until the live link is parked in the frame */
+.compare-still {
+  position: absolute;
+  inset: 12%;
+  width: 76%;
+  height: 76%;
+  object-fit: contain;
+  transition: opacity 0.6s var(--ease);
+}
+body.scene-ready .compare-still {
+  opacity: 0;
+}
+body.no-part .compare-still {
+  opacity: 1;
+}
+
 /* ------------------------------------------------------------------- scan */
 .act--scan .act-title {
   max-width: 18ch;
@@ -914,6 +1109,8 @@ html.is-turning * {
   .js .act .joints,
   .js .act .act-copy,
   .js .act .process-cta,
+  .js .act .print-get,
+  .js .act .compare-cell,
   .js .act .email,
   .js .act .links,
   .js .act .colophon {
@@ -1411,6 +1608,39 @@ body.detail-open .cursor {
     max-width: none;
     font-size: 17px;
     line-height: 1.45;
+  }
+  .act--revision .act-copy {
+    max-width: none;
+  }
+  /* revision: the two frames join the bottom-anchored column, side by side */
+  .compare {
+    position: static;
+    width: 100%;
+    transform: none;
+    gap: 10px;
+  }
+  .compare-cell {
+    gap: 8px;
+  }
+  .compare-frame {
+    max-height: none;
+  }
+  .compare-rev {
+    top: 8px;
+    left: 10px;
+    font-size: 9px;
+  }
+  .compare-todo,
+  .compare-cap {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+  }
+  .print-status {
+    font-size: 9px;
+  }
+  .print-cta {
+    padding: 11px 14px 10px;
+    font-size: 10px;
   }
 }
 

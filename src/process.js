@@ -3,8 +3,11 @@
 //
 // The arm film's chrome and act choreography, plus the 3D stage this page
 // owns: the indexing turret of parts on the hero (spin it by hand, click a
-// part to bring it round), the A1 mini that leaves it for step 01, and the
-// three motor types that hover on step 02.
+// part to bring it round), the A1 mini that leaves it for step 01, the three
+// motor types that hover on step 02, the A1 mini printing the J1 → J2 link on
+// step 03 (the download link shows once the print is done) and that link
+// parked in Rev B's frame on step 04. Every hand-off between them is scrubbed
+// by the scroll (syncTrack), so the 3D moves with the copy.
 // Scene: ./process-stage.js. Balloons: ./process-hud.js. Curtain: ./film-loader.js.
 // ============================================================================
 import { createProcessStage } from './process-stage.js'
@@ -13,6 +16,7 @@ import motorsUrl from './assets/process/arm-motors.glb?url'
 import { initFilmLoader, reportLoadProgress, wasCurtainLifted } from './film-loader.js'
 
 const PRINTER_MODEL_URL = import.meta.env.BASE_URL + 'models/printer-a1-mini.glb'
+const LINK_MODEL_URL = import.meta.env.BASE_URL + 'models/arm-parts/parts/link-J1-J2.glb'
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const body = document.body
@@ -64,7 +68,8 @@ const ACTS = [...document.querySelectorAll('.act')].map((el) => ({
 let activeAct = 0
 
 /* Which stage the scroll position wants. The ring spins on the hero, the
-   printer takes over for 01, the motors hover for 02; 03+ are copy only. */
+   printer takes over for 01, the motors hover for 02, the printer prints for
+   03 and the printed link sits in its frame for 04; 05+ are copy only. */
 let wantedStage = 'ring'
 let lastStageY = 0
 
@@ -96,16 +101,23 @@ function startScene() {
       scene = await createProcessStage(canvas, {
         printerUrl: PRINTER_MODEL_URL,
         motorsUrl,
+        linkUrl: LINK_MODEL_URL,
         reducedMotion,
         phone,
         onLoadProgress: reportLoadProgress,
-        onFrame: hud ? (frame) => hud.draw(frame) : null,
+        onFrame: (frame) => {
+          hud?.draw(frame)
+          syncSlot()
+        },
+        onPrint: showPrint,
       })
       if (!scene) return null
       await scene.ready
       window.__printer = scene // dev/QA handle (harmless)
       window.__processStage = scene
       body.classList.add('scene-ready')
+      if (!scene.printable) body.classList.add('no-part')
+      syncTrack()
       syncStage()
       scene.setStage(wantedStage) // honour a deep link / restored scroll position
       if (wasCurtainLifted()) scene.play() // the safety valve lifted it first
@@ -116,6 +128,54 @@ function startScene() {
     }
   })()
   return sceneTask
+}
+
+/* Where the printer's, the motors' and the print's acts sit, in viewports past
+   the top of the screen — the stage moves each object with its own act. */
+const PRINTER_ACT = ACTS.find((a) => a.stage === 'printer')
+const MOTORS_ACT = ACTS.find((a) => a.stage === 'motors')
+const PRINT_ACT = ACTS.find((a) => a.stage === 'print')
+function syncTrack() {
+  if (!scene || !PRINTER_ACT || !MOTORS_ACT) return
+  const y = window.scrollY
+  const vh = window.innerHeight || 1
+  scene.setTrack(
+    (y - PRINTER_ACT.el.offsetTop) / vh,
+    (y - MOTORS_ACT.el.offsetTop) / vh,
+    PRINT_ACT ? (y - PRINT_ACT.el.offsetTop) / vh : -3,
+  )
+}
+
+/* Rev B's frame is handed over as it is on screen, entrance and reveal
+   transforms included, so the printed link lands exactly in it. Read every
+   rendered frame while step 04 is near (the transforms run on their own). */
+const COMPARE_ACT = ACTS.find((a) => a.stage === 'compare')
+const compareSlot = document.getElementById('compare-slot')
+let slotSynced = false
+function syncSlot() {
+  if (!scene || !compareSlot || !COMPARE_ACT) return
+  const vh = window.innerHeight || 1
+  const vw = window.innerWidth || 1
+  if (slotSynced && Math.abs(window.scrollY - COMPARE_ACT.el.offsetTop) > vh * 1.8) return
+  slotSynced = true
+  const r = compareSlot.getBoundingClientRect()
+  scene.setSlot(r.left / vw, r.top / vh, r.width / vw, r.height / vh)
+}
+
+/* -------------------------------------------------------------- the print */
+// Step 03's status line follows the print; once it is done the download link
+// takes its place (body.print-done). A scene that never prints shows it at once.
+const printStatusLabel = document.getElementById('print-status-label')
+const printStatusPct = document.getElementById('print-status-pct')
+const printMeter = document.getElementById('print-meter')
+function showPrint({ progress, done }) {
+  const p = done ? 1 : Math.min(1, Math.max(0, Number(progress) || 0))
+  if (printStatusPct) printStatusPct.textContent = `${Math.round(p * 100)}%`
+  if (printMeter) printMeter.style.setProperty('--p', p.toFixed(3))
+  if (done) {
+    if (printStatusLabel) printStatusLabel.textContent = 'Printed · link J1 → J2'
+    body.classList.add('print-done')
+  }
 }
 
 function syncStage() {
@@ -141,7 +201,6 @@ function syncStage() {
 // Mouse: drag anywhere on the ring to spin it, click a part to bring it round.
 // Touch: a tap on a part brings it round; swipes stay the page's scroll.
 let turning = false
-let lastNudgeY = window.scrollY
 function initTurretHand() {
   if (reducedMotion) return
   let tap = null
@@ -270,10 +329,8 @@ function measure() {
     setProgress(shown)
     body.classList.toggle('at-end', shown === ACTS.length - 1)
   }
+  syncTrack()
   syncStage()
-  // scrolling on the hero flicks the turret round before the printer leaves it
-  if (wantedStage === 'ring') scene?.nudge(y - lastNudgeY)
-  lastNudgeY = y
   // Runs last: transition state depends on the freshly updated activeAct.
   updateTransitions(y, vh)
 }
@@ -438,7 +495,11 @@ initScroll()
 measure()
 
 requestAnimationFrame(() => {
-  startScene().then(settleScene)
+  startScene().then((ready) => {
+    // no scene, no print: the models are still a click away
+    if (!ready) showPrint({ progress: 1, done: true })
+    settleScene(ready)
+  })
 })
 
 // pointer parallax on the object (the canvas itself is not interactive)
