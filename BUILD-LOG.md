@@ -845,3 +845,100 @@ the print at several points (head on the top layer, cable bent, hot layer), 03 �
 centred in its frame, 04 → 05, back to 01 (rig parked, no part); reduced motion; JS off; the
 `BASE=/personal-page/` build under preview (zip link 200, no failed requests, no console errors);
 build green.
+
+## 2026-10-21 — `/plan/`: the concept figures land
+
+Ethan generated the three plates from `plan/FIGURE-PROMPTS.md` and said "好了你都加上去吧". The
+dashed figure slots are replaced with real concept plates; the copy slots stay "to come".
+
+- **Robot** — the accepted humanoid (not the rejected tracked chassis): charcoal printed shells,
+silver stepper motors, five-axis arm language, sensor head, backpack. 1145 × 1374.
+- **Drone** — the 3-inch FPV quad with the downward search pod. 1145 × 1374.
+- **Parallel** — 16:6 scene: the humanoid reaches toward the marker flag while the drone holds above.
+2048 × 768.
+
+**Files** — `public/img/plates/plan-{robot,drone}-5x6.webp` (126 / 114 KB) and
+`plan-parallel-16x6.webp` (138 KB), all WebP q88 from Ethan's PNGs. `plan/index.html` —
+`<figure class="plan-plate">` with a 5:6 media frame for the portrait renders and a 16:6 frame for the
+scene, captions `Fig. 01 — concept` / `Not built`, descriptive alt text, lazy loading. Meta description
+and footer status corrected ("concept figures in — copy to come"). `src/plan.css` — plate rules replace
+the unused `.slot--figure` / `.slot--wide` / `.slot-figure-mark`; the flip rule moved to `.plan-plate`.
+
+**Honesty** — every figure is captioned concept / not built; the arm is still a 500 g bench prototype,
+the humanoid and the drone's search pod are plan, not hardware.
+
+**Verified** — build green; dev 5178 at 1440 / 1024 / 390: three images at their natural ratios, no
+horizontal overflow, no console errors / failed requests; no-JS and reduced-motion render all three
+plates. Evidence in `../review-plan-figures/`. Committed in this push.
+
+**Open** — section copy for all three; the parallel plate is only 129 px tall at 390 (inherent to
+16:6) — revisit if it reads too small on a phone; hub entry remains the Mission button only.
+
+## 2026-10-21 — Sheet 03 joins the hub (published; figures still pending)
+
+Ethan's call: keep the drone sheet's existing copy and wire it into the hub like 01 and 02 — not a
+strip-back to an empty template, and not a second sheet. So the Sheet 03 page itself is untouched;
+only the hub, one shared CSS component and Sheet 02's next-sheet line changed.
+
+- **Hub work register** (`index.html`) — a third `.sheet-row--lead`, `03 FPV drone`, linking
+  `./work/drone/`: title split `FPV / drone`; the sheet's own honest line (three-inch quad built as
+  the eye of the rescue system; the video link reaches the goggles; nothing past the pilot solved);
+  tags `Hardware / FPV 2026 / Not flying` (muted outline chip, not the rust `.state--built`); the
+  shared `Open sheet ↗` CTA. The drone is removed from the `.register`; 04 AI interviewer and
+  05 Physics at the bench stay in prep.
+- **Meta line** — `05 sheets · 02 published` → `05 sheets · 03 published`.
+- **Plate** (`src/hub.css`) — no airframe model or photographs exist yet, so the row's plate is
+  `.plate-media--todo`: the same dashed, paper-tint figure-pending frame the sheet and `/plan/` use,
+  with `Fig. 03 — the airframe`, a dim `Airframe` mark, `3D model + photographs to come`, and the
+  caption `Fig. 03 — the airframe · figures to come`. Border darkens on row hover/focus; no image
+  zoom, because there is no image to zoom. The `/plan/` drone concept plate was not borrowed at this
+  point — it is a concept, not this build. (Replaced the same day with a crop of the concept render;
+  see the next entry.)
+- **Sheet 02** — `.sheet-next` now reads `Next sheet — 03 FPV drone ↗` and links `../drone/`
+  (was `03 FPV drone · in prep`, unlinked).
+- **Docs** — README (three sheets published; register rules), ARCHITECTURE (hub plate contract +
+  Sheet 03 hub entry), this log.
+
+**Verified** — `_qa/qa-drone-hub.mjs`, **37/37** on dev 5190 (the shared 5178 was left to the
+concurrent `/plan/` session): three `.sheet-row`s in source order; the drone row is the third link;
+dashed plate at 16:10 with the pending copy; register only 04–05; `03 published` meta; reveal and
+ghost state; CTA fills ink on row hover; keyboard Tab reaches the row with a visible focus ring;
+click-through to `/work/drone/` with the back link intact; Sheet 02's next link resolves; no
+horizontal overflow at 1440 / 1280 / 1024 / 860 / 700 / 560 / 390; no-JS renders all three rows and
+the pending plate; zero console errors / failed requests. Build green with seven entries (hub
+17.8 kB / 4.3 kB gzip). Evidence in `../review-drone-hub/` (`qa-drone-hub.json`, hub work section at
+1440 and 390, row hover/focus, no-JS, Nora's sheet-next).
+
+**Open** — the airframe model and photographs are still Ethan's to supply; the sheet is reachable
+from the hub in the local build only. Committed in this push.
+
+## 2026-10-21 — the search-drone concept render lands on Sheet 03
+
+Ethan sent the concept render — “put this on” — and it now carries Sheet 03: the sheet hero and the
+hub row's plate. It is the **same 1145×1374 render** as `/plan/`'s Fig. 02 (the search drone with the
+downward sensor pod), so every caption says **concept render, not the build**; the build's own
+airframe model and photographs are still pending, and the sheet's existing dashed slots stay.
+
+- **Assets** — `public/img/plates/drone-search-5x6.webp` (1145×1374, q88, 117 KB) for the sheet
+  hero; `public/img/plates/drone-16x10.webp` (1145×716 crop of the same render, 98 KB) for the hub
+  plate. The crop keeps the hub's three plate rows full-bleed instead of shrinking a portrait into a
+  landscape frame.
+- **Sheet 03** (`work/drone/index.html` + `src/drone.css`) — the hero becomes a two-column
+  `.drone-hero-top`: copy left, 5:6 `.drone-hero-plate` right (max 430 px, hairline mount like
+  `/plan/`'s plates), caption `Concept render — the search drone. Not the build.` At ≤860 px the
+  render drops under the title, left-aligned, max 380 px. The hero-foot (lede + meta table) is
+  unchanged, and the page still fits the first viewport at 1440×1000.
+- **Hub** (`index.html`) — the dashed pending plate is replaced by the 16:10 crop, caption
+  `Fig. 03 — the search drone · concept render`; the row's copy, `Not flying` chip and CTA are
+  unchanged. The `.plate-media--todo` rules added earlier the same day were removed — no row uses
+  them now, and `src/hub.css` is back to its original rules.
+- **Honesty** — no caption calls the render the build; the sheet's Fig. 01 airframe slot and Fig. 03
+  photo slot stay dashed “to come”; nothing claims the search pod exists. The state chip still says
+  `Not flying`.
+
+**Verified** — `_qa/qa-drone-hub.mjs`, **67/67** on dev 5190: both images decode (1145×1374 /
+1145×716), the hub plate stays 16:10 and the hero plate 5:6 from 1440 down to 390, the hero stacks at
+≤860, hover zoom + CTA ink, keyboard focus, click-through, no-JS images, no horizontal overflow, zero
+console errors / failed requests. Production build green (seven entries); the preview build serves
+the new plates. Captures in `../review-drone-hub/` (`hub-drone-row-1440.png`,
+`drone-1440-hero.png`, `drone-390-hero-render.png`, `qa-drone-hub.json`). **Committed in this push.**

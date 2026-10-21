@@ -1,10 +1,11 @@
 # Ethan Antoine Li — engineering portfolio
 
-A static site laid out like an engineering drawing set. **Sheet 00** is the index (`/`). Two sheets
-are published: **01** the arm film (`/work/arm/`) and **02** Nora, the personal AI (`/work/nora/`).
-**03 FPV drone** is written and designed locally at `/work/drone/` — its airframe model and photographs
-are still to come, so it is not linked from the hub yet. A new top-level area, **the grand plan**
-(`/plan/`), is being framed — intro written, sections to come.
+A static site laid out like an engineering drawing set. **Sheet 00** is the index (`/`). Three sheets
+are published: **01** the arm film (`/work/arm/`), **02** Nora, the personal AI (`/work/nora/`), and
+**03** the FPV drone (`/work/drone/`). The drone sheet leads with a concept render of the search
+configuration (captioned as a concept, not the build); the build's own airframe model and photographs
+are still to come. A new top-level area, **the grand plan** (`/plan/`), is being built — intro
+written, three concept figures in, section copy to come.
 
 **Live:** <https://ethanantoineli.github.io/personal-page/> — deployed 2026-10-20 (GitHub Pages,
 project site). The direction and the open decisions live in [`HUB-PLAN.md`](HUB-PLAN.md).
@@ -15,18 +16,20 @@ project site). The direction and the open decisions live in [`HUB-PLAN.md`](HUB-
 
 | Route | Sheet | Content |
 | --- | --- | --- |
-| `/` | 00 — index | Name, one line, current state, works register (01 and 02 published, 03–05 in prep), mission band carrying **the grand plan copy + its `The grand plan ↗` button** (rust→ink, same component as the sheet CTAs), system diagram, built/in build/next, record, contact, title block. No 3D. The Nora plate is a live canvas: the cat alone on paper, idling through her movement bank. |
+| `/` | 00 — index | Name, one line, current state, works register (01–03 published, 04–05 in prep), mission band carrying **the grand plan copy + its `The grand plan ↗` button** (rust→ink, same component as the sheet CTAs), system diagram, built/in build/next, record, contact, title block. No 3D. The Nora plate is a live canvas: the cat alone on paper, idling through her movement bank; the drone plate is a 16:10 crop of the search-drone concept render. |
 | `/work/arm/` | 01 — the arm | The v6 **product film**: fixed 3D stage, six camera stops, the real articulated `arm-opt.glb`, mesh/points/x-ray modes, free view with part details. Unchanged except a back link to the index. |
 | `/work/arm/process/` | 01 — process | How the arm got made, in order. The hero is an indexing turret of the six parts (A1 mini + five motors) on a drawn dial, presenting each in build order with a drawing-sheet balloon — drag to spin it, click a part to bring it round. Step 01 (the Bambu Lab A1 mini) and step 02 (the motors) are live 3D; step 03 has the A1 mini print the J1 → J2 link (head along the gantry, bed shuttling, gantry climbing a layer at a time), then shows the **Download the 3D models** link; step 04 compares that link's two revisions (Rev B live in its frame, Rev A waiting on its model); steps 05–06 (design, assemble) are written. Same film chrome as the arm sheet. |
 | `/work/nora/` | 02 — Nora | The personal AI that runs 24/7 on a Mac of her own, with an **interactive pixel-art desk cat** as its status window. Same loading curtain and top-bar shell as Sheet 01. Argument, state table, build diagram, and the live demo. |
 | `/work/nora/demo/` | — | The actual desk-cat page, copied into the site and permanently in demo mode (fake events, no server). Embedded on Sheet 02; `?full` opens the complete pet page. |
-| `/work/drone/` | 03 — FPV drone | The rescue system's eye, built and not flying. Hero, the build and its parts table (no part but the airframe has a CAD model), the five-stage chain (video link works; flight not solved; recognition / position fix / handoff not built), the two test flights, and the design lesson. **Figures pending**: the airframe model and photographs are marked "to come"; the sheet is not linked from the hub yet. |
-| `/plan/` | — (area) | **The grand plan** — the long-range rescue system: one full robot doing the rescue job, with drones working alongside it as its larger eye. **Intro written; sections to come**: the `01 Robot` / `02 Drone` / `03 Parallel` slots are still dashed "to come" frames for copy and figures. Entered from the hub's Mission band via its `The grand plan ↗` button. |
+| `/work/drone/` | 03 — FPV drone | The rescue system's eye, built and not flying. Hero with a **concept render of the search drone** (5:6, captioned "concept render — not the build"), the build and its parts table (no part but the airframe has a CAD model), the five-stage chain (video link works; flight not solved; recognition / position fix / handoff not built), the two test flights, and the design lesson. **Build figures pending**: the airframe model and photographs are marked "to come"; the hub plate is a 16:10 crop of the same concept render. |
+| `/plan/` | — (area) | **The grand plan** — the long-range rescue system: one full robot doing the rescue job, with drones working alongside it as its larger eye. **Intro written; concept figures in**: the `01 Robot` and `02 Drone` sections carry the accepted concept plates, `03 Parallel` the wide scene; the copy slots are still dashed "to come" frames. Entered from the hub's Mission band via its `The grand plan ↗` button. |
 
-Register rules: a sheet is only linked when it has real content. **03 FPV drone** is written but still
-`SHEET IN PREP` on the hub until its figures exist; 04–05 (AI interviewer, physics) are also in prep.
+Register rules: a sheet is linked once it has real content. **03 FPV drone** is published from
+2026-10-21 — the sheet is written, its concept render is labelled as a concept, and its build figures
+are honestly pending — and 04–05 (AI interviewer, physics) are still in prep until their assets exist.
 
-Content rules: **nothing claims the drone vision system works**; **nothing from Nora's real activity
+Content rules: **nothing claims the drone vision system works**; the search-drone render is always
+captioned as a concept, never as a photograph of the build; **nothing from Nora's real activity
 log appears on the site** — the demo only ever shows a scripted fake week. Prototype/status labels
 wherever they matter.
 
@@ -60,6 +63,8 @@ Requires Node 18+ (tested on Node 24). Ports are pinned in `vite.config.js`.
 | `public/img/plates/nora-16x10.png/.webp` | 112 KB / 11 KB | Sheet 02's 16:10 room still — the demo figure's no-JS *and* reduced-motion fallback (the 16:10 paper band is trimmed to 16:9 by CSS) |
 | `public/img/plates/nora-cat.png/.webp` | 5 KB / 5 KB | Transparent still of the cat alone — the exact hub canvas layout — shown when JS is off |
 | `public/img/plates/nora-states.png/.webp` | 178 KB / 63 KB | 2×2 contact sheet of four demo states (listening, working, error, offline) |
+| `public/img/plates/drone-search-5x6.webp` | 1145×1374 · 117 KB | The search-drone **concept render** (Ethan's render, the same image as `/plan/` Fig. 02) — Sheet 03's hero plate |
+| `public/img/plates/drone-16x10.webp` | 1145×716 · 98 KB | 16:10 crop of the same render for the hub row's plate |
 | `public/img/arm-plate.png/.webp` | 193 / 46 KB | The film's own hero / no-WebGL still (portrait) |
 | `public/models/arm-parts/` | 1.7 MB + 9 parts | The same arm split into its nine parts (five motors, four printed links), one GLB each + `manifest.json`; `parts/link-J1-J2.glb` is the part printed on the process page |
 | `public/downloads/3d-models.zip` | 5.2 MB | `arm-opt.glb`, `printer-a1-mini.glb` and `arm-parts/` with a README — the process page's download (browsable unzipped under `public/models/`) |
@@ -114,7 +119,7 @@ personal-page/
   work/nora/index.html     # Sheet 02 — Nora
   work/nora/demo/          # the desk-cat page, demo-only (iframe target; ?full = full page)
     index.html nora.js style.css
-  work/drone/index.html    # Sheet 03 — FPV drone (figures pending)
+  work/drone/index.html    # Sheet 03 — FPV drone (concept render in; build figures pending)
   src/
     tokens.css             # shared design tokens + @font-face
     shell.css              # shared shell: loading curtain + top chrome (every page)
@@ -142,4 +147,5 @@ personal-page/
 QA captures and the iteration record for the hub + Sheet 02 are in `../review-v10/` (hub, phase 1),
 `../review-v11/` (Nora sheet, demo states, first production pass) and `../review-v12/` (Sheet 02 final
 pass: fresh capture set, QA report, independent critic notes). Sheet 03's captures and its 54-check
-QA report are in `../review-v21/` (`qa-drone.json`, dev + production preview).
+QA report are in `../review-v21/` (`qa-drone.json`, dev + production preview); the hub row + concept
+render pass is in `../review-drone-hub/` (67 checks, screenshots).
