@@ -165,39 +165,140 @@ function startScene() {
   return sceneTask
 }
 
+// Free view -> scan: one timeline on the free act's local scroll progress t
+// (0 = the free view at rest, 1 = the scan act has arrived).
+//   0    – hand   free view: the visitor owns orbit + zoom (idle spin after 4 s)
+//   hand          control returns to the page: no snap, the idle spin stops
+//   hand – camEnd camera free -> scan, the visitor's orbit / zoom easing out on
+//                 the same curve (span 0.6, close to the other moves' 1.0)
+//   wipeStart – wipeEnd  the cut sweeps the arm top -> bottom in the scan
+//                 framing: x-ray above it, the solid model below
+// Reversing retraces the same positions, so nothing depends on direction.
+const SCAN_TIMELINE = { hand: 0.08, camEnd: 0.68, wipeStart: 0.48, wipeEnd: 0.96 }
+const clamp01 = (v) => Math.min(1, Math.max(0, v))
+const smooth01 = (v) => {
+  const x = clamp01(v)
+  return x * x * (3 - 2 * x)
+}
+let scanTarget = 0 // scroll-driven wipe progress: 0 = base look, 1 = x-ray
+let scanSnap = true // the first placement jumps (no wipe replay on load)
+
 function applyStop(i, t = 1, dir = 0) {
   const act = ACTS[i]
   if (!act || !scene) return
   try {
-    if (act.stop === 'free') {
-      // Hand-over zone: once the visitor scrolls out of the act (in either
-      // direction) the camera eases back to the neighbouring preset, so every
-      // slide always arrives in the same framing no matter how they left the
-      // free view.
-      if (t > 0.72 && dir !== 0) {
-        const next = ACTS[i + 1]
-        scene.setControlMode('scroll')
+    const next = ACTS[i + 1]
+    if (dir === 0) {
+      // Scene-ready arrival: show this act's preset now, and let a full
+      // measure() on the next frame place the camera, hand-off and scan
+      // exactly where the page is scrolled to.
+      if (act.stop === 'free') {
         scene.setStop('free', 1)
-        if (dir > 0 && next) {
-          const bt = Math.min(1, (t - 0.72) / 0.28)
-          scene.setStop(next.stop, bt)
-        }
-        return
+        scene.setControlMode('free')
+      } else {
+        scene.setControlMode('scroll', act.stop)
+        scene.setStop(act.stop, 1)
       }
-      // Free view: the visitor owns orbit + zoom, the page stops steering.
-      scene.setStop('free', 1)
-      scene.setControlMode('free')
+      onScroll()
       return
     }
-    scene.setControlMode('scroll')
-    // The scene blends between an arrived stop and a destination stop:
-    // pin the current one, then blend towards the next by its local progress.
-    scene.setStop(act.stop, 1)
-    const next = ACTS[i + 1]
-    if (next && t < 1) scene.setStop(next.stop, t)
+    if (act.stop === 'free') {
+      const T = SCAN_TIMELINE
+      if (t < T.hand) {
+        // Free view: the visitor owns orbit + zoom. A hand-off that had begun
+        // is undone, so scrolling back gives them their own view again.
+        scene.setStop('free', 1)
+        scene.releaseManual(0)
+        scene.setControlMode('free')
+      } else {
+        // The page has the camera again: free -> next on one curve, with the
+        // visitor's orbit / zoom eased out on that same curve.
+        const u = clamp01((t - T.hand) / (T.camEnd - T.hand))
+        scene.setControlMode('scroll', next ? next.stop : act.stop)
+        scene.setStop('free', 1)
+        if (next) scene.setStop(next.stop, u)
+        scene.releaseManual(smooth01(u))
+        if (hideDetailCard) hideDetailCard()
+      }
+    } else {
+      scene.setControlMode('scroll', act.stop)
+      // The scene blends between an arrived stop and a destination stop:
+      // pin the current one, then blend towards the next by its local progress.
+      scene.setStop(act.stop, 1)
+      if (next && t < 1) scene.setStop(next.stop, t)
+      // Scrolling up out of the free view eases its orbit / zoom out along
+      // this blend; any other act finishes a pending hand-off on its own.
+      scene.releaseManual(next && next.stop === 'free' ? 1 - smooth01(t) : 1)
+    }
+    if (i >= SCAN_INDEX) scanTarget = 1
+    else if (i !== SCAN_BOUNDARY) scanTarget = 0
+    else if (reducedMotion) scanTarget = activeAct === SCAN_INDEX ? 1 : 0
+    else {
+      const T = SCAN_TIMELINE
+      scanTarget = smooth01((t - T.wipeStart) / (T.wipeEnd - T.wipeStart))
+    }
+    applyLook(scanSnap)
+    scanSnap = false
   } catch {
     /* scene not ready — no-op */
   }
+}
+
+// What the arm shows. The visitor's mode pick (userMode) holds everywhere but
+// the scan act: the scan always wipes from it into the x-ray, which is the
+// act's content. A pick made inside the scan act cancels the wipe there and
+// holds until they scroll back out of it.
+let userMode = null
+let scanPick = null
+let modeShown = null
+function applyLook(snap = false) {
+  if (activeAct !== SCAN_INDEX) scanPick = null
+  const base = userMode || 'mesh'
+  const shown = scanPick || (scanTarget >= 0.5 ? 'xray' : base)
+  if (scene) {
+    scene.setMode?.(scanPick || base)
+    scene.setScan?.(scanPick ? null : scanTarget, snap)
+    trackScanLine()
+  }
+  if (shown !== modeShown) {
+    modeShown = shown
+    document.querySelectorAll('.mode button').forEach((b) => {
+      b.classList.toggle('on', b.dataset.mode === shown)
+    })
+  }
+}
+
+// The hairline rides the cut on every rendered frame, not only on scroll
+// events: the wipe and the camera keep easing after the scroll stops. It runs
+// while a cut is on the model and stops itself once the wipe has settled.
+const scanLineInfo = { alpha: 0, settled: true }
+let scanLineRaf = 0
+let scanLineOn = false
+function trackScanLine() {
+  if (scanLineRaf || !scanLine || !scene?.scanScreenY || reducedMotion) return
+  const step = () => {
+    const y = scene.scanScreenY(scanLineInfo)
+    // Only over an untransformed canvas: elsewhere a stage motion would carry
+    // the model off the line (the scan boundary itself keeps the stage still).
+    const fam = stageEl ? stageEl.dataset.fam : ''
+    const flat = !fam || fam === 'none'
+    if (y !== null && Number.isFinite(y) && flat && scanLineInfo.alpha > 0.001) {
+      const dpr = window.devicePixelRatio || 1
+      const top = Math.round((y - 0.5) * dpr) / dpr // 1px line centred on the cut
+      scanLine.style.transform = `translate3d(0, ${top}px, 0)`
+      scanLine.style.opacity = scanLineInfo.alpha.toFixed(3)
+      scanLineOn = true
+    } else if (scanLineOn) {
+      scanLine.style.opacity = '0'
+      scanLineOn = false
+    }
+    if (y === null && scanLineInfo.settled) {
+      scanLineRaf = 0
+      return
+    }
+    scanLineRaf = requestAnimationFrame(step)
+  }
+  scanLineRaf = requestAnimationFrame(step)
 }
 
 /* --------------------------------------------------------------- ghost type */
@@ -259,17 +360,17 @@ function updateStage(y, vh) {
   if (!stageEl || reducedMotion) return
   let fam = 'none'
   let bump = 0
-  let scanP = null
   let closeAnchor = null
   for (let n = 0; n < ACTS.length - 1; n++) {
     const centre = ACTS[n + 1].el.offsetTop - vh * 0.5
     const span = vh * 0.36
     const p = (y - (centre - span)) / (span * 2)
     if (p > 0 && p < 1) {
-      fam = ACTS[n + 1].el.dataset.ent || 'none'
+      // The scan boundary keeps the stage still: the wipe is its transition
+      // (camera + scan run from applyStop, the hairline from trackScanLine).
+      fam = n === SCAN_BOUNDARY ? 'none' : ACTS[n + 1].el.dataset.ent || 'none'
       bump = Math.sin(Math.PI * p)
-      if (n === SCAN_BOUNDARY) scanP = p
-      else closeAnchor = CLOSEUP_BY_BOUNDARY[n]
+      if (n !== SCAN_BOUNDARY) closeAnchor = CLOSEUP_BY_BOUNDARY[n]
     }
   }
   stageEl.dataset.fam = fam
@@ -277,28 +378,6 @@ function updateStage(y, vh) {
 
   if (!scene) return
   scene.setCloseUp(closeAnchor || 'elbow', closeAnchor ? bump * (phone ? 0.3 : 0.85) : 0)
-  if (scanP !== null) {
-    scene.setScan(scanP)
-  } else if (activeAct === 3) {
-    scene.setScan(1)
-  } else {
-    scene.setScan(null)
-  }
-  if (!userMode) setMode(scanP !== null || activeAct === SCAN_INDEX ? 'xray' : 'mesh', false)
-
-  if (scanLine) {
-    if (scanP !== null && scene.scanScreenY) {
-      const y = scene.scanScreenY()
-      if (y !== null && Number.isFinite(y)) {
-        scanLine.style.top = `${y.toFixed(1)}px`
-        scanLine.style.opacity = '1'
-      } else {
-        scanLine.style.opacity = '0'
-      }
-    } else {
-      scanLine.style.opacity = '0'
-    }
-  }
 }
 
 function updateTransitions(y, vh) {
@@ -353,11 +432,14 @@ function measure() {
   const t = Math.min(1, Math.max(0, (y - start) / Math.max(1, end - start)))
 
   // every slide must arrive in its preset framing: wipe any borrowed orbit /
-  // zoom when the transition into the next slide starts, and again on arrival
+  // zoom when the transition into the next slide starts, and again on arrival.
+  // Leaving the free view is the exception: applyStop() eases the visitor's
+  // orbit / zoom out on the scroll timeline there, so it is not dropped here.
   if (i !== stopIndex) {
+    const fromFree = stopIndex === FREE_INDEX
     stopIndex = i
-    resetMark = -1
-    if (scene && ACTS[i].stop !== 'free') scene.releaseManual?.()
+    resetMark = fromFree ? i : -1
+    if (scene && ACTS[i].stop !== 'free' && !fromFree) scene.releaseManual?.()
   }
   if (scene && ACTS[i].stop !== 'free' && t > 0.5 && resetMark !== i) {
     scene.releaseManual?.()
@@ -533,23 +615,21 @@ function initIndex() {
 }
 
 /* --------------------------------------------------------------- mode switch */
-let userMode = null
-let appliedMode = null
-function setMode(mode, fromUser = true) {
-  if (fromUser) userMode = mode
-  if (mode === appliedMode && !fromUser) return
-  appliedMode = mode
-  document.querySelectorAll('.mode button').forEach((b) => {
-    b.classList.toggle('on', b.dataset.mode === mode)
-  })
-  scene?.setMode?.(mode)
+// A visitor's pick. Outside the scan act it becomes the film's look (and the
+// look the scan wipes from); inside the scan act it overrides the x-ray until
+// they scroll out of it. applyLook() (next to applyStop) resolves the rest.
+function setMode(mode) {
+  if (mode !== 'mesh' && mode !== 'points' && mode !== 'xray') return
+  if (activeAct === SCAN_INDEX) scanPick = mode
+  else userMode = mode
+  applyLook()
 }
 
 function initMode() {
   const buttons = [...document.querySelectorAll('.mode button')]
   if (!buttons.length) return
   buttons.forEach((btn) => {
-    btn.addEventListener('click', () => setMode(btn.dataset.mode, true))
+    btn.addEventListener('click', () => setMode(btn.dataset.mode))
   })
 }
 
