@@ -69,7 +69,7 @@ Where the page is a placeholder, label it as such.
   a five-axis robotic arm and an FPV drone; both prototypes; the page says where things aren't
   built.
 - **Facts strip:** Discipline (A-level: Maths, Further Maths, Physics, Chemistry) · Toolchain
-  (Shapr3D, Bambu Lab H2S, STM32F407, three.js) · State (prototype, in build).
+  (Shapr3D, Bambu Lab A1 mini, STM32F407, three.js) · State (prototype, in build).
 - **Plate:** `FIG. 01 — EPQ 3.1 arm`, caption `5 DOF built · 6 DOF designed`.
 
 ### 3.2 Mission
@@ -85,11 +85,11 @@ Where the page is a placeholder, label it as such.
 ### 3.3 The arm (5-DOF robotic arm)
 
 - **What it is:** my rescue robot's first piece — the EPQ artefact. Designed in **Shapr3D**, printed
-  on a **Bambu Lab H2S**.
+  on a **Bambu Lab A1 mini**.
 - **DOF:** **6 designed, 5 built** — the budget stopped at five motors. This phrasing resolves the
   old 5-vs-6 ambiguity and must stay consistent everywhere.
 - **Architecture (from the EPQ):**
-  - Actuators: UMIR57 ×2 (J1, J2), UMIR42 ×3 (J3–J5) steppers.
+  - Actuators: UMIR57 ×1 (J1), UMIR42 ×4 (J2–J5) steppers.
   - Reductions: 25:1 planetary on the base; self-locking 50:1 worm on the shoulder.
   - Torque: 19 N·m base, 5.4 N·m shoulder.
   - Controller: STM32F407; bus: RS485 / Modbus-RTU.
@@ -212,7 +212,10 @@ personal-page/
 
 1. **Status list** — the "Built / In build / Next" items are drafted from the EPQ notes; confirm each
    is still true (especially firmware/RS485 progress and the payload work).
-2. **500 g payload** — page calls it a *target*, not a result. Confirm wording.
+2. **500 g payload** — **resolved 2026-10-21**: the page calls it a *target*, not a result. The
+   payload act heading reads `Built to a 500-gram target.` and its spec label
+   `[ payload target · in build ]`, matching the hub's In-build line `Payload work toward the
+   500 g target`.
 3. **A-level subject list** in the hero facts strip — confirm it should be public.
 4. **Date** — "Last updated — October 2026". Update when the page changes.
 5. **Drone copy** — recognises only "FPV flying" as built. If the airframe/parts differ from that

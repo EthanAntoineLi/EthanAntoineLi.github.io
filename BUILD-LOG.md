@@ -109,7 +109,7 @@ Review verdicts:
   3. Close on the arm.
   4. Pull out to drone (half frame).
   - Captions fade in/out at the arm + drone beats.
-- Tail: Toolbox (Bambu Lab H2S, Shapr3D), In progress (arm = EPQ, drone vision next), Contact (email only, no GitHub).
+- Tail: Toolbox (Bambu Lab A1 mini, Shapr3D), In progress (arm = EPQ, drone vision next), Contact (email only, no GitHub).
 - Monochrome clay look: shared `MeshStandardMaterial` (roughness 0.95), soft studio lighting (hemi + key + rim + fill).
 - Fonts: Playfair Display (serif) + DotGothic16 (dot-matrix) — open-source (Google Fonts).
 - Production build verified: `npm run build` → dist/ (JS 568 KB / 146 KB gzip).
@@ -942,3 +942,114 @@ airframe model and photographs are still pending, and the sheet's existing dashe
 console errors / failed requests. Production build green (seven entries); the preview build serves
 the new plates. Captures in `../review-drone-hub/` (`hub-drone-row-1440.png`,
 `drone-1440-hero.png`, `drone-390-hero-render.png`, `qa-drone-hub.json`). **Committed in this push.**
+
+## 2026-10-21 — sheet 01: the drone half is built (correction)
+
+Ethan's correction: the drone was built, it just did not work very well. Sheet 01's closing scan
+act still said *"The drone half isn't built yet."* — which Sheet 03 contradicts: the airframe is
+built, the video link works, and the quad has never flown under control (two failed tests).
+Text-only fix, no layout change beyond an explicit line break.
+
+- **`work/arm/index.html`** — the dim line now reads `The drone half was built.` / `It doesn’t fly.`
+  with a `<br />` after `built.` so the sentence does not orphan "It" over the X-ray render; the
+  `og:description` link preview follows: `… The drone half was built — it just doesn't fly.` The
+  stale source comment `(not built yet)` on the process-slide door is dropped — that page has been
+  live since 2026-10-20.
+- **Left alone at that moment** — Sheet 03’s own detail (airframe + video link built, `Not flying`
+  in its body band, two attempts), the hub’s video-link aria-label, and the arm’s payload/motor
+  copy. The payload and motor figures and the site’s status vocabulary were corrected by the
+  concurrent pass later in this working tree (the two entries below); this snapshot carries all of
+  it.
+- **Verified** — `_qa/qa-arm-drone-copy.mjs`, **17/17** on dev (5178) and production preview (4178):
+  exact `og:description`, no "not built yet" left in the rendered copy, closing line correct at
+  1440 / 1024 / 390, no horizontal overflow, zero console errors / failed requests; `npm run build`
+  green (seven entries). Captures in `../review-arm-drone-copy/` (`arm-scan-1440.png`,
+  `arm-scan-390.png`, `qa-arm-drone-copy.json`).
+- **Not done** — no commit/deploy (the tree holds another session's uncommitted work); no README /
+  ARCHITECTURE change (neither documents the scan copy).
+
+## 2026-10-21 — sheet 01: 500 grams is the target, not a result (correction)
+
+Ethan's correction: *"Built to hold 500 grams"* is a target line, and the hub already lists the
+payload work under **In build**. The arm's payload act now says the same thing the hub says — 500 g
+is the target, the work on it is in build — instead of reading like a finished capability.
+
+- **`work/arm/index.html`** — the 01 / Payload heading is now `Built to a` / `500-gram target.`
+  (was `Built to hold` / `500 grams.`): the arm was built to a payload target, and nothing claims
+  that target has been demonstrated. The payload spec label follows the DOF row's
+  `[ built · 6 drawn ]` pattern: `[ payload target · in build ]` (was `[ payload target ]`, which
+  named the target but not its state). Nothing else in the act moves.
+- **`src/arm-scene.js`** — the payload close-up's source comment names the new copy (the comment
+  exists to keep the left third of the page clear behind the render).
+- **Same state elsewhere** — the hub's 03 / Status needed no change: `In build` already carries
+  `Payload work toward the 500 g target`, and the process sheet's `05 Test · 500 g target` is
+  already a target. The arm page was the only place reading as a result.
+- **Verified** — `dev/qa-arm-payload-copy.mjs`, **20/20** on dev (5178) and production preview
+  (4178): the rendered heading is exactly `Built to a 500-gram target.`, "built to hold" is gone
+  from the page, the label reads `[ payload target · in build ]`, the hub still lists the payload
+  line under In build (not under Built), the 390 px label stays on one line and inside its spec row,
+  no horizontal overflow at 1440 / 1024 / 390, zero console errors / failed requests; `npm run
+  build` green (seven entries, the copy in `dist/`). Captures in `../review-arm-payload/`:
+  `payload-1440.png`, `payload-1024.png`, `payload-390.png`, `hub-status-1440.png` and
+  `qa-arm-payload-copy.json`.
+- **Not done** — no commit/deploy: the tree holds other sessions' uncommitted copy corrections
+  (drone-half scan line, motor figures), so this change stays uncommitted alongside them.
+
+## 2026-10-21 — status vocabulary: the plan's four words
+
+Ethan: “Status words don't match: Built / Running / Not flying / Study / In prep. The plan said Built /
+In build / Proposed / Study.” `HUB-PLAN.md` §2 defines exactly that set — **BUILT** (works, can
+show), **IN BUILD** (partly works), **PROPOSED** (designed, not made), **STUDY**
+(investigation/report, not an artefact) — and the page had drifted into its own words. Text only, no
+layout change:
+
+- **Hub chips** — 02 Nora `Running` → `Built`; 03 FPV drone `Not flying` → `In build`; 01 arm keeps
+  `Built`; 04 AI interviewer / 05 Physics keep `Study`. One primary status per row.
+- **Register notes** — the `Sheet in prep` mono note is gone from 04/05; each row now carries exactly
+  one status. The footnote and the list's `aria-label` say `unpublished` instead, and the
+  `.register-note` rule left `hub.css` (no other user).
+- **Hero strip** — `FPV drone — not flying` → `FPV drone — in build`; arm `built` and handoff
+  `not built` unchanged (the plan labels that status `PROPOSED / NOT BUILT`).
+- **Mission diagram** — drone `FPV · not flying` → `FPV · in build`; arm `bench prototype` → `built`;
+  its `aria-label` rewritten to match the visible states.
+- **Sheets** — Sheet 02 meta Status `Running 24/7` → `Built`, Sheet 03 meta Status `Not flying` →
+  `In build`; both title-block Status cells follow (`built` / `in build`). Sheet 03's next-sheet line
+  now reads `04 AI interviewer · unpublished`. The body status bands keep the specific detail
+  (`Running · 24/7`, `Not flying`) — the taxonomy is the primary status, the bands are the evidence.
+- **Left alone** — the hub's bottom Built / In build / Next board is a work board, not a project
+  status; the arm's `[ payload target · in build ]` label already agreed. `PROPOSED` is reserved:
+  no current project is designed-but-not-made (the humanoid on `/plan/` is a concept only).
+- **Verified** — DOM read-back of every chip, strip item, diagram state, sheet meta and title-block
+  cell; no `register-note` left anywhere; no console errors / failed requests on the hub, Sheet 02,
+  Sheet 03 at 1440 / 1280 / 860 / 390; no horizontal overflow; `npm run build` green (seven entries).
+  Evidence in `../review-status-vocab/` (`status-vocab.json`, `layout-check.json`, `hub-work.png`,
+  `hub-register.png`, `hub-system.png`, `nora-meta.png`, `drone-meta.png`, both title blocks, the
+  390 px register and diagram).
+- **Not done** — no commit/deploy: per Ethan, local dev only (dev server 5178). The live GitHub Pages
+  site still carries the old words.
+
+## 2026-10-21 — the corrections port onto the arm-film master (push)
+
+The hour’s copy corrections were all written on the old film base (`hub` @ `3d6074e`, the 18:18
+deploy), while GitHub `master` had already moved to `1bd17ea` (PR #4, the arm-film camera rework:
+one orbit, poses that build, the free-view → scan hand-off, five files). The change set was ported
+onto the new master rather than resetting master to the old base, so the corrections and the new
+camera work are both kept. The old version is untouched: the local checkout stays on `hub` with its
+uncommitted changes, `origin/hub` still points at `3d6074e`, and master gains one commit on top of
+`1bd17ea`.
+
+- **Port** — the 13-file working-tree snapshot applied onto `1bd17ea` in a throwaway worktree.
+  Twelve files applied cleanly. The one conflict was `src/arm-scene.js`: the only change there was a
+  source comment naming the payload copy, and the arm-film rework had already deleted that comment
+  block, so the hunk is obsolete and was dropped — nothing functional is missing.
+- **Docs** — the entries above are the corrections’ own record; this entry is the port. The
+  drone-half entry’s “left alone” line was written before the later status-vocabulary pass, so it is
+  annotated rather than rewritten.
+- **Verified** — `_qa/qa-arm-drone-copy.mjs` **17/17**, `dev/qa-arm-payload-copy.mjs` **20/20**, and
+  a port smoke over hub / arm / drone / nora at 1440 and 390 against a production preview of the
+  ported tree: new copy and status words in the built output, arm-film files present, no horizontal
+  overflow, zero console errors / failed requests; `npm run build` green (seven entries). Evidence in
+  `../review-port-master/`.
+- **Old kept** — the pre-port working tree is also saved as a patch at
+  `_qa/backups/old-version-wip-2026-10-21.patch` (outside the repo).
+

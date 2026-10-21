@@ -28,7 +28,7 @@ const phone = window.matchMedia('(max-width: 820px)').matches
 const RING_PARTS = {
   printer: { n: '01', name: 'A1 mini', spec: 'Bambu Lab · the printer' },
   'motor-J1': { n: '02', name: 'J1 · base', spec: 'UMIR57 stepper' },
-  'motor-J2': { n: '03', name: 'J2 · shoulder', spec: 'UMIR57 stepper' },
+  'motor-J2': { n: '03', name: 'J2 · shoulder', spec: 'UMIR42 stepper' },
   'motor-J3': { n: '04', name: 'J3', spec: 'UMIR42 stepper' },
   'motor-J4': { n: '05', name: 'J4', spec: 'UMIR42 stepper' },
   'motor-J5': { n: '06', name: 'J5', spec: 'UMIR42 stepper' },

@@ -16,7 +16,7 @@ project site). The direction and the open decisions live in [`HUB-PLAN.md`](HUB-
 
 | Route | Sheet | Content |
 | --- | --- | --- |
-| `/` | 00 — index | Name, one line, current state, works register (01–03 published, 04–05 in prep), mission band carrying **the grand plan copy + its `The grand plan ↗` button** (rust→ink, same component as the sheet CTAs), system diagram, built/in build/next, record, contact, title block. No 3D. The Nora plate is a live canvas: the cat alone on paper, idling through her movement bank; the drone plate is a 16:10 crop of the search-drone concept render. |
+| `/` | 00 — index | Name, one line, current state, works register (01–03 published, 04–05 unpublished), mission band carrying **the grand plan copy + its `The grand plan ↗` button** (rust→ink, same component as the sheet CTAs), system diagram, built/in build/next, record, contact, title block. No 3D. The Nora plate is a live canvas: the cat alone on paper, idling through her movement bank; the drone plate is a 16:10 crop of the search-drone concept render. |
 | `/work/arm/` | 01 — the arm | The v6 **product film**: fixed 3D stage, six camera stops, the real articulated `arm-opt.glb`, mesh/points/x-ray modes, free view with part details. Unchanged except a back link to the index. |
 | `/work/arm/process/` | 01 — process | How the arm got made, in order. The hero is an indexing turret of the six parts (A1 mini + five motors) on a drawn dial, presenting each in build order with a drawing-sheet balloon — drag to spin it, click a part to bring it round. Step 01 (the Bambu Lab A1 mini) and step 02 (the motors) are live 3D; step 03 has the A1 mini print the J1 → J2 link (head along the gantry, bed shuttling, gantry climbing a layer at a time), then shows the **Download the 3D models** link; step 04 compares that link's two revisions (Rev B live in its frame, Rev A waiting on its model); steps 05–06 (design, assemble) are written. Same film chrome as the arm sheet. |
 | `/work/nora/` | 02 — Nora | The personal AI that runs 24/7 on a Mac of her own, with an **interactive pixel-art desk cat** as its status window. Same loading curtain and top-bar shell as Sheet 01. Argument, state table, build diagram, and the live demo. |
@@ -26,7 +26,12 @@ project site). The direction and the open decisions live in [`HUB-PLAN.md`](HUB-
 
 Register rules: a sheet is linked once it has real content. **03 FPV drone** is published from
 2026-10-21 — the sheet is written, its concept render is labelled as a concept, and its build figures
-are honestly pending — and 04–05 (AI interviewer, physics) are still in prep until their assets exist.
+are honestly pending — and 04–05 (AI interviewer, physics) stay unpublished until their assets exist.
+
+Status vocabulary: every project carries exactly one of the plan's four words — `BUILT` / `IN BUILD` /
+`PROPOSED` / `STUDY` — in the hub chips, the hero strip, the mission diagram and the sheets' status
+fields. The sheets' status bands keep the specific state in its own words (Nora: `Running · 24/7`;
+drone: `Not flying`).
 
 Content rules: **nothing claims the drone vision system works**; the search-drone render is always
 captioned as a concept, never as a photograph of the build; **nothing from Nora's real activity

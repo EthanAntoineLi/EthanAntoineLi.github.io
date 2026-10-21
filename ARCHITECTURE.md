@@ -86,6 +86,26 @@ personal-page/
   `onPrint`; `body.print-done` then swaps the progress line for the download link. Step 04
   (`compare`) parks that link in Rev B's frame; Rev A is a placeholder until its model exists.
 
+## Status vocabulary
+
+The plan's four words are the only project statuses (`HUB-PLAN.md` §2: BUILT = works, can show;
+IN BUILD = partly works; PROPOSED = designed, not made; STUDY = investigation/report, not an
+artefact). Every project carries exactly one, and every status field on the site uses the same set:
+
+| Status | Where |
+| --- | --- |
+| `BUILT` | hub chips 01 / 02, hero strip, Sheet 02 meta + title block |
+| `IN BUILD` | hub chip 03, hero strip, mission diagram, Sheet 03 meta + title block |
+| `PROPOSED` | reserved — no current project; the humanoid on `/plan/` is a concept only |
+| `STUDY` | hub register 04 / 05 |
+
+The sheets' own status bands keep the specific state in its own words (Sheet 02 `Running · 24/7`,
+Sheet 03 `Not flying`): that is the evidence behind the primary status, not a second status.
+Unpublished sheets carry no "in prep" tag — the register's footnote and its list label say they are
+not linked yet. `.state` / `.state--built` in `hub.css` render the chips (rust for built, muted
+outline for the others). The hub's bottom Built / In build / Next board is a work board, not a
+project status.
+
 ## Ownership / what each file owns
 
 | File | Owns | Must not |

@@ -549,13 +549,6 @@ main,
   gap: 14px;
 }
 
-.register-note {
-  color: var(--dim);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  white-space: nowrap;
-}
-
 .register-foot {
   margin-top: 20px;
   max-width: 64ch;

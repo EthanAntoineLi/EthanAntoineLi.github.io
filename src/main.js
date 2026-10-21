@@ -70,7 +70,7 @@ const PART_INFO = {
     title: 'Shoulder pitch',
     rows: [
       ['Travel', '0–150°'],
-      ['Actuator', 'UMIR57 stepper'],
+      ['Actuator', 'UMIR42 stepper'],
       ['Reduction', '50 : 1 worm · self-locking'],
       ['Torque', '5.4 N·m'],
     ],
