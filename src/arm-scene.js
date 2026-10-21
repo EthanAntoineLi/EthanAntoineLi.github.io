@@ -108,9 +108,31 @@ const MIN_DIST = 0.12
 // target toward an anchor by `focusAmount` (0 = centred on the bounds).
 // ---------------------------------------------------------------------------
 const STOP_DEFS = {
+  // ONE CAMERA MOVE. The film is a single orbit around the arm in one
+  // direction (azimuth only ever increases: hero -125° -> scan +20°, steps of
+  // 34-38°, 145° in all), craning up a little at every stop. The total stays
+  // under 180°, so even a jump straight from hero to scan (index link, reduced
+  // motion) still turns the same way: the live camera damps along the shortest
+  // arc. az 0 looks at the arm's front (+z, the way it reaches); negative az
+  // is its left side, where the reach reads left-to-right, away from the copy.
+  //
+  // POSES THAT BUILD. [J1 base, J2 shoulder, J3 upper-arm roll, J4 elbow, J5
+  // wrist roll], degrees. The shoulder only rises (0 -> 55 -> 80), the elbow
+  // folds once to hold and then only opens, the wrist roll only advances, and
+  // J1 + J3 make the one turn: the reach swings round to face the visitor.
+  //
+  // No focus offsets and no close-ups: the framing solve centres the live
+  // silhouette. Each stop's fill is the size the arm really takes there, so
+  // the camera distance stays within ~10% from hero to process, makes one push
+  // in at process -> free (the arm turns to face the visitor) and holds it
+  // through the scan. Every arrival keeps its slide's copy, the slide counter
+  // and the top bar clear at 1440x900, 960x600 and phone width (phones scale
+  // the fill in computeDesired, so wide poses read smaller there).
   hero: {
-    az: 0.62, // 3/4 from the front right
-    el: 0.12,
+    // Behind the left shoulder, nearly level: the powered-down arm hangs as
+    // one clean vertical, its shoulder motor pointing back at the name.
+    az: -2.18,
+    el: 0.06,
     fov: 32,
     fillX: 0.78,
     fillY: 0.7, // hangs vertically, so it can be taller
@@ -118,72 +140,83 @@ const STOP_DEFS = {
     focusAmount: 0,
     // All joints at zero: the "powered down, hanging vertical" state.
     pose: [0, 0, 0, 0, 0],
-    // sit right of the name column
+    // right of the name column; lifted clear of the pull quote
     screenX: 0.36,
     pointSize: 1,
-    screenY: 0
+    screenY: 0.06
   },
   joints: {
-    az: -1.05, // swung around to a true side three-quarter
-    el: -0.04,
-    fov: 33,
-    fillX: 0.66,
-    fillY: 0.58, // close, but never the whole viewport: the copy column stays clear
-    focus: 'elbow',
-    focusAmount: 0.34,
-    // A display pose: base turned a little, shoulder up, elbow folded ~95°,
-    // wrist cocked. Reads as a deliberate product pose, not a random bend.
-    pose: [18, 52, 0, 96, 24],
-    pointSize: 1.12,
-    // Push the close-up into the right third so the left ~third of the page's
-    // "Built to hold 500 grams" copy stays legible underneath.
-    screenX: 0.3,
-    // Lifted so the arm's lower edge clears the full-width spec row.
-    screenY: 0.26
+    // Payload: a true side view, so the lift reads as a silhouette.
+    az: -1.54,
+    el: 0.12,
+    fov: 32,
+    // fillX is set to the width the arm really takes here (and at the next
+    // stop), so the blend between them holds one size instead of swelling.
+    fillX: 0.47,
+    fillY: 0.395,
+    focus: null,
+    focusAmount: 0,
+    // It wakes and lifts: shoulder up, elbow folded to hold the load up.
+    pose: [0, 55, 0, 88, 30],
+    pointSize: 1.1,
+    // In the band between the title, the counter (top right) and the
+    // full-width spec row.
+    screenX: 0.14,
+    screenY: 0.32
   },
   profile: {
-    // Front three-quarter from above: looking down onto the linkage from the
-    // front-left, so the face of the assembly reads. Short lens keeps the
-    // perspective visible.
-    az: 0.95,
-    el: 0.6,
-    fov: 26,
-    fillX: 0.8,
-    fillY: 0.74,
+    // Process: front-left three-quarter, a little higher.
+    az: -0.91,
+    el: 0.18,
+    fov: 32,
+    fillX: 0.45,
+    fillY: 0.42,
     focus: null,
     focusAmount: 0,
-    pose: [0, 14, 0, 26, 0],
-    pointSize: 0.92,
-    screenX: 0,
-    screenY: 0
+    // Programmed: the arm reaches out to work, every joint engaged. Shoulder
+    // higher, elbow opened, upper arm rolled out, wrist turning.
+    pose: [15, 80, 60, 55, 120],
+    pointSize: 1,
+    // Upper band: above the step list (desktop, right), between the title and
+    // the counter, and between the title and the list on phones.
+    screenX: 0.24,
+    screenY: 0.31
   },
   free: {
-    // the "your turn" stop: a clean three-quarter the visitor takes over from
-    az: 0.72,
-    el: 0.16,
+    // Your turn: nearly head-on. J1 and J3 swing the reach round so the tool
+    // face looks at the visitor, then the visitor takes the camera.
+    az: -0.31,
+    el: 0.24,
     fov: 32,
-    fillX: 0.78,
-    fillY: 0.7,
+    // fillX only binds on phones (the pose is taller than wide). fillY sets the
+    // camera distance to the closest of the film, so process -> free is one
+    // push in that never pulls back out.
+    fillX: 0.55,
+    fillY: 0.5,
     focus: null,
     focusAmount: 0,
-    pose: [10, 22, 0, 42, 12],
+    pose: [-18, 80, -30, 55, 150],
     pointSize: 1,
     screenX: 0,
-    screenY: 0
+    screenY: 0.08
   },
   scan: {
-    az: -0.9, // wider top-ish three-quarter
-    el: 0.68, // ~39° above
-    fov: 43,
-    fillX: 0.62,
-    fillY: 0.58,
+    // Scan: the orbit carries on past the front and cranes up over the arm.
+    az: 0.35,
+    el: 0.52, // ~30° above
+    fov: 34,
+    // fillX only binds on phones. fillY keeps the camera distance level with
+    // the free view (no pull-out on the way in).
+    fillX: 0.55,
+    fillY: 0.52,
     focus: null,
     focusAmount: 0,
-    pose: [-10, 18, -8, 38, 14],
-    pointSize: 1.32,
-    // Nudge the cloud right of the copy column so the scan read stays clear.
-    screenX: 0.08,
-    screenY: -0.02
+    // holds the facing pose; the wrist roll keeps turning
+    pose: [-18, 82, -30, 52, 180],
+    pointSize: 1.3,
+    // right of the wide "This half is real" title, below the counter
+    screenX: 0.41,
+    screenY: -0.05
   }
 }
 const STOP_NAMES = Object.keys(STOP_DEFS)
