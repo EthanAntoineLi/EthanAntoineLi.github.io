@@ -1298,19 +1298,12 @@ body.no-part .compare-still {
     gap: 16px;
   }
 
-  /* gentler stage motion on a narrow canvas */
-  .stage[data-fam="rise"] canvas {
-    transform: translateY(calc(var(--bump, 0) * -1.6vh)) scale(calc(1 + var(--bump, 0) * 0.02));
-  }
-  .stage[data-fam="swing"] canvas {
-    transform: rotate(calc(var(--bump, 0) * -1.1deg)) translateX(calc(var(--bump, 0) * 1.4vw))
-      scale(calc(1 + var(--bump, 0) * 0.03));
-  }
-  .stage[data-fam="dolly"] canvas {
-    transform: scale(calc(1 + var(--bump, 0) * 0.05));
+  /* phones too: the camera carries each boundary, the canvas never tilts */
+  .stage[data-fam] canvas {
+    transform: none;
   }
   .scan-line {
-    display: none;
+    display: block; /* it rides the exact cut, so phones keep it too */
   }
 }
 
@@ -1384,18 +1377,11 @@ body.no-part .compare-still {
   transition: none;
   transform-origin: 50% 50%;
 }
-.stage[data-fam="rise"] canvas {
-  transform: translateY(calc(var(--bump, 0) * -3.4vh)) scale(calc(1 + var(--bump, 0) * 0.04));
-}
-.stage[data-fam="swing"] canvas {
-  transform: rotate(calc(var(--bump, 0) * -3.2deg)) translateX(calc(var(--bump, 0) * 4vw))
-    scale(calc(1 + var(--bump, 0) * 0.07));
-}
-.stage[data-fam="curtain"] canvas {
-  transform: scale(calc(1 + var(--bump, 0) * 0.02));
-}
-.stage[data-fam="dolly"] canvas {
-  transform: scale(calc(1 + var(--bump, 0) * 0.14));
+/* No family moves the rendered canvas: a rotate / scale of the flat image on
+   top of the 3D move read as a wobble and softened the render. The arm's
+   motion at every boundary is the camera path (STOP_DEFS in arm-scene.js). */
+.stage[data-fam] canvas {
+  transform: none;
 }
 
 
@@ -1418,7 +1404,8 @@ body.no-part .compare-still {
   }
 }
 
-/* hairline drawn exactly on the x-ray scan cut */
+/* hairline drawn exactly on the x-ray scan cut: main.js moves it (transform)
+   and fades it (opacity) on every rendered frame while the cut is on the arm */
 .scan-line {
   position: fixed;
   left: 0;
@@ -1429,6 +1416,7 @@ body.no-part .compare-still {
   opacity: 0;
   pointer-events: none;
   z-index: 4;
+  will-change: transform, opacity;
 }
 .scan-line::after {
   content: "";

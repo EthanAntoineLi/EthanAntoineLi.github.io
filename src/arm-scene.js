@@ -108,9 +108,31 @@ const MIN_DIST = 0.12
 // target toward an anchor by `focusAmount` (0 = centred on the bounds).
 // ---------------------------------------------------------------------------
 const STOP_DEFS = {
+  // ONE CAMERA MOVE. The film is a single orbit around the arm in one
+  // direction (azimuth only ever increases: hero -125° -> scan +20°, steps of
+  // 34-38°, 145° in all), craning up a little at every stop. The total stays
+  // under 180°, so even a jump straight from hero to scan (index link, reduced
+  // motion) still turns the same way: the live camera damps along the shortest
+  // arc. az 0 looks at the arm's front (+z, the way it reaches); negative az
+  // is its left side, where the reach reads left-to-right, away from the copy.
+  //
+  // POSES THAT BUILD. [J1 base, J2 shoulder, J3 upper-arm roll, J4 elbow, J5
+  // wrist roll], degrees. The shoulder only rises (0 -> 55 -> 80), the elbow
+  // folds once to hold and then only opens, the wrist roll only advances, and
+  // J1 + J3 make the one turn: the reach swings round to face the visitor.
+  //
+  // No focus offsets and no close-ups: the framing solve centres the live
+  // silhouette. Each stop's fill is the size the arm really takes there, so
+  // the camera distance stays within ~10% from hero to process, makes one push
+  // in at process -> free (the arm turns to face the visitor) and holds it
+  // through the scan. Every arrival keeps its slide's copy, the slide counter
+  // and the top bar clear at 1440x900, 960x600 and phone width (phones scale
+  // the fill in computeDesired, so wide poses read smaller there).
   hero: {
-    az: 0.62, // 3/4 from the front right
-    el: 0.12,
+    // Behind the left shoulder, nearly level: the powered-down arm hangs as
+    // one clean vertical, its shoulder motor pointing back at the name.
+    az: -2.18,
+    el: 0.06,
     fov: 32,
     fillX: 0.78,
     fillY: 0.7, // hangs vertically, so it can be taller
@@ -118,72 +140,83 @@ const STOP_DEFS = {
     focusAmount: 0,
     // All joints at zero: the "powered down, hanging vertical" state.
     pose: [0, 0, 0, 0, 0],
-    // sit right of the name column
+    // right of the name column; lifted clear of the pull quote
     screenX: 0.36,
     pointSize: 1,
-    screenY: 0
+    screenY: 0.06
   },
   joints: {
-    az: -1.05, // swung around to a true side three-quarter
-    el: -0.04,
-    fov: 33,
-    fillX: 0.66,
-    fillY: 0.58, // close, but never the whole viewport: the copy column stays clear
-    focus: 'elbow',
-    focusAmount: 0.34,
-    // A display pose: base turned a little, shoulder up, elbow folded ~95°,
-    // wrist cocked. Reads as a deliberate product pose, not a random bend.
-    pose: [18, 52, 0, 96, 24],
-    pointSize: 1.12,
-    // Push the close-up into the right third so the left ~third of the page's
-    // "Built to hold 500 grams" copy stays legible underneath.
-    screenX: 0.3,
-    // Lifted so the arm's lower edge clears the full-width spec row.
-    screenY: 0.26
+    // Payload: a true side view, so the lift reads as a silhouette.
+    az: -1.54,
+    el: 0.12,
+    fov: 32,
+    // fillX is set to the width the arm really takes here (and at the next
+    // stop), so the blend between them holds one size instead of swelling.
+    fillX: 0.47,
+    fillY: 0.395,
+    focus: null,
+    focusAmount: 0,
+    // It wakes and lifts: shoulder up, elbow folded to hold the load up.
+    pose: [0, 55, 0, 88, 30],
+    pointSize: 1.1,
+    // In the band between the title, the counter (top right) and the
+    // full-width spec row.
+    screenX: 0.14,
+    screenY: 0.32
   },
   profile: {
-    // Front three-quarter from above: looking down onto the linkage from the
-    // front-left, so the face of the assembly reads. Short lens keeps the
-    // perspective visible.
-    az: 0.95,
-    el: 0.6,
-    fov: 26,
-    fillX: 0.8,
-    fillY: 0.74,
+    // Process: front-left three-quarter, a little higher.
+    az: -0.91,
+    el: 0.18,
+    fov: 32,
+    fillX: 0.45,
+    fillY: 0.42,
     focus: null,
     focusAmount: 0,
-    pose: [0, 14, 0, 26, 0],
-    pointSize: 0.92,
-    screenX: 0,
-    screenY: 0
+    // Programmed: the arm reaches out to work, every joint engaged. Shoulder
+    // higher, elbow opened, upper arm rolled out, wrist turning.
+    pose: [15, 80, 60, 55, 120],
+    pointSize: 1,
+    // Upper band: above the step list (desktop, right), between the title and
+    // the counter, and between the title and the list on phones.
+    screenX: 0.24,
+    screenY: 0.31
   },
   free: {
-    // the "your turn" stop: a clean three-quarter the visitor takes over from
-    az: 0.72,
-    el: 0.16,
+    // Your turn: nearly head-on. J1 and J3 swing the reach round so the tool
+    // face looks at the visitor, then the visitor takes the camera.
+    az: -0.31,
+    el: 0.24,
     fov: 32,
-    fillX: 0.78,
-    fillY: 0.7,
+    // fillX only binds on phones (the pose is taller than wide). fillY sets the
+    // camera distance to the closest of the film, so process -> free is one
+    // push in that never pulls back out.
+    fillX: 0.55,
+    fillY: 0.5,
     focus: null,
     focusAmount: 0,
-    pose: [10, 22, 0, 42, 12],
+    pose: [-18, 80, -30, 55, 150],
     pointSize: 1,
     screenX: 0,
-    screenY: 0
+    screenY: 0.08
   },
   scan: {
-    az: -0.9, // wider top-ish three-quarter
-    el: 0.68, // ~39° above
-    fov: 43,
-    fillX: 0.62,
-    fillY: 0.58,
+    // Scan: the orbit carries on past the front and cranes up over the arm.
+    az: 0.35,
+    el: 0.52, // ~30° above
+    fov: 34,
+    // fillX only binds on phones. fillY keeps the camera distance level with
+    // the free view (no pull-out on the way in).
+    fillX: 0.55,
+    fillY: 0.52,
     focus: null,
     focusAmount: 0,
-    pose: [-10, 18, -8, 38, 14],
-    pointSize: 1.32,
-    // Nudge the cloud right of the copy column so the scan read stays clear.
-    screenX: 0.08,
-    screenY: -0.02
+    // holds the facing pose; the wrist roll keeps turning
+    pose: [-18, 82, -30, 52, 180],
+    pointSize: 1.3,
+    // right of the wide "This half is real" title, below the counter
+    screenX: 0.41,
+    screenY: -0.05
   }
 }
 const STOP_NAMES = Object.keys(STOP_DEFS)
@@ -1184,15 +1217,48 @@ export async function createArmScene(canvas, opts = {}) {
     state.pointer.liveX = damp(state.pointer.liveX, state.pointer.x, pointerRate, dt)
     state.pointer.liveY = damp(state.pointer.liveY, state.pointer.y, pointerRate, dt)
 
-    // ---- free view: zoom damping + gentle idle rotation ------------------
+    // ---- free view: zoom, idle rotation, and the hand-off back to the page
+    // While a hand-off runs (see setControlMode / releaseManual) the page owns
+    // the visitor's orbit + zoom: they follow the page's ease, at the camera
+    // rig's rate, and a drag or zoom click that lands meanwhile is ignored —
+    // the orbit is re-damped here from last frame's value, so the generic
+    // orbit damping above never gets to act on it.
+    if (handoff.active) {
+      const keep = 1 - handoff.amount
+      state.orbit.az = handoff.az * keep
+      state.orbit.el = handoff.el * keep
+      state.zoom.target = 1 + (handoff.zoom - 1) * keep
+      state.orbit.liveAz = damp(handoff.liveAz, state.orbit.az, rate, dt)
+      state.orbit.liveEl = damp(handoff.liveEl, state.orbit.el, rate, dt)
+      handoff.liveAz = state.orbit.liveAz
+      handoff.liveEl = state.orbit.liveEl
+    }
     state.zoom.live = damp(state.zoom.live, state.zoom.target, 5, dt)
-    if (state.control === 'free') {
+    if (
+      handoff.active &&
+      handoff.amount >= 1 &&
+      state.orbit.liveAz === 0 &&
+      state.orbit.liveEl === 0 &&
+      state.zoom.live === 1
+    ) {
+      handoff.active = false // fully eased out: the camera is the page's alone again
+    }
+    if (state.control === 'free' && !handoff.active) {
       state.idle += dt
       if (state.idle > 4 && !state.settings.reducedMotion) {
         state.orbit.az = clamp(state.orbit.az + dt * 0.1, -Math.PI, Math.PI)
       }
     } else {
       state.idle = 0
+    }
+
+    // ---- x-ray scan wipe: damped at the camera rig's rate, so the cut and the
+    // camera move stay in step even when the scroll jumps (reduced motion: a
+    // clean jump). The cut itself is placed after the camera, in applyScanPlane.
+    if (state.scan.planeSolid) {
+      state.scan.value = state.settings.reducedMotion
+        ? state.scan.target
+        : damp(state.scan.value, state.scan.target, rate, dt)
     }
 
     // ---- distance + centring: exact fit to the live frame ----------------
@@ -1238,13 +1304,36 @@ export async function createArmScene(canvas, opts = {}) {
   let lastLinesOpacity = -1
   let lastLinesVisible = null
   let lastTransparent = null
+  let lastMeshVisible = null
+  let lastShellOpacity = -1
+  let lastShellVisible = null
 
+  // meshOpacity / pointsOpacity / linesOpacity are the base look (render mode x
+  // entry reveal). While the x-ray scan runs, its half is composed on top (see
+  // the x-ray scan section): 'split' keeps the base look below the cut and the
+  // x-ray above it, 'done' is the x-ray alone.
   function applyMaterialState(meshOpacity, pointsOpacity, linesOpacity = 0) {
+    const phase = applyScanPlane(linesOpacity >= 0.5)
+    let shellOpacity = 0
+    if (phase !== 'off') {
+      const xray = MODE_TARGETS.xray
+      const reveal = scanEntryReveal()
+      if (phase === 'done') {
+        meshOpacity = xray.mesh * reveal.mesh
+        pointsOpacity = reveal.points
+        linesOpacity = xray.lines * reveal.mesh
+      } else {
+        shellOpacity = xray.mesh * reveal.mesh
+        linesOpacity = Math.max(linesOpacity, xray.lines * reveal.mesh)
+      }
+    }
     const clampedMesh = clamp(meshOpacity, 0, 1)
     const clampedPoints = clamp(pointsOpacity, 0, 1)
     const clampedLines = clamp(linesOpacity, 0, 1)
-    // Mesh
-    if (meshOpacity > 0.004) {
+    // Mesh. Hidden per material, not per object: the x-ray edges and the scan
+    // shells are children of these meshes and must stay drawable on their own.
+    const meshVisible = meshOpacity > 0.004
+    if (meshVisible) {
       if (Math.abs(clampedMesh - lastMeshOpacity) > 0.0015) {
         for (const material of state.materials.values()) material.opacity = clampedMesh
         lastMeshOpacity = clampedMesh
@@ -1261,10 +1350,22 @@ export async function createArmScene(canvas, opts = {}) {
       } else {
         for (const material of state.materials.values()) material.depthWrite = depthWrite
       }
-      for (const mesh of state.arm.meshes) mesh.visible = true
     } else {
-      for (const mesh of state.arm.meshes) mesh.visible = false
       lastMeshOpacity = -1
+    }
+    if (meshVisible !== lastMeshVisible) {
+      for (const material of state.materials.values()) material.visible = meshVisible
+      lastMeshVisible = meshVisible
+    }
+    // Scan shells: the x-ray half of the model during the wipe
+    const shellVisible = shellOpacity > 0.004
+    if (shellVisible && Math.abs(shellOpacity - lastShellOpacity) > 0.0015) {
+      for (const material of state.scan.shellMaterials) material.opacity = shellOpacity
+      lastShellOpacity = shellOpacity
+    }
+    if (shellVisible !== lastShellVisible) {
+      for (const shell of state.scan.shells) shell.visible = shellVisible
+      lastShellVisible = shellVisible
     }
     // X-ray edges (per-material base opacity: motors stay faint)
     if (state.edgeMaterials.length) {
@@ -1480,18 +1581,66 @@ export async function createArmScene(canvas, opts = {}) {
     return true
   }
 
-  function setControlMode(mode) {
+  // The camera hand-off out of the free view. Leaving 'free' never snaps the
+  // visitor's orbit / zoom away: they are captured here and the page eases
+  // them out with releaseManual(amount) on its own scroll timeline (amount 0 =
+  // the visitor's view, 1 = none of it), so scrolling back restores the view
+  // and a reversal can never jump. update() applies it every frame.
+  const handoff = { active: false, amount: 0, az: 0, el: 0, zoom: 1, liveAz: 0, liveEl: 0 }
+
+  function beginHandoff(toward) {
+    if (handoff.active) return
+    let az = state.orbit.az
+    let liveAz = state.orbit.liveAz
+    // Wrap the captured azimuth by whole turns (an invisible change) so the
+    // ease runs the short way round to the stop the page is heading for.
+    const goal = toward ? STOP_DEFS[toward] : null
+    if (goal) {
+      const turns = Math.round((state.live.az + az - goal.az) / (Math.PI * 2))
+      az -= turns * Math.PI * 2
+      liveAz -= turns * Math.PI * 2
+    }
+    handoff.active = true
+    handoff.amount = 0
+    handoff.az = az
+    handoff.el = state.orbit.el
+    handoff.zoom = state.zoom.target
+    handoff.liveAz = liveAz
+    handoff.liveEl = state.orbit.liveEl
+    state.orbit.az = az
+    state.orbit.liveAz = liveAz
+    state.idle = 0
+  }
+
+  function endHandoff() {
+    if (!handoff.active) return
+    const keep = 1 - handoff.amount
+    // Undo the short-way wrap (whole turns, invisible): the visitor's drag and
+    // idle spin clamp the orbit to ±π, which must not catch a wrapped value.
+    const turns = Math.round((handoff.az * keep) / (Math.PI * 2))
+    state.orbit.az = handoff.az * keep - turns * Math.PI * 2
+    state.orbit.liveAz -= turns * Math.PI * 2
+    state.orbit.el = handoff.el * keep
+    state.zoom.target = 1 + (handoff.zoom - 1) * keep
+    handoff.active = false
+  }
+
+  // mode: 'free' | 'scroll'. `toward` (optional) names the stop the page is
+  // about to steer to, so the hand-off eases the short way round.
+  function setControlMode(mode, toward) {
     if (state.disposed) return false
     if (mode !== 'free' && mode !== 'scroll') return false
     if (state.control === mode) return true
+    const leavingFree = state.control === 'free'
     state.control = mode
     if (mode === 'scroll') {
-      // hand the camera back to the page: undo the visitor's offset/zoom
-      state.zoom.target = 1
-      state.orbit.az = 0
-      state.orbit.el = 0
+      // hand the camera back to the page; the visitor's offsets stay until the
+      // page eases them out (releaseManual), and the idle spin stops
+      if (leavingFree) beginHandoff(toward)
       setHighlight(null)
     } else {
+      // the visitor takes over from wherever the hand-off had got to
+      endHandoff()
       state.idle = 0
     }
     return true
@@ -1506,17 +1655,36 @@ export async function createArmScene(canvas, opts = {}) {
     return true
   }
 
-  function releaseManual() {
+  // releaseManual()        drop any borrowed orbit / zoom. Out of the free view
+  //                        (or mid hand-off) that is an eased hand-off, never
+  //                        a snap.
+  // releaseManual(amount)  0..1: how far the running hand-off has eased out
+  //                        (scroll-linked by the page); a no-op without one.
+  function releaseManual(amount) {
     if (state.disposed) return false
-    state.orbit.az = 0
-    state.orbit.el = 0
-    state.zoom.target = 1
-    state.idle = 0
+    if (amount === undefined) {
+      if (state.control === 'free' || handoff.active) {
+        beginHandoff()
+        handoff.amount = 1
+        return true
+      }
+      state.orbit.az = 0
+      state.orbit.el = 0
+      state.zoom.target = 1
+      state.idle = 0
+      return true
+    }
+    const a = Number(amount)
+    if (!handoff.active || !Number.isFinite(a)) return false
+    handoff.amount = clamp(a, 0, 1)
     return true
   }
 
   function resetView() {
     if (state.disposed) return false
+    handoff.active = false
+    // ease back the short way, even from a hand-off's wrapped azimuth
+    state.orbit.liveAz -= Math.round(state.orbit.liveAz / (Math.PI * 2)) * Math.PI * 2
     state.zoom.target = 1
     state.orbit.az = 0
     state.orbit.el = 0
@@ -1634,91 +1802,176 @@ export async function createArmScene(canvas, opts = {}) {
   }
 
   // ------------------------------------------------------------ x-ray scan
+  // The free view -> scan wipe. Nothing is ever clipped away: one cut divides
+  // the arm into the look it had (below the cut) and the x-ray (above it), and
+  // the cut sweeps from just above the silhouette to just below it as the wipe
+  // value goes 0 -> 1 (0 = the base look everywhere, 1 = x-ray everywhere).
+  //
+  // The cut is a plane through the camera, so on screen it is exactly one
+  // horizontal row, whatever the camera or the pose does: the page draws its
+  // hairline on that row (scanScreenY) and it sits on the cut on every frame.
+  //
+  //   PBR meshes + points   base look, kept below the cut   (planeSolid)
+  //   shell twins           x-ray shell, kept above the cut (planeShell)
+  //   x-ray edges           kept above the cut              (planeEdges)
+  //
+  // The planes stay attached for good ("keep everything" when idle), so a
+  // scan starting, stopping or reversing never recompiles a shader.
+  const SCAN_EPS = 1e-4
+  const SCAN_MARGIN = 0.03 // NDC: start / end this far beyond the silhouette
+  const SCAN_FADE = 0.06 // the hairline fades over the first / last 6 % of the wipe
+  const KEEP_ALL = 1e6
+  const _scanViewProj = new THREE.Matrix4()
+  const _scanRight = new THREE.Vector3()
+  const _scanUp = new THREE.Vector3()
+  const _scanRay = new THREE.Vector3()
+  const _scanNormal = new THREE.Vector3()
 
-  function buildScanRing() {
-    if (!state.arm || !state.scan || state.scan.line) return
-    const b = state.bounds
-    if (!Number.isFinite(b.min.x) || !Number.isFinite(b.max.x)) return
-    const ring = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(b.min.x - 0.03, 0, b.min.z - 0.03),
-      new THREE.Vector3(b.max.x + 0.03, 0, b.min.z - 0.03),
-      new THREE.Vector3(b.max.x + 0.03, 0, b.max.z + 0.03),
-      new THREE.Vector3(b.min.x - 0.03, 0, b.max.z + 0.03)
-    ])
-    const ringMat = new THREE.LineBasicMaterial({
-      color: 0x8f3a22,
-      transparent: true,
-      opacity: 0.5,
-      depthTest: false,
-      depthWrite: false
-    })
-    const line = new THREE.LineLoop(ring, ringMat)
-    line.renderOrder = 6
-    line.visible = false
-    line.frustumCulled = false
-    state.arm.root.add(line)
-    state.scan.line = line
+  function installScanClipping() {
+    const scan = state.scan
+    scan.target = 0
+    scan.value = 0
+    scan.on = false
+    scan.ndcY = 1
+    scan.alpha = 0
+    scan.planeSolid = new THREE.Plane(UP.clone(), KEEP_ALL)
+    scan.planeShell = new THREE.Plane(UP.clone(), KEEP_ALL)
+    scan.planeEdges = new THREE.Plane(UP.clone(), KEEP_ALL)
+    for (const material of state.materials.values()) material.clippingPlanes = [scan.planeSolid]
+    if (state.pointsMaterial) state.pointsMaterial.clippingPlanes = [scan.planeSolid]
+    for (const material of state.edgeMaterials) material.clippingPlanes = [scan.planeEdges]
+    // One x-ray shell twin per primitive: same geometry and node, a translucent
+    // clone of its material (exactly what x-ray mode draws), hidden unless the
+    // wipe is mid-way.
+    const shellByMaterial = new Map()
+    scan.shells = []
+    for (const mesh of state.arm.meshes) {
+      let shellMaterial = shellByMaterial.get(mesh.material)
+      if (!shellMaterial) {
+        shellMaterial = mesh.material.clone()
+        shellMaterial.transparent = true
+        shellMaterial.depthWrite = false
+        shellMaterial.opacity = MODE_TARGETS.xray.mesh
+        shellMaterial.visible = true
+        shellMaterial.clippingPlanes = [scan.planeShell]
+        shellByMaterial.set(mesh.material, shellMaterial)
+      }
+      const shell = new THREE.Mesh(mesh.geometry, shellMaterial)
+      shell.name = mesh.name + '_scan'
+      shell.visible = false
+      shell.renderOrder = 1
+      shell.raycast = () => {}
+      mesh.add(shell)
+      scan.shells.push(shell)
+    }
+    scan.shellMaterials = [...shellByMaterial.values()]
   }
 
-  function applyScanPlane() {
-    if (!state.scan.plane) return
-    const b = state.bounds
-    const range = Math.max(1e-4, b.max.y - b.min.y)
-    const y = b.max.y - state.scan.value * range
-    state.scan.plane.constant = -y
-    if (state.scan.line) {
-      state.scan.line.position.y = y
-      state.scan.line.visible = state.scan.on
-    }
-    const planes = state.scan.on ? [state.scan.plane] : null
-    if (state.materials) {
-      for (const material of state.materials.values()) {
-        const current = material.clippingPlanes
-        const count = current ? current.length : 0
-        if (count !== (planes ? planes.length : 0)) {
-          material.clippingPlanes = planes
-          material.needsUpdate = true
-        }
-      }
-    }
-    for (const material of state.edgeMaterials) {
-      const current = material.clippingPlanes
-      const count = current ? current.length : 0
-      if (count !== (planes ? planes.length : 0)) {
-        material.clippingPlanes = planes
-        material.needsUpdate = true
-      }
+  // Same curves as the entry reveal in update(), for the x-ray half (the page
+  // can load straight onto the scan act while the reveal is still playing).
+  function scanEntryReveal() {
+    if (state.settings.reducedMotion) return { mesh: 1, points: 0 }
+    return {
+      mesh: smoothstep01((state.entryRaw - 0.34) / 0.5),
+      points: (1 - smoothstep01((state.entryRaw - 0.62) / 0.38)) * 0.92
     }
   }
 
-  function setScan(value) {
+  // Runs every frame after the camera is placed. Returns the phase: 'off'
+  // (base look), 'split' (the cut is on the model) or 'done' (x-ray).
+  function applyScanPlane(edgesBothSides = false) {
+    const scan = state.scan
+    if (!scan.planeSolid) return 'off'
+    const v = scan.value
+    const phase = v <= SCAN_EPS ? 'off' : v >= 1 - SCAN_EPS ? 'done' : 'split'
+    const camera = state.camera
+    const samples = state.samplesWorld
+    scan.on = phase === 'split' && !!camera && samples.length > 2
+    if (!scan.on) {
+      scan.planeSolid.set(UP, KEEP_ALL)
+      scan.planeShell.set(UP, KEEP_ALL)
+      scan.planeEdges.set(UP, KEEP_ALL)
+      scan.alpha = 0
+      return phase
+    }
+    // the live silhouette's vertical extent on screen (NDC)
+    camera.updateMatrixWorld()
+    _scanViewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+    const e = _scanViewProj.elements
+    let minY = Infinity
+    let maxY = -Infinity
+    for (let i = 0; i < samples.length; i += 3) {
+      const x = samples[i]
+      const y = samples[i + 1]
+      const z = samples[i + 2]
+      const w = e[3] * x + e[7] * y + e[11] * z + e[15]
+      if (w <= 1e-6) continue
+      const ny = (e[1] * x + e[5] * y + e[9] * z + e[13]) / w
+      if (ny < minY) minY = ny
+      if (ny > maxY) maxY = ny
+    }
+    if (!(maxY > minY)) {
+      minY = -1
+      maxY = 1
+    }
+    const row = lerp(maxY + SCAN_MARGIN, minY - SCAN_MARGIN, v)
+    scan.ndcY = row
+    // the plane through the camera that contains screen row `row`
+    _scanRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize()
+    _scanUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize()
+    _scanRay.setFromMatrixColumn(camera.matrixWorld, 2).normalize().negate()
+    const tanV = Math.tan((camera.fov * D2R) / 2) / (camera.zoom || 1)
+    _scanRay.addScaledVector(_scanUp, row * tanV)
+    _scanNormal.crossVectors(_scanRight, _scanRay).normalize() // + side: above the row
+    scan.planeShell.setFromNormalAndCoplanarPoint(_scanNormal, camera.position)
+    scan.planeSolid.copy(scan.planeShell).negate()
+    // An x-ray base look already draws edges below the cut: keep them whole.
+    if (edgesBothSides) scan.planeEdges.set(UP, KEEP_ALL)
+    else scan.planeEdges.copy(scan.planeShell)
+    scan.alpha = smoothstep01(v / SCAN_FADE) * smoothstep01((1 - v) / SCAN_FADE)
+    return phase
+  }
+
+  // setScan(0..1)        wipe target: 0 = base look, 1 = fully x-ray. The wipe
+  //                      eases toward it at the camera's rate.
+  // setScan(v, true)     jump straight there (first placement, reduced motion).
+  // setScan(null)        cancel at once (the visitor picked a render mode):
+  //                      whatever was showing cross-fades to that mode.
+  function setScan(value, snap = false) {
     if (state.disposed) return false
+    const scan = state.scan
+    if (!scan.planeSolid) return false
     if (value === null || value === undefined) {
-      state.scan.on = false
-      state.scan.value = 1
-      applyScanPlane()
+      if (scan.value >= 0.5) {
+        const xray = MODE_TARGETS.xray
+        state.modeLive.mesh = xray.mesh
+        state.modeLive.points = xray.points
+        state.modeLive.pointsSize = xray.pointsSize
+        state.modeLive.lines = xray.lines
+      }
+      scan.target = 0
+      scan.value = 0
       return true
     }
     const v = Number(value)
     if (!Number.isFinite(v)) return false
-    state.scan.value = clamp(v, 0, 1)
-    state.scan.on = state.scan.value < 0.998
-    applyScanPlane()
+    scan.target = clamp(v, 0, 1)
+    if (snap || state.settings.reducedMotion) scan.value = scan.target
     return true
   }
 
-  // Screen-space y (CSS px) of the scan plane right now, so the page can draw a
-  // hairline exactly on the cut. Returns null when the scanner is off.
-  const _scanWorld = new THREE.Vector3()
-  function scanScreenY() {
-    if (!state.arm || !state.camera || !state.scan.on) return null
-    const b = state.bounds
-    const range = Math.max(1e-4, b.max.y - b.min.y)
-    const y = b.max.y - state.scan.value * range
-    _scanWorld.set(0, y, 0)
-    state.arm.root.localToWorld(_scanWorld)
-    _scanWorld.project(state.camera)
-    return ((1 - _scanWorld.y) / 2) * state.height
+  // Canvas-local y (CSS px) of the cut as of the last rendered frame, or null
+  // when no cut is on the model. Pass an object to also read `alpha` (the
+  // hairline's fade, 0..1) and `settled` (false while the wipe is still moving
+  // toward its target), so a per-frame follower knows when it can stop.
+  function scanScreenY(out) {
+    const scan = state.scan
+    if (out && typeof out === 'object') {
+      out.alpha = scan.on ? scan.alpha : 0
+      out.settled = scan.value === scan.target
+    }
+    if (!state.arm || !state.camera || !scan.on) return null
+    return ((1 - scan.ndcY) / 2) * state.height
   }
 
   const CLOSEUP_ANCHORS = new Set(['base', 'shoulder', 'elbow', 'wrist', 'tip'])
@@ -1956,8 +2209,9 @@ export async function createArmScene(canvas, opts = {}) {
       state.edgeMaterials = edges.materials
       state.edgeObjects = edges.objects
       state.scene.add(arm.root)
-      // scan slice: a clip plane plus a thin line around the model at the slice
-      state.scan.plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+      // x-ray scan: the cut's clipping planes (attached once, for good) and
+      // the translucent shell twins that draw the x-ray half mid-wipe
+      installScanClipping()
       state.loaded = true
 
       // Initial pose + grounded measurements (silhouette samples first).

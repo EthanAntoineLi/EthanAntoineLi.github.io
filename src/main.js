@@ -47,7 +47,10 @@ const ACTS = [...document.querySelectorAll('.act')].map((el) => ({
 const SCAN_INDEX = ACTS.findIndex((a) => a.stop === 'scan')
 const FREE_INDEX = ACTS.findIndex((a) => a.stop === 'free')
 const SCAN_BOUNDARY = SCAN_INDEX - 1
-const isFree = () => activeAct === FREE_INDEX
+// Part hover / click are live only while the visitor owns the camera: from
+// arriving in the free view until the scroll hand-off takes it back.
+let freeControl = false
+const isFree = () => activeAct === FREE_INDEX && freeControl
 
 // Copy for the click-through details in the Free view. Facts only — the same
 // numbers the tables and the EPQ report use.
@@ -165,39 +168,142 @@ function startScene() {
   return sceneTask
 }
 
+// Free view -> scan: one timeline on the free act's local scroll progress t
+// (0 = the free view at rest, 1 = the scan act has arrived).
+//   0    – hand   free view: the visitor owns orbit + zoom (idle spin after 4 s)
+//   hand          control returns to the page: no snap, the idle spin stops
+//   hand – camEnd camera free -> scan, the visitor's orbit / zoom easing out on
+//                 the same curve (span 0.6, close to the other moves' 1.0)
+//   wipeStart – wipeEnd  the cut sweeps the arm top -> bottom in the scan
+//                 framing: x-ray above it, the solid model below
+// Reversing retraces the same positions, so nothing depends on direction.
+const SCAN_TIMELINE = { hand: 0.08, camEnd: 0.68, wipeStart: 0.48, wipeEnd: 0.96 }
+const clamp01 = (v) => Math.min(1, Math.max(0, v))
+const smooth01 = (v) => {
+  const x = clamp01(v)
+  return x * x * (3 - 2 * x)
+}
+let scanTarget = 0 // scroll-driven wipe progress: 0 = base look, 1 = x-ray
+let scanSnap = true // the first placement jumps (no wipe replay on load)
+
 function applyStop(i, t = 1, dir = 0) {
   const act = ACTS[i]
   if (!act || !scene) return
   try {
-    if (act.stop === 'free') {
-      // Hand-over zone: once the visitor scrolls out of the act (in either
-      // direction) the camera eases back to the neighbouring preset, so every
-      // slide always arrives in the same framing no matter how they left the
-      // free view.
-      if (t > 0.72 && dir !== 0) {
-        const next = ACTS[i + 1]
-        scene.setControlMode('scroll')
+    const next = ACTS[i + 1]
+    freeControl = act.stop === 'free' && (dir === 0 || t < SCAN_TIMELINE.hand)
+    if (!freeControl) hoverPartId = null
+    if (dir === 0) {
+      // Scene-ready arrival: show this act's preset now, and let a full
+      // measure() on the next frame place the camera, hand-off and scan
+      // exactly where the page is scrolled to.
+      if (act.stop === 'free') {
         scene.setStop('free', 1)
-        if (dir > 0 && next) {
-          const bt = Math.min(1, (t - 0.72) / 0.28)
-          scene.setStop(next.stop, bt)
-        }
-        return
+        scene.setControlMode('free')
+      } else {
+        scene.setControlMode('scroll', act.stop)
+        scene.setStop(act.stop, 1)
       }
-      // Free view: the visitor owns orbit + zoom, the page stops steering.
-      scene.setStop('free', 1)
-      scene.setControlMode('free')
+      onScroll()
       return
     }
-    scene.setControlMode('scroll')
-    // The scene blends between an arrived stop and a destination stop:
-    // pin the current one, then blend towards the next by its local progress.
-    scene.setStop(act.stop, 1)
-    const next = ACTS[i + 1]
-    if (next && t < 1) scene.setStop(next.stop, t)
+    if (act.stop === 'free') {
+      const T = SCAN_TIMELINE
+      if (t < T.hand) {
+        // Free view: the visitor owns orbit + zoom. A hand-off that had begun
+        // is undone, so scrolling back gives them their own view again.
+        scene.setStop('free', 1)
+        scene.releaseManual(0)
+        scene.setControlMode('free')
+      } else {
+        // The page has the camera again: free -> next on one curve, with the
+        // visitor's orbit / zoom eased out on that same curve.
+        const u = clamp01((t - T.hand) / (T.camEnd - T.hand))
+        scene.setControlMode('scroll', next ? next.stop : act.stop)
+        scene.setStop('free', 1)
+        if (next) scene.setStop(next.stop, u)
+        scene.releaseManual(smooth01(u))
+        if (hideDetailCard) hideDetailCard()
+      }
+    } else {
+      scene.setControlMode('scroll', act.stop)
+      // The scene blends between an arrived stop and a destination stop:
+      // pin the current one, then blend towards the next by its local progress.
+      scene.setStop(act.stop, 1)
+      if (next && t < 1) scene.setStop(next.stop, t)
+      // Scrolling up out of the free view eases its orbit / zoom out along
+      // this blend; any other act finishes a pending hand-off on its own.
+      scene.releaseManual(next && next.stop === 'free' ? 1 - smooth01(t) : 1)
+    }
+    if (i >= SCAN_INDEX) scanTarget = 1
+    else if (i !== SCAN_BOUNDARY) scanTarget = 0
+    else if (reducedMotion) scanTarget = activeAct === SCAN_INDEX ? 1 : 0
+    else {
+      const T = SCAN_TIMELINE
+      scanTarget = smooth01((t - T.wipeStart) / (T.wipeEnd - T.wipeStart))
+    }
+    applyLook(scanSnap)
+    scanSnap = false
   } catch {
     /* scene not ready — no-op */
   }
+}
+
+// What the arm shows. The visitor's mode pick (userMode) holds everywhere but
+// the scan act: the scan always wipes from it into the x-ray, which is the
+// act's content. A pick made inside the scan act cancels the wipe there and
+// holds until they scroll back out of it.
+let userMode = null
+let scanPick = null
+let modeShown = null
+function applyLook(snap = false) {
+  if (activeAct !== SCAN_INDEX) scanPick = null
+  const base = userMode || 'mesh'
+  const shown = scanPick || (scanTarget >= 0.5 ? 'xray' : base)
+  if (scene) {
+    scene.setMode?.(scanPick || base)
+    scene.setScan?.(scanPick ? null : scanTarget, snap)
+    trackScanLine()
+  }
+  if (shown !== modeShown) {
+    modeShown = shown
+    document.querySelectorAll('.mode button').forEach((b) => {
+      b.classList.toggle('on', b.dataset.mode === shown)
+    })
+  }
+}
+
+// The hairline rides the cut on every rendered frame, not only on scroll
+// events: the wipe and the camera keep easing after the scroll stops. It runs
+// while a cut is on the model and stops itself once the wipe has settled.
+const scanLineInfo = { alpha: 0, settled: true }
+let scanLineRaf = 0
+let scanLineOn = false
+function trackScanLine() {
+  if (scanLineRaf || !scanLine || !scene?.scanScreenY || reducedMotion) return
+  const step = () => {
+    const y = scene.scanScreenY(scanLineInfo)
+    // Only over an untransformed canvas: elsewhere a stage motion would carry
+    // the model off the line (the scan boundary itself keeps the stage still).
+    const fam = stageEl ? stageEl.dataset.fam : ''
+    const flat = !fam || fam === 'none'
+    if (y !== null && Number.isFinite(y) && flat && scanLineInfo.alpha > 0.001) {
+      const dpr = window.devicePixelRatio || 1
+      const top = Math.round((y - 0.5) * dpr) / dpr // 1px line centred on the cut
+      scanLine.style.transform = `translate3d(0, ${top}px, 0)`
+      scanLine.style.opacity = scanLineInfo.alpha.toFixed(3)
+      scanLineOn = true
+    } else if (scanLineOn) {
+      scanLine.style.opacity = '0'
+      scanLineOn = false
+    }
+    if (y === null && scanLineInfo.settled) {
+      scanLineRaf = 0
+      return
+    }
+    scanLineRaf = requestAnimationFrame(step)
+  }
+  scanLineRaf = requestAnimationFrame(step)
 }
 
 /* --------------------------------------------------------------- ghost type */
@@ -233,43 +339,52 @@ let vel = 0
 let lastY = window.scrollY
 let specsCounted = false
 
+// The spec figures count up on the same scroll progress as the body of their
+// slide (--in-1), so they scrub both ways instead of running a one-shot timer.
+// updateTransitions() calls this every frame; with reduced motion the figures
+// keep their final values.
 function countSpecs() {
-  if (specsCounted || reducedMotion) return
-  specsCounted = true
-  const nums = [...document.querySelectorAll('.spec-num')]
-  if (!nums.length) return
-  const targets = nums.map((el) => Number(el.textContent) || 0)
-  const start = performance.now()
-  const tick = (now) => {
-    const t = Math.min(1, (now - start) / 900)
-    const e = 1 - Math.pow(1 - t, 3)
-    nums.forEach((el, n) => {
-      el.textContent = String(Math.round(targets[n] * e))
-    })
-    if (t < 1) requestAnimationFrame(tick)
+  if (reducedMotion) return
+  if (!specsCounted) {
+    specsCounted = true
+    for (const el of document.querySelectorAll('.spec-num')) {
+      el.dataset.value = el.textContent
+      const a = ACTS.find((x) => x.el.contains(el))
+      if (!a) continue
+      if (!a.specNums) a.specNums = []
+      a.specNums.push(el)
+    }
   }
-  requestAnimationFrame(tick)
+  for (const a of ACTS) {
+    if (!a.specNums || !a.textIn) continue
+    for (const el of a.specNums) {
+      const v = String(Math.round((Number(el.dataset.value) || 0) * a.textIn[1]))
+      if (el.textContent !== v) el.textContent = v
+    }
+  }
 }
 
-// Which named joint a transition dives into. Boundary 3 (free view -> scan) is
-// the scan itself, so it has no close-up. The film now ends on the scan act.
-const CLOSEUP_BY_BOUNDARY = ['shoulder', 'elbow', null, null]
+// Which named joint a transition dives into: none. The camera path in
+// STOP_DEFS (arm-scene.js) carries every boundary as one continuous orbit; a
+// mid-scroll push-in on a joint that was itself moving read as a zoom in and
+// straight back out, and cropped the arm under the top bar.
+const CLOSEUP_BY_BOUNDARY = [null, null, null, null]
 
 function updateStage(y, vh) {
   if (!stageEl || reducedMotion) return
   let fam = 'none'
   let bump = 0
-  let scanP = null
   let closeAnchor = null
   for (let n = 0; n < ACTS.length - 1; n++) {
     const centre = ACTS[n + 1].el.offsetTop - vh * 0.5
     const span = vh * 0.36
     const p = (y - (centre - span)) / (span * 2)
     if (p > 0 && p < 1) {
-      fam = ACTS[n + 1].el.dataset.ent || 'none'
+      // The scan boundary keeps the stage still: the wipe is its transition
+      // (camera + scan run from applyStop, the hairline from trackScanLine).
+      fam = n === SCAN_BOUNDARY ? 'none' : ACTS[n + 1].el.dataset.ent || 'none'
       bump = Math.sin(Math.PI * p)
-      if (n === SCAN_BOUNDARY) scanP = p
-      else closeAnchor = CLOSEUP_BY_BOUNDARY[n]
+      if (n !== SCAN_BOUNDARY) closeAnchor = CLOSEUP_BY_BOUNDARY[n]
     }
   }
   stageEl.dataset.fam = fam
@@ -277,40 +392,97 @@ function updateStage(y, vh) {
 
   if (!scene) return
   scene.setCloseUp(closeAnchor || 'elbow', closeAnchor ? bump * (phone ? 0.3 : 0.85) : 0)
-  if (scanP !== null) {
-    scene.setScan(scanP)
-  } else if (activeAct === 3) {
-    scene.setScan(1)
-  } else {
-    scene.setScan(null)
-  }
-  if (!userMode) setMode(scanP !== null || activeAct === SCAN_INDEX ? 'xray' : 'mesh', false)
-
-  if (scanLine) {
-    if (scanP !== null && scene.scanScreenY) {
-      const y = scene.scanScreenY()
-      if (y !== null && Number.isFinite(y)) {
-        scanLine.style.top = `${y.toFixed(1)}px`
-        scanLine.style.opacity = '1'
-      } else {
-        scanLine.style.opacity = '0'
-      }
-    } else {
-      scanLine.style.opacity = '0'
-    }
-  }
 }
 
 function updateTransitions(y, vh) {
   if (reducedMotion) return
   updateStage(y, vh)
-  for (const a of ACTS) {
-    const top = a.el.offsetTop
-    const enter = Math.min(1, Math.max(0, (y - (top - vh * 0.8)) / (vh * 0.8)))
-    const exit = Math.min(1, Math.max(0, (y - (top + vh * 0.2)) / (vh * 0.6)))
-    a.el.style.setProperty('--enter', enter.toFixed(3))
-    a.el.style.setProperty('--exit', exit.toFixed(3))
+  // The text hand-off (styled in src/arm-film.css). Every value is a pure
+  // function of scroll position, so scrolling up plays it backwards.
+  const hold = Boolean(lenis) && TEXT_HOLD_MQ.matches
+  const tops = ACTS.map((a) => a.el.offsetTop) // read layout once, before any writes
+  let shownText = 0
+  for (let n = 0; n < ACTS.length; n++) {
+    const a = ACTS[n]
+    const top = tops[n]
+    const prevTop = n > 0 ? tops[n - 1] : null
+    const nextTop = n < ACTS.length - 1 ? tops[n + 1] : null
+    // Scroll progress from the previous slide to this one, and from this one
+    // to the next (the same 0..1 the camera blends over).
+    const pIn = prevTop === null ? 1 : (y - prevTop) / Math.max(1, top - prevTop)
+    const pOut = nextTop === null ? 0 : (y - top) / Math.max(1, nextTop - top)
+    const enter = textRamp(pIn, TEXT.fade.in)
+    const exit = textRamp(pOut, TEXT.fade.out)
+    const f = textSmooth(enter) * (1 - textSmooth(exit))
+    const in0 = textEaseOut(textRamp(pIn, TEXT.in[0]))
+    const in1 = textEaseOut(textRamp(pIn, TEXT.in[1]))
+    const out0 = textEaseIn(textRamp(pOut, TEXT.out[0]))
+    const out1 = textEaseIn(textRamp(pOut, TEXT.out[1]))
+
+    // Hold the copy near its rest position while the page scrolls, so it
+    // fades where it was read instead of sliding under the chrome or across
+    // the arm. An act taller than the viewport scrolls its overflow first.
+    let dy = y - top
+    if (dy > 0) {
+      const span = nextTop === null ? 0 : nextTop - top
+      dy = Math.min(Math.max(0, dy - Math.max(0, span - vh)), span * 0.5)
+    } else if (prevTop !== null) {
+      dy = Math.max(dy, -(top - prevTop) * 0.5)
+    }
+    const pin = hold ? dy * (1 - TEXT.drift) : 0
+
+    a.f = f
+    a.textIn = [in0, in1]
+    setTextVar(a, '--enter', enter.toFixed(3))
+    setTextVar(a, '--exit', exit.toFixed(3))
+    setTextVar(a, '--f', f.toFixed(3))
+    setTextVar(a, '--in-0', in0.toFixed(3))
+    setTextVar(a, '--in-1', in1.toFixed(3))
+    setTextVar(a, '--out-0', out0.toFixed(3))
+    setTextVar(a, '--out-1', out1.toFixed(3))
+    setTextVar(a, '--pin', `${pin.toFixed(1)}px`)
+    // fully handed-off copy must not catch clicks or drags meant for the arm
+    a.el.classList.toggle('is-off', f === 0)
+    shownText = Math.max(shownText, f)
   }
+  rootStyle.setProperty('--film-text', shownText.toFixed(3))
+  countSpecs()
+}
+
+// Text hand-off timing, as fractions of the scroll between two slides. The
+// outgoing copy is gone by 40% and the incoming copy starts at 60%, so only one
+// slide's text is ever readable and the arm has the middle to itself.
+//   fade  the whole slide's opacity (--f)
+//   in    entrance of the head (eyebrow + title, --in-0) and body (--in-1)
+//   out   exit of the head (--out-0) and body (--out-1). The head leads both
+//         ways, so a slide's title goes first and its button goes last.
+//   drift share of the scroll that held copy still follows (see --pin)
+const TEXT = {
+  fade: { in: [0.6, 0.84], out: [0.1, 0.4] },
+  in: [
+    [0.6, 0.8],
+    [0.68, 0.88],
+  ],
+  out: [
+    [0.1, 0.3],
+    [0.18, 0.4],
+  ],
+  drift: 0.12,
+}
+// Holding the copy is a scroll-linked transform. It only stays in step with the
+// page when Lenis drives the scroll from the main thread (desktop wheel); on
+// phones the native, threaded scroll would make held copy shake, so it scrolls
+// normally there and only fades.
+const TEXT_HOLD_MQ = window.matchMedia('(min-width: 821px)')
+const textRamp = (p, [a, b]) => Math.min(1, Math.max(0, (p - a) / (b - a)))
+const textSmooth = (t) => t * t * (3 - 2 * t)
+const textEaseOut = (t) => 1 - (1 - t) ** 3
+const textEaseIn = (t) => t ** 3
+function setTextVar(a, name, value) {
+  if (!a.textVars) a.textVars = {}
+  if (a.textVars[name] === value) return
+  a.textVars[name] = value
+  a.el.style.setProperty(name, value)
 }
 
 function updateVelocity(y) {
@@ -330,13 +502,8 @@ function measure() {
   scrollPrev = y
   if (Math.abs(delta) > 0.5) scrollDir = delta > 0 ? 1 : -1
 
-  // Cross-fade each act's copy with the fold so two sections' text never shout
-  // over each other during a transition.
-  for (const a of ACTS) {
-    const top = a.el.getBoundingClientRect().top
-    const f = Math.min(1, Math.max(0.04, 1 - Math.abs(top) / (vh * 0.82)))
-    a.el.style.setProperty('--f', f.toFixed(3))
-  }
+  // Each act's copy fade (--f) is part of the text hand-off, set with the rest
+  // of it in updateTransitions(); with reduced motion it stays at 1.
   updateVelocity(y)
 
   // Stops sit at the top of each 100vh act. Scroll progress between two act
@@ -353,11 +520,14 @@ function measure() {
   const t = Math.min(1, Math.max(0, (y - start) / Math.max(1, end - start)))
 
   // every slide must arrive in its preset framing: wipe any borrowed orbit /
-  // zoom when the transition into the next slide starts, and again on arrival
+  // zoom when the transition into the next slide starts, and again on arrival.
+  // Leaving the free view is the exception: applyStop() eases the visitor's
+  // orbit / zoom out on the scroll timeline there, so it is not dropped here.
   if (i !== stopIndex) {
+    const fromFree = stopIndex === FREE_INDEX
     stopIndex = i
-    resetMark = -1
-    if (scene && ACTS[i].stop !== 'free') scene.releaseManual?.()
+    resetMark = fromFree ? i : -1
+    if (scene && ACTS[i].stop !== 'free' && !fromFree) scene.releaseManual?.()
   }
   if (scene && ACTS[i].stop !== 'free' && t > 0.5 && resetMark !== i) {
     scene.releaseManual?.()
@@ -395,16 +565,22 @@ window.addEventListener('resize', () => {
 })
 
 /* --------------------------------------------------------------- reveals */
+// The copy's reveal is scrubbed by scroll (updateTransitions + arm-film.css),
+// not fired once by a timer, so every act is handed to that driver at boot:
+// `is-in` is style.css's at-rest state, and the scroll values sit on top of it.
+// Keyboard focus landing in a slide whose copy is faded brings that slide to
+// rest, so a focused control is never invisible.
 function initReveals() {
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting) e.target.classList.add('is-in')
-      }
-    },
-    { rootMargin: '0px 0px -18% 0px', threshold: 0.12 },
-  )
-  ACTS.forEach((a) => io.observe(a.el))
+  ACTS.forEach((a) => a.el.classList.add('is-in'))
+  document.addEventListener('focusin', (e) => {
+    const target = e.target instanceof Element ? e.target : null
+    if (!target || !target.matches(':focus-visible')) return
+    const a = ACTS.find((x) => x.el.contains(target))
+    if (!a || !(a.f < 0.98)) return
+    const top = a.el.offsetTop
+    if (lenis) lenis.scrollTo(top)
+    else window.scrollTo({ top, behavior: 'smooth' })
+  })
 }
 
 /* ------------------------------------------------------------------ cursor */
@@ -533,23 +709,21 @@ function initIndex() {
 }
 
 /* --------------------------------------------------------------- mode switch */
-let userMode = null
-let appliedMode = null
-function setMode(mode, fromUser = true) {
-  if (fromUser) userMode = mode
-  if (mode === appliedMode && !fromUser) return
-  appliedMode = mode
-  document.querySelectorAll('.mode button').forEach((b) => {
-    b.classList.toggle('on', b.dataset.mode === mode)
-  })
-  scene?.setMode?.(mode)
+// A visitor's pick. Outside the scan act it becomes the film's look (and the
+// look the scan wipes from); inside the scan act it overrides the x-ray until
+// they scroll out of it. applyLook() (next to applyStop) resolves the rest.
+function setMode(mode) {
+  if (mode !== 'mesh' && mode !== 'points' && mode !== 'xray') return
+  if (activeAct === SCAN_INDEX) scanPick = mode
+  else userMode = mode
+  applyLook()
 }
 
 function initMode() {
   const buttons = [...document.querySelectorAll('.mode button')]
   if (!buttons.length) return
   buttons.forEach((btn) => {
-    btn.addEventListener('click', () => setMode(btn.dataset.mode, true))
+    btn.addEventListener('click', () => setMode(btn.dataset.mode))
   })
 }
 

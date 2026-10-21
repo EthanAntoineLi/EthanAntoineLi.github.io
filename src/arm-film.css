@@ -1,0 +1,93 @@
+/* ==========================================================================
+   Sheet 01 film: the text layer's scroll hand-off. Loaded only by
+   /work/arm/, right after style.css. The .act, reveal, enter/exit and
+   .progress rules in style.css are shared with /work/arm/process/, so this
+   file overrides them here instead of changing them there.
+
+   updateTransitions() in main.js sets, per act, from scroll position:
+     --f          the slide's text opacity: 1 at rest, 0 from 40% to 60% of
+                  the scroll between two slides
+     --in-0/1     entrance of the head (eyebrow + title) / body, 0 -> 1
+     --out-0/1    exit of the head / body, 0 -> 1
+     --pin        px that hold the copy near its rest position mid-transition
+   and on :root
+     --film-text  the most visible slide's --f
+   With reduced motion none of these are set, so every default below is the
+   static, at-rest look.
+   ========================================================================== */
+
+/* -------------------------------------------- one system for every slide */
+/* The per-family enter/exit motion (rise, swing, curtain, dolly) stays on the
+   3D stage; the copy uses one fade and one motion everywhere. */
+.act[data-ent] {
+  transform: none;
+  opacity: 1;
+  -webkit-mask-image: none;
+  mask-image: none;
+  filter: none;
+}
+.act .act-inner,
+.act[data-ex] .act-inner {
+  opacity: var(--f, 1);
+  transform: translate3d(0, var(--pin, 0px), 0);
+  clip-path: none;
+  filter: none;
+}
+/* Copy that is fully handed off sits over the canvas: let the arm have the
+   pointer. */
+.act.is-off .act-inner,
+.act.is-off .act-inner * {
+  pointer-events: none !important;
+}
+
+/* Head and body each rise 22px into place and lift 22px on the way out (the
+   distance the old timed reveal used). The head leads in both directions. */
+.js .act.is-in :is(.eyebrow, .hero-name, .act-title) {
+  --in: var(--in-0, 1);
+  --out: var(--out-0, 0);
+}
+.js .act.is-in :is(.hero-line, .pull, .scroll-cue, .spec-row, .act-note, .joints, .process-cta, .free-hud) {
+  --in: var(--in-1, 1);
+  --out: var(--out-1, 0);
+}
+.js .act.is-in
+  :is(.eyebrow, .hero-name, .act-title, .hero-line, .pull, .scroll-cue, .spec-row, .act-note, .joints, .process-cta, .free-hud) {
+  opacity: 1;
+  transform: translate3d(0, calc((1 - var(--in)) * 22px - var(--out) * 22px), 0);
+  transition: none;
+}
+/* the free view's note already moves with its HUD */
+.js .act.is-in .free-hud .act-note {
+  transform: none;
+}
+/* keep the button's hover fill */
+.js .act.is-in .process-cta {
+  transition: background 0.25s var(--ease);
+}
+
+/* Titles open behind a mask that runs downward on the way in and closes from
+   the top on the way out. At rest it is style.css's inset(-15% -5%); each edge
+   travels 130% so the overhanging ascenders and descenders go too. */
+.js .act.is-in :is(.hero-name, .act-title) {
+  clip-path: inset(
+    calc(-15% + var(--out) * 130%) -5% calc(-15% + (1 - var(--in)) * 130%) -5%
+  );
+}
+
+/* ---------------------------------------------------------------- counter */
+/* Out of the text column: top right, level with the eyebrows, where no title
+   or list ever runs. It dims while no slide owns the screen, so the number
+   changes while it is quiet. (Phones hide it in style.css.) */
+@media (min-width: 821px) {
+  .progress {
+    top: calc(var(--chrome-h) + 54px);
+    right: var(--gutter);
+    left: auto;
+    flex-direction: row-reverse;
+    transform: none;
+    opacity: calc(0.28 + 0.72 * var(--film-text, 1));
+  }
+  .progress-ticks {
+    justify-items: end;
+  }
+}
