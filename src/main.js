@@ -251,9 +251,11 @@ function countSpecs() {
   requestAnimationFrame(tick)
 }
 
-// Which named joint a transition dives into. Boundary 3 (free view -> scan) is
-// the scan itself, so it has no close-up. The film now ends on the scan act.
-const CLOSEUP_BY_BOUNDARY = ['shoulder', 'elbow', null, null]
+// Which named joint a transition dives into: none. The camera path in
+// STOP_DEFS (arm-scene.js) carries every boundary as one continuous orbit; a
+// mid-scroll push-in on a joint that was itself moving read as a zoom in and
+// straight back out, and cropped the arm under the top bar.
+const CLOSEUP_BY_BOUNDARY = [null, null, null, null]
 
 function updateStage(y, vh) {
   if (!stageEl || reducedMotion) return
