@@ -289,6 +289,33 @@ main,
   opacity: 0.55;
 }
 
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 18px;
+}
+
+.about-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  justify-self: end;
+  padding: 10px 14px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    background-color 0.22s var(--ease),
+    color 0.22s var(--ease);
+}
+
+.about-cta:hover,
+.about-cta:focus-visible {
+  background: var(--ink);
+  color: var(--paper);
+}
+
 .scroll-cue {
   display: flex;
   flex-direction: column;
@@ -979,6 +1006,10 @@ main,
   .status-strip {
     flex-direction: column;
     gap: 9px;
+  }
+
+  .hero-actions {
+    align-items: flex-start;
   }
 
   .scroll-cue {
