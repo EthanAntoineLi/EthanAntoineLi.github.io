@@ -299,21 +299,34 @@ main,
 .about-cta {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 12px;
   justify-self: end;
-  padding: 10px 14px;
-  border: 1px solid var(--ink);
-  color: var(--ink);
+  padding: 17px 24px 16px;
+  border-radius: 2px;
+  background: var(--accent);
+  color: var(--paper);
+  font-size: 12.5px;
+  letter-spacing: 0.18em;
   text-decoration: none;
   transition:
     background-color 0.22s var(--ease),
     color 0.22s var(--ease);
 }
 
+.about-cta-arrow {
+  line-height: 1;
+  transition: transform 0.25s var(--ease);
+}
+
 .about-cta:hover,
 .about-cta:focus-visible {
   background: var(--ink);
   color: var(--paper);
+}
+
+.about-cta:hover .about-cta-arrow,
+.about-cta:focus-visible .about-cta-arrow {
+  transform: translate(2px, -2px);
 }
 
 .scroll-cue {
