@@ -226,8 +226,8 @@
       </section>
 
       <!-- ======================================================== REVISION -->
-      <!-- Rev A holds a bake of the first design; Rev B's frame (#compare-slot)
-           is where the stage parks the printed link. -->
+      <!-- Rev A runs its own small scene for the first design; Rev B's frame
+           (#compare-slot) is where the stage parks the printed link. -->
       <section class="act act--step act--revision" id="revision" data-ghost="REV" data-index="5" data-stage="compare" data-ent="rise" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
@@ -242,10 +242,11 @@
             <div class="compare-cell">
               <div class="compare-frame">
                 <span class="compare-rev mono">Rev A</span>
+                <canvas class="compare-canvas" id="compare-a-canvas" aria-hidden="true"></canvas>
                 <img
                   class="compare-plate"
                   src="/img/link-j1-j2-rev-a.png"
-                  alt="Render of the first design of the J1 → J2 link: two printed plates, a motor block and three steel shafts."
+                  alt="The first design of the J1 → J2 link: two printed plates, a motor block and three steel shafts."
                 />
               </div>
               <p class="compare-cap mono"><span>Rev A</span> · first design · 146 × 70 × 59 mm</p>

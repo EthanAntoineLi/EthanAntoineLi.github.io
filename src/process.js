@@ -14,6 +14,7 @@ import { createProcessStage } from './process-stage.js'
 import { createRingHud } from './process-hud.js'
 import motorsUrl from './assets/process/arm-motors.glb?url'
 import { initFilmLoader, reportLoadProgress, wasCurtainLifted } from './film-loader.js'
+import { initCompareA } from './compare-a.js'
 
 const PRINTER_MODEL_URL = import.meta.env.BASE_URL + 'models/printer-a1-mini.glb'
 const LINK_MODEL_URL = import.meta.env.BASE_URL + 'models/arm-parts/parts/link-J1-J2.glb'
@@ -470,6 +471,37 @@ function initIndex() {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') setOpen(false)
   })
+}
+
+/* --------------------------------------- Rev A: live first-design link */
+// Rev B is parked by the stage; Rev A gets its own small scene so both links
+// turn the same way. Loaded only when the frame comes near the viewport.
+const compareACanvas = document.getElementById('compare-a-canvas')
+if (compareACanvas) {
+  const frame = compareACanvas.closest('.compare-frame')
+  let startedRevA = false
+  const startCompareA = () => {
+    if (startedRevA) return
+    startedRevA = true
+    initCompareA(compareACanvas, { reducedMotion }).then((ok) => {
+      if (ok) document.body.classList.add('compare-a-live')
+    })
+  }
+  if ('IntersectionObserver' in window && frame) {
+    const ioA = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          ioA.disconnect()
+          startCompareA()
+        }
+      },
+      { rootMargin: '900px 0px' },
+    )
+    ioA.observe(frame)
+  } else {
+    startCompareA()
+  }
 }
 
 /* -------------------------------------------------------------- boot */
