@@ -944,29 +944,11 @@ body.print-done .print-links {
     linear-gradient(var(--ink), var(--ink)) bottom right / 12px 1px no-repeat,
     linear-gradient(var(--ink), var(--ink)) bottom right / 1px 12px no-repeat;
 }
-.compare-frame--todo {
-  display: grid;
-  place-items: center;
-  border-style: dashed;
-  background-color: color-mix(in srgb, var(--paper-2) 60%, transparent);
-}
-.compare-frame--todo::before {
-  content: "";
-  position: absolute;
-  inset: 18%;
-  border: 1px dashed var(--line);
-  border-radius: 50%;
-  opacity: 0.8;
-}
 .compare-rev {
   position: absolute;
   top: 12px;
   left: 16px;
   color: var(--ink);
-}
-.compare-todo {
-  position: relative;
-  color: var(--dim);
 }
 .compare-cap {
   color: var(--dim);
@@ -980,7 +962,15 @@ body.print-done .print-links {
   letter-spacing: 0;
   color: var(--ink-soft);
 }
-/* the still stands in until the live link is parked in the frame */
+/* Rev A's first design is a baked render: always visible. Rev B's still stands
+   in only until the live link is parked in the frame. */
+.compare-plate {
+  position: absolute;
+  inset: 12%;
+  width: 76%;
+  height: 76%;
+  object-fit: contain;
+}
 .compare-still {
   position: absolute;
   inset: 12%;
@@ -1630,7 +1620,6 @@ body.detail-open .cursor {
     left: 10px;
     font-size: 9px;
   }
-  .compare-todo,
   .compare-cap {
     font-size: 8px;
     letter-spacing: 0.12em;
