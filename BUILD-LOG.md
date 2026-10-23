@@ -1053,3 +1053,27 @@ uncommitted changes, `origin/hub` still points at `3d6074e`, and master gains on
 - **Old kept** — the pre-port working tree is also saved as a patch at
   `_qa/backups/old-version-wip-2026-10-21.patch` (outside the repo).
 
+## 2026-10-23 — og:image: a social card per page
+
+Every page carried `og:title` / `og:description` / `og:type` but no image; the note in the head said
+the image would come with the final root URL (HUB-PLAN §8.2), and the repo has been at
+`https://ethanantoineli.github.io/` since 2026-10-21. The stale `public/img/og.jpg` (v2 hero, old
+`START AT 01 — MISSION` copy) is replaced by six cards drawn from the site's own tokens.
+
+- **Cards** — `public/img/og/{home,arm,process,nora,drone,plan}.jpg`, 1200×630 JPEG (50–73 KB each).
+  One template: mono top bar (`ethan antoine li · portfolio` / sheet + rev), rule, red-dot kicker,
+  Inter Tight title, Instrument Serif italic line, mono tag row, and the page's plate in a
+  corner-ticked frame with its figure caption. Paper `#f6f6f4`, ink `#101214`, rust `#b23e22` — the
+  same tokens as `src/tokens.css`; fonts are the shipped woff2 subsets. Rendered from the real plate
+  files (arm 16:10, Nora's desk, the drone concept render, the `plan-parallel` figure, the A1 mini
+  still), so no new artwork was invented.
+- **Heads** — each page now has `og:site_name`, absolute `og:url` (its own route), absolute `og:image`
+  (its card), `og:image:type` / `:width` / `:height` / `:alt`, and `twitter:card =
+  summary_large_image`. The `og:image and og:url are set when…` comment is gone from the three files
+  that carried it. `public/404.html` points at the home card.
+- **Docs** — `ARCHITECTURE.md` lists `img/og/*.jpg`; the README deploy block is corrected to the
+  user-site root (it still described the `BASE=/personal-page/` project-path deploy).
+- **Verified** — `npm run build` green (seven entries); the built `dist/` HTML carries the new tags on
+  all seven pages and `dist/img/og/*.jpg` exists; every card is 1200×630 at 50–73 KB; card URLs
+  resolve on the live site after deploy.
+

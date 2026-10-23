@@ -62,7 +62,7 @@ personal-page/
     img/plates/plan-robot-5x6.webp   # /plan/ Fig. 01: the humanoid robot concept (1145×1374)
     img/plates/plan-drone-5x6.webp   # /plan/ Fig. 02: the search-drone concept (1145×1374)
     img/plates/plan-parallel-16x6.webp # /plan/ Fig. 03: robot + drone, one job (2048×768)
-    img/og.jpg
+    img/og/*.jpg              # 1200×630 social cards: home, arm, process, nora, drone, plan
     fonts/*.woff2             # Inter Tight 300/400, Instrument Serif italic (latin)
     favicon.svg
   dev/                        # local-only QA + plate tooling, git-ignored

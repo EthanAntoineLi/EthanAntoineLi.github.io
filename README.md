@@ -103,14 +103,13 @@ The cat canvas runs at 15 fps, pauses off-screen, and renders one static frame u
 
 ## Deploy
 
-Live: <https://ethanantoineli.github.io/personal-page/>. `.github/workflows/deploy.yml` builds `dist/`
+Live: <https://ethanantoineli.github.io/>. `.github/workflows/deploy.yml` builds `dist/` with base `/`
 and publishes it to GitHub Pages on push to `master` (Pages enabled, source: GitHub Actions, repo
-public). To publish the current work: `git push origin hub:master`.
+public). To publish the current work: `git push origin <branch>:master`.
 
-Because the site lives on a **project path**, the workflow builds with `BASE=/personal-page/` and all
-internal navigation links are document-relative, so the same markup also works from a user-site root.
-If the repo is later renamed `EthanAntoineLi.github.io`, delete the `BASE` env from the workflow and
-the site moves to <https://ethanantoineli.github.io/> (OG/canonical then need the final URLs).
+The repo is a **user site** (`EthanAntoineLi.github.io`), so the hub is the root and the sheets sit
+under `/work/…`. Open Graph tags carry the final absolute URLs (<https://ethanantoineli.github.io/>)
+and a 1200×630 card per page (`public/img/og/*.jpg`).
 
 `HUB-PLAN.md` §8–10 tracks the remaining deploy/URL decisions.
 
