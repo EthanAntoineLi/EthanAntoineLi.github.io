@@ -3,11 +3,12 @@
 //
 // The arm film's chrome and act choreography, plus the 3D stage this page
 // owns: the indexing turret of parts on the hero (spin it by hand, click a
-// part to bring it round), the A1 mini that leaves it for step 01, the three
-// motor types that hover on step 02, the A1 mini printing the J1 → J2 link on
-// step 03 (the download link shows once the print is done) and that link
-// parked in Rev B's frame on step 04. Every hand-off between them is scrubbed
-// by the scroll (syncTrack), so the 3D moves with the copy.
+// part to bring it round), the A1 mini that leaves it for 01 / Why, the three
+// motor types that hover on 04 / Motors, the A1 mini printing the J1 → J2 link
+// on 08 / Printing (the download link shows once the print is done) and that
+// link parked in Rev B's frame on 09 / Revision. Every hand-off between them
+// is scrubbed by the scroll (syncTrack), so the 3D moves with the copy; the
+// copy-and-table acts in between leave the stage empty.
 // Scene: ./process-stage.js. Balloons: ./process-hud.js. Curtain: ./film-loader.js.
 // ============================================================================
 import { createProcessStage } from './process-stage.js'
@@ -25,14 +26,15 @@ const canvas = document.getElementById('printer-canvas')
 const hudCanvas = document.getElementById('ring-hud')
 const phone = window.matchMedia('(max-width: 820px)').matches
 
-// The turret's balloons, numbered in the order the build happened.
+// The turret's balloons: the printer, then the five actuators as built
+// (05 / Gearboxes on the page carries the same facts).
 const RING_PARTS = {
-  printer: { n: '01', name: 'A1 mini', spec: 'Bambu Lab · the printer' },
-  'motor-J1': { n: '02', name: 'J1 · base', spec: 'UMIR57 stepper' },
-  'motor-J2': { n: '03', name: 'J2 · shoulder', spec: 'UMIR42 stepper' },
-  'motor-J3': { n: '04', name: 'J3', spec: 'UMIR42 stepper' },
-  'motor-J4': { n: '05', name: 'J4', spec: 'UMIR42 stepper' },
-  'motor-J5': { n: '06', name: 'J5', spec: 'UMIR42 stepper' },
+  printer: { n: '01', name: 'A1 mini', spec: 'Bambu Lab · 3D printer' },
+  'motor-J1': { n: '02', name: 'J1 · base', spec: 'UMIR57 · planetary 25:1' },
+  'motor-J2': { n: '03', name: 'J2 · shoulder', spec: 'UMIR42 · worm 50:1' },
+  'motor-J3': { n: '04', name: 'J3 · roll', spec: 'UMIR42 · planetary 50:1' },
+  'motor-J4': { n: '05', name: 'J4 · pitch', spec: 'UMIR42 · planetary 50:1' },
+  'motor-J5': { n: '06', name: 'J5 · roll', spec: 'UMIR42 · planetary 50:1' },
 }
 
 /* --------------------------------------------------------- smooth scroll */
@@ -69,8 +71,9 @@ const ACTS = [...document.querySelectorAll('.act')].map((el) => ({
 let activeAct = 0
 
 /* Which stage the scroll position wants. The ring spins on the hero, the
-   printer takes over for 01, the motors hover for 02, the printer prints for
-   03 and the printed link sits in its frame for 04; 05+ are copy only. */
+   printer takes over for 01, the motors hover for 04, the printer prints for
+   08 and the printed link sits in its frame for 09; every other act is copy
+   only ('off'). */
 let wantedStage = 'ring'
 let lastStageY = 0
 
@@ -195,6 +198,8 @@ function syncStage() {
   if (wanted !== wantedStage) {
     wantedStage = wanted
     scene?.setStage(wanted)
+    // the no-WebGL still steps aside for the copy-only acts' tables
+    body.classList.toggle('stage-idle', wanted === 'off')
   }
 }
 
@@ -276,12 +281,18 @@ function setProgress(i) {
 let vel = 0
 let lastY = window.scrollY
 
+// An act taller than the screen (a table on a phone) only starts to leave once
+// its bottom edge has come up: `over` is how far it runs past one viewport.
+function overrun(a, vh) {
+  return Math.max(0, a.el.offsetHeight - vh)
+}
+
 function updateTransitions(y, vh) {
   if (reducedMotion) return
   for (const a of ACTS) {
     const top = a.el.offsetTop
     const enter = Math.min(1, Math.max(0, (y - (top - vh * 0.8)) / (vh * 0.8)))
-    const exit = Math.min(1, Math.max(0, (y - (top + vh * 0.2)) / (vh * 0.6)))
+    const exit = Math.min(1, Math.max(0, (y - (top + overrun(a, vh) + vh * 0.2)) / (vh * 0.6)))
     a.el.style.setProperty('--enter', enter.toFixed(3))
     a.el.style.setProperty('--exit', exit.toFixed(3))
   }
@@ -305,7 +316,9 @@ function measure() {
   // over each other during a transition.
   for (const a of ACTS) {
     const top = a.el.getBoundingClientRect().top
-    const f = Math.min(1, Math.max(0.04, 1 - Math.abs(top) / (vh * 0.82)))
+    const over = overrun(a, vh)
+    const off = top > 0 ? top : top < -over ? -(top + over) : 0
+    const f = Math.min(1, Math.max(0.04, 1 - off / (vh * 0.82)))
     a.el.style.setProperty('--f', f.toFixed(3))
   }
   updateVelocity(y)

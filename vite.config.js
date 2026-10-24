@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 // HTML entries:
 //   /            → Sheet 00, the hub (index)
 //   /work/arm/   → Sheet 01, the v6 film (unchanged behaviour)
-//   /work/arm/process/ → Sheet 01 / process, step 01 (type-only for now)
+//   /work/arm/process/ → Sheet 01 / process, the EPQ act by act
 //   /work/nora/  → Sheet 02, Nora
 //   /work/drone/ → Sheet 03, FPV drone (figures to come)
 //   /plan/       → the grand plan, structure only (draft)

@@ -1077,3 +1077,40 @@ the image would come with the final root URL (HUB-PLAN §8.2), and the repo has 
   all seven pages and `dist/img/og/*.jpg` exists; every card is 1200×630 at 50–73 KB; card URLs
   resolve on the live site after deploy.
 
+
+## 2026-10-24 — process: the page follows the EPQ report
+
+Ethan: finalise the process page and make it match his EPQ report (pasted in full). The page
+had six steps in its own order (printer, motors, printing, revision, design, assemble) and a
+"more steps go up as they are written" ending. It now follows the report section by section.
+
+- **Acts (15).** Hero → 01 Why (the ski-rescue abstract; the A1 mini stays as the 3D object) →
+  02 The brief (Table 1, all eight requirements) → 03 Open or closed loop → 04 Motors (the
+  hovering motors) → 05 Gearboxes (actuators as built: J1 57×55 planetary 25:1 · J2 42×40 worm
+  50:1 · J3 42×40 planetary · J4/J5 42×34 planetary, with the report's reasons) → 06 Torque check
+  (static / SF 2 / rated per joint; J2 fails, 6.24 needed vs 5.4 rated) → 07 Design (Shapr3D over
+  SolidWorks / AutoCAD, STEP over STL / 3MF) → 08 Printing (PLA on an H2S, PETG interface, heat-set
+  inserts; the print + download stay) → 09 Revision (the J1 → J2 link: the shoulder motor raised
+  56 mm above the axis to counter the arm) → 10 Control (PC + MinimalModbus over RS485, every
+  request timed out, the odd-parity diagnosis, the lesson) → 11 Cost (¥3,483.58 against ¥2,000,
+  by category, with a spend bar and the budget marked) → 12 Evaluation (4 met, 3 not, 1 untested)
+  → 13 Next (serial settings, trace one request, add drivers one at a time, second iteration) →
+  back. "Assemble" is gone (the report has no such section; the first-assembly lesson lives in 08).
+- **Data acts** (`.act--data`, new in `style.css`): copy left, a schedule-style table (or the loop
+  pair / spend bar / step list) right; one column below 1024 px, narrow columns dropped on phones.
+- **Stage.** Unchanged code. The copy-only acts sit between the 3D acts; the tracks are clamped so
+  the stage is empty behind them. Printing and Revision stay neighbours (the link's flight).
+  `body.stage-idle` hides the no-WebGL still behind the tables.
+- **`process.js`.** Turret balloons carry the actuators as built (`UMIR42 · worm 50:1`, …); an act
+  taller than the screen keeps its copy lit until its bottom comes up (`overrun`), so a long table
+  on a phone never fades while it is being read. The index panel goes to two columns
+  (`.index-panel--long`).
+- **Honesty notes.** The report says the links were printed on a Bambu Lab H2S; the 3D model is an
+  A1 mini, so 08's note says "on screen: an A1 mini model" and the og:image alt no longer claims
+  the A1 mini printed the parts. Where the report disagrees with itself the page uses its tables:
+  J1 4.37 N·m (the text says 4.32), J3/J4 payload at 0.143 m (the table prints 0.0143, but its
+  product 0.0715 needs 0.143), NFR-03 met (the text says "not met" right after showing it met).
+- **Verified** on dev (5178), headless Chromium / SwiftShader: every act at 1440×900, 1280×720 and
+  390×844; zero console errors or failed requests; no horizontal overflow; index panel at both
+  sizes and a jump to 11; hero → 01 → 04 → 08 → 09 hand-offs intact (the link lands in Rev B's
+  frame); the arm film still loads clean; `npm run build` green.
