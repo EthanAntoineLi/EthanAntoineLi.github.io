@@ -85,7 +85,8 @@ personal-page/
   08 / Printing (`print`) runs the A1 mini's print of the J1 → J2 link once and reports it through
   `onPrint`; `body.print-done` then swaps the progress line for the download link. 09 / Revision
   (`compare`) parks that link in Rev B's frame, so the print and compare acts must stay neighbours;
-  Rev A runs its own small scene (`compare-a.js`). Acts without `data-stage` (the brief, loops,
+  the stage draws Rev A in its own frame too (`setSlotA`), with Rev B's pose, light, material,
+  easing, turn and scale — one shared `slotPose`, so the two read as one object drawn twice. Acts without `data-stage` (the brief, loops,
   gearboxes, torque, design, control, cost, evaluation, next) are copy + tables (`.act--data`); the
   tracks are clamped, so the stage simply stands empty behind them and `body.stage-idle` hides the
   no-WebGL still. An act taller than the screen (tables on a phone) keeps its copy lit until its

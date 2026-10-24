@@ -6,7 +6,8 @@
 // part to bring it round), the A1 mini that leaves it for 01 / Why, the three
 // motor types that hover on 04 / Motors, the A1 mini printing the J1 → J2 link
 // on 08 / Printing (the download link shows once the print is done) and that
-// link parked in Rev B's frame on 09 / Revision. Every hand-off between them
+// link parked in Rev B's frame on 09 / Revision, with the first design (Rev A)
+// in the frame beside it, under the same physics. Every hand-off between them
 // is scrubbed by the scroll (syncTrack), so the 3D moves with the copy; the
 // copy-and-table acts in between leave the stage empty.
 // Scene: ./process-stage.js. Balloons: ./process-hud.js. Curtain: ./film-loader.js.
@@ -15,10 +16,10 @@ import { createProcessStage } from './process-stage.js'
 import { createRingHud } from './process-hud.js'
 import motorsUrl from './assets/process/arm-motors.glb?url'
 import { initFilmLoader, reportLoadProgress, wasCurtainLifted } from './film-loader.js'
-import { initCompareA } from './compare-a.js'
 
 const PRINTER_MODEL_URL = import.meta.env.BASE_URL + 'models/printer-a1-mini.glb'
 const LINK_MODEL_URL = import.meta.env.BASE_URL + 'models/arm-parts/parts/link-J1-J2.glb'
+const REV_A_MODEL_URL = import.meta.env.BASE_URL + 'models/arm-parts/parts/link-J1-J2-rev-a.glb'
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const body = document.body
@@ -106,6 +107,7 @@ function startScene() {
         printerUrl: PRINTER_MODEL_URL,
         motorsUrl,
         linkUrl: LINK_MODEL_URL,
+        revAUrl: REV_A_MODEL_URL,
         reducedMotion,
         phone,
         onLoadProgress: reportLoadProgress,
@@ -121,6 +123,7 @@ function startScene() {
       window.__processStage = scene
       body.classList.add('scene-ready')
       if (!scene.printable) body.classList.add('no-part')
+      if (scene.hasRevA) body.classList.add('compare-a-live')
       syncTrack()
       syncStage()
       scene.setStage(wantedStage) // honour a deep link / restored scroll position
@@ -150,20 +153,31 @@ function syncTrack() {
   )
 }
 
-/* Rev B's frame is handed over as it is on screen, entrance and reveal
-   transforms included, so the printed link lands exactly in it. Read every
-   rendered frame while step 04 is near (the transforms run on their own). */
+/* Both revision frames are handed over as they are on screen, entrance and
+   reveal transforms included, so the printed link lands exactly in Rev B's and
+   Rev A sits exactly in its own. Read every rendered frame while 09 is near
+   (the transforms run on their own). Rev A shows once its frame is revealed. */
 const COMPARE_ACT = ACTS.find((a) => a.stage === 'compare')
 const compareSlot = document.getElementById('compare-slot')
+const compareSlotA = document.getElementById('compare-slot-a')
 let slotSynced = false
 function syncSlot() {
   if (!scene || !compareSlot || !COMPARE_ACT) return
   const vh = window.innerHeight || 1
   const vw = window.innerWidth || 1
-  if (slotSynced && Math.abs(window.scrollY - COMPARE_ACT.el.offsetTop) > vh * 1.8) return
+  if (slotSynced && Math.abs(window.scrollY - COMPARE_ACT.el.offsetTop) > vh * 1.8) {
+    scene.setSlotA(null)
+    return
+  }
   slotSynced = true
   const r = compareSlot.getBoundingClientRect()
   scene.setSlot(r.left / vw, r.top / vh, r.width / vw, r.height / vh)
+  if (compareSlotA && COMPARE_ACT.el.classList.contains('is-in')) {
+    const a = compareSlotA.getBoundingClientRect()
+    scene.setSlotA(a.left / vw, a.top / vh, a.width / vw, a.height / vh)
+  } else {
+    scene.setSlotA(null)
+  }
 }
 
 /* -------------------------------------------------------------- the print */
@@ -484,37 +498,6 @@ function initIndex() {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') setOpen(false)
   })
-}
-
-/* --------------------------------------- Rev A: live first-design link */
-// Rev B is parked by the stage; Rev A gets its own small scene so both links
-// turn the same way. Loaded only when the frame comes near the viewport.
-const compareACanvas = document.getElementById('compare-a-canvas')
-if (compareACanvas) {
-  const frame = compareACanvas.closest('.compare-frame')
-  let startedRevA = false
-  const startCompareA = () => {
-    if (startedRevA) return
-    startedRevA = true
-    initCompareA(compareACanvas, { reducedMotion }).then((ok) => {
-      if (ok) document.body.classList.add('compare-a-live')
-    })
-  }
-  if ('IntersectionObserver' in window && frame) {
-    const ioA = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue
-          ioA.disconnect()
-          startCompareA()
-        }
-      },
-      { rootMargin: '900px 0px' },
-    )
-    ioA.observe(frame)
-  } else {
-    startCompareA()
-  }
 }
 
 /* -------------------------------------------------------------- boot */
