@@ -16,7 +16,10 @@
 //   print   — step 03: the printer again, closer, printing the J1 → J2 link:
 //             the head sweeps along the X arm, the bed shuttles under it, the
 //             gantry climbs a layer at a time and the part grows on the plate.
-//   compare — step 04: the finished link parked in Rev B's frame, turning.
+//   compare — step 04: the finished link parked in Rev B's frame, turning, and
+//             the first design (Rev A) in its own frame beside it — the same
+//             camera, lights, material, easing and turn, so the two read as
+//             one object drawn twice.
 //
 // Every hand-off is scrubbed by the scroll (setTrack), never run on a timer:
 //   hero → 01  the turret holds still, the balloons clear, the other parts
@@ -33,8 +36,8 @@
 //
 // PUBLIC API
 //   const stage = await createProcessStage(canvas, {
-//     printerUrl, motorsUrl, linkUrl, reducedMotion, phone, onLoadProgress,
-//     onFrame, onPrint
+//     printerUrl, motorsUrl, linkUrl, revAUrl, reducedMotion, phone,
+//     onLoadProgress, onFrame, onPrint
 //   })
 //   stage.printable                 false when the printed part did not load
 //   stage.ready                     model loaded + first frame drawn
@@ -55,6 +58,9 @@
 //                                   the top, 1 = scrolled a viewport past it)
 //   stage.setSlot(x, y, w, h)       Rev B's frame on screen, viewport fractions
 //                                   (left, top, width, height)
+//   stage.setSlotA(x, y, w, h)      Rev A's frame, the same way; no rect (or a
+//                                   bad one) hides Rev A
+//   stage.hasRevA                   true once the first design is in the scene
 //   onFrame(hud)                    per-frame screen data for the part balloons
 //   onPrint({ progress, done })     the print's progress, 0..1; done once
 //   stage.setVisible(bool)          pause drawing
@@ -354,6 +360,7 @@ export async function createProcessStage(canvas, opts = {}) {
     printerUrl: typeof opts.printerUrl === 'string' ? opts.printerUrl : '',
     motorsUrl: typeof opts.motorsUrl === 'string' ? opts.motorsUrl : '',
     linkUrl: typeof opts.linkUrl === 'string' ? opts.linkUrl : '',
+    revAUrl: typeof opts.revAUrl === 'string' ? opts.revAUrl : '',
     reducedMotion: opts.reducedMotion === true,
     phone: opts.phone === true,
     onLoadProgress: typeof opts.onLoadProgress === 'function' ? opts.onLoadProgress : null,
@@ -408,6 +415,10 @@ export async function createProcessStage(canvas, opts = {}) {
     // Rev B's frame, as reported by the page and as eased toward by the part
     slot: null,
     slotLive: null,
+    // Rev A's frame, the same way, and how far Rev A has faded in
+    slotA: null,
+    slotALive: null,
+    revAAlpha: 0,
     angVel: 0, // measured ring speed, whatever drove it (spring, hand, exit)
     lastAngle: 0,
     present: new Array(6).fill(0),
@@ -664,6 +675,7 @@ export async function createProcessStage(canvas, opts = {}) {
   let printer = null
   let rig = null // the printer's moving assemblies (see rigPrinter)
   let part = null // the printed J1 → J2 link (see makePrintPart)
+  let revA = null // the first design of that link (see makeRevA)
 
   /* ------------------------------------------------------------ the dial */
   // Everything here is built at unit radius in the dial plane (XZ); the group
@@ -1144,23 +1156,94 @@ export async function createProcessStage(canvas, opts = {}) {
     return { ...wrapped, plane, hot, band }
   }
 
+  // Rev A, the first design of the same link. Its CAD export stands upside
+  // down with its rings on x; turned here (into the geometry, so the layer
+  // lines run the same way) to match Rev B's frame: rings on z, coupling
+  // down. Then it gets Rev B's material — printed-black PLA, the same layer
+  // lines — and from there the same pose, light and turn as Rev B in its frame.
+  const REV_A_TURN = new THREE.Matrix4().makeRotationFromQuaternion(
+    new THREE.Quaternion()
+      .setFromAxisAngle(UP, Math.PI / 2)
+      .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI)),
+  )
+  function makeRevA(model) {
+    model.updateMatrixWorld(true)
+    const holder = new THREE.Group()
+    const meshes = []
+    model.traverse((o) => {
+      if (o.isMesh) meshes.push(o)
+    })
+    for (const mesh of meshes) {
+      const geometry = mesh.geometry.clone()
+      geometry.applyMatrix4(new THREE.Matrix4().multiplyMatrices(REV_A_TURN, mesh.matrixWorld))
+      holder.add(new THREE.Mesh(geometry, mesh.material))
+    }
+    const wrapped = wrapModel(holder)
+    const material = new THREE.MeshPhysicalMaterial({
+      color: 0x1d2024,
+      roughness: 0.56,
+      metalness: 0.0,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.5,
+      envMapIntensity: 1.15,
+      bumpMap: makeLayerTexture(),
+      bumpScale: 0.0004,
+      side: THREE.DoubleSide,
+      transparent: true, // it fades in with its frame; opaque once it has
+    })
+    wrapped.pivot.traverse((o) => {
+      if (!o.isMesh) return
+      layerUVs(o.geometry, 72)
+      o.material = material
+    })
+    wrapped.pivot.name = 'rev-a-link'
+    wrapped.pivot.visible = false
+    scene.add(wrapped.pivot)
+    return { ...wrapped, material }
+  }
+
+  /** A link turning in its frame: centred in the current eye's view, tipped a
+      little toward it — the one pose both revisions share. Both are drawn to
+      one scale, like two views on a sheet: the larger of the two fills its
+      frame, so their real sizes compare. */
+  function slotPose(slotLive, basis, outPos, outQuat) {
+    outPos.copy(pointOn(basis, slotLive.x + slotLive.w / 2 - 0.5, 0.5 - (slotLive.y + slotLive.h / 2), 0))
+    const fit = Math.min(slotLive.w * basis.viewW, slotLive.h * basis.viewH) * PRINT.fill
+    const turn = settings.reducedMotion ? 0 : state.time * PRINT.spin
+    outQuat.setFromAxisAngle(basis.right, 0.16).multiply(_qTurn.setFromAxisAngle(UP, state.camera.az + 0.7 + turn))
+    return fit / Math.max(part ? part.maxDim : 0, revA ? revA.maxDim : 0, 1e-6)
+  }
+
+  /** Ease a reported frame the way the objects ease: same weight for both. */
+  function easeSlot(live, target, dt) {
+    if (!target) return live
+    if (!live || settings.reducedMotion) return { ...target }
+    for (const key of ['x', 'y', 'w', 'h']) live[key] = ease(live[key], target[key], TRACK.smooth, dt)
+    return live
+  }
+
   const loader = new GLTFLoader()
   let loadedBytes = 0
-  const weight = { printer: 2.68, motors: 1.77, link: 0.03 }
-  const totalWeight = weight.printer + weight.motors + weight.link
+  const weight = { printer: 2.68, motors: 1.77, link: 0.03, revA: 0.11 }
+  const totalWeight = weight.printer + weight.motors + weight.link + weight.revA
 
   try {
     await MeshoptDecoder.ready
     loader.setMeshoptDecoder(MeshoptDecoder)
-    const progress = { printer: 0, motors: 0, link: 0 }
+    const progress = { printer: 0, motors: 0, link: 0, revA: 0 }
     const note = () => {
-      loadedBytes = weight.printer * progress.printer + weight.motors * progress.motors + weight.link * progress.link
+      loadedBytes =
+        weight.printer * progress.printer +
+        weight.motors * progress.motors +
+        weight.link * progress.link +
+        weight.revA * progress.revA
       settings.onLoadProgress?.(clamp(loadedBytes / totalWeight, 0, 1))
     }
     let printerGltf
     let motorsGltf
     let linkGltf
-    ;[printerGltf, motorsGltf, linkGltf] = await Promise.all([
+    let revAGltf
+    ;[printerGltf, motorsGltf, linkGltf, revAGltf] = await Promise.all([
       new Promise((resolve, reject) => {
         loader.load(
           settings.printerUrl,
@@ -1206,6 +1289,24 @@ export async function createProcessStage(canvas, opts = {}) {
           },
         )
       }),
+      // Rev A too: without it its frame keeps the baked render
+      new Promise((resolve) => {
+        if (!settings.revAUrl) return resolve(null)
+        loader.load(
+          settings.revAUrl,
+          resolve,
+          (e) => {
+            if (e && e.total) {
+              progress.revA = e.loaded / e.total
+              note()
+            }
+          },
+          (err) => {
+            console.warn('[process-stage] Rev A unavailable', err)
+            resolve(null)
+          },
+        )
+      }),
     ])
     if (state.disposed) return null
 
@@ -1221,6 +1322,7 @@ export async function createProcessStage(canvas, opts = {}) {
       part.footZ = part.size.y * part.bedScale
     }
     if (!part) state.print.done = true
+    if (revAGltf) revA = makeRevA(revAGltf.scene)
 
     const container =
       motorsGltf.scene.children.find(
@@ -1268,6 +1370,12 @@ export async function createProcessStage(canvas, opts = {}) {
     const p = pendingStage
     pendingStage = null
     applyStage(p)
+  }
+
+  function toSlot(x, y, w, h) {
+    const v = [x, y, w, h].map(Number)
+    if (!v.every(Number.isFinite) || v[2] <= 0 || v[3] <= 0) return null
+    return { x: v[0], y: v[1], w: v[2], h: v[3] }
   }
 
   /* -------------------------------------------------------------- turret */
@@ -1757,6 +1865,7 @@ export async function createProcessStage(canvas, opts = {}) {
     }
 
     updatePrint(dt, basis, onPrintTrack)
+    updateRevA(dt, basis)
   }
 
   /* ---------------------------------------------------------------- print */
@@ -1774,11 +1883,7 @@ export async function createProcessStage(canvas, opts = {}) {
     const shift = state.trackLive.print
 
     // Rev B's frame, eased like the other objects so the part has the same weight
-    const slot = state.slot
-    if (slot) {
-      if (!state.slotLive || settings.reducedMotion) state.slotLive = { ...slot }
-      else for (const key of ['x', 'y', 'w', 'h']) state.slotLive[key] = ease(state.slotLive[key], slot[key], TRACK.smooth, dt)
-    }
+    state.slotLive = easeSlot(state.slotLive, state.slot, dt)
     const flight = part && state.slotLive ? easeInOut(smooth(PRINT.flight[0], PRINT.flight[1], shift)) : 0
     pr.flight = flight
 
@@ -1865,13 +1970,9 @@ export async function createProcessStage(canvas, opts = {}) {
 
     let visible = onBed || slotK > 0
     if (slotK > 0) {
-      // Rev B's frame: centre and fit in the current eye's view, turning slowly
+      // Rev B's frame: the pose it shares with Rev A
       const sl = state.slotLive
-      _slotPos.copy(pointOn(basis, sl.x + sl.w / 2 - 0.5, 0.5 - (sl.y + sl.h / 2), 0))
-      const fit = Math.min(sl.w * basis.viewW, sl.h * basis.viewH) * PRINT.fill
-      const slotScale = fit / part.maxDim
-      const turn = settings.reducedMotion ? 0 : state.time * PRINT.spin
-      _slotQuat.setFromAxisAngle(basis.right, 0.16).multiply(_qTurn.setFromAxisAngle(UP, state.camera.az + 0.7 + turn))
+      const slotScale = slotPose(sl, basis, _slotPos, _slotQuat)
       // lift off the plate on a gentle arc
       pivot.position.copy(_bedPos).lerp(_slotPos, slotK).addScaledVector(basis.up, Math.sin(Math.PI * slotK) * 0.05 * basis.viewH)
       pivot.quaternion.copy(_bedQuat).slerp(_slotQuat, slotK)
@@ -1884,6 +1985,31 @@ export async function createProcessStage(canvas, opts = {}) {
       pivot.scale.copy(_bedScale)
     }
     pivot.visible = visible
+  }
+
+  /* ---------------------------------------------------------------- Rev A */
+  // No flight: it is simply in its frame, fading in with it, and otherwise
+  // posed, lit, eased and turned exactly like Rev B beside it.
+  const _revAPos = new THREE.Vector3()
+  const _revAQuat = new THREE.Quaternion()
+  function updateRevA(dt, basis) {
+    if (!revA) return
+    state.slotALive = easeSlot(state.slotALive, state.slotA, dt)
+    const want = state.slotA ? 1 : 0
+    state.revAAlpha = settings.reducedMotion ? want : ease(state.revAAlpha, want, 5, dt)
+    const sl = state.slotALive
+    const onScreen = sl && sl.y + sl.h > -0.05 && sl.y < 1.05
+    if (!sl || !onScreen || state.revAAlpha < 0.01) {
+      revA.pivot.visible = false
+      return
+    }
+    const scale = slotPose(sl, basis, _revAPos, _revAQuat)
+    revA.pivot.position.copy(_revAPos)
+    revA.pivot.quaternion.copy(_revAQuat)
+    revA.pivot.scale.setScalar(scale)
+    revA.material.opacity = state.revAAlpha > 0.99 ? 1 : state.revAAlpha
+    revA.material.depthWrite = state.revAAlpha > 0.99
+    revA.pivot.visible = true
   }
 
   function frame() {
@@ -2015,12 +2141,13 @@ export async function createProcessStage(canvas, opts = {}) {
       }
     },
     setSlot(x, y, w, h) {
-      const v = [x, y, w, h].map(Number)
-      if (!v.every(Number.isFinite) || v[2] <= 0 || v[3] <= 0) {
-        state.slot = null
-        return
-      }
-      state.slot = { x: v[0], y: v[1], w: v[2], h: v[3] }
+      state.slot = toSlot(x, y, w, h)
+    },
+    setSlotA(x, y, w, h) {
+      state.slotA = toSlot(x, y, w, h)
+    },
+    get hasRevA() {
+      return Boolean(revA)
     },
     setStage(name) {
       if (!['ring', 'printer', 'motors', 'print', 'compare', 'off'].includes(name)) return false
@@ -2094,6 +2221,16 @@ export async function createProcessStage(canvas, opts = {}) {
           partVisible: part ? part.pivot.visible : null,
           partRect: part && part.pivot.visible ? Object.values(screenRectFor(part.pivot, {}) || {}).map(Math.round) : null,
           slot: state.slotLive ? Object.values(state.slotLive).map((v) => +v.toFixed(3)) : null,
+          revA: revA
+            ? {
+                visible: revA.pivot.visible,
+                alpha: +state.revAAlpha.toFixed(3),
+                rect: revA.pivot.visible ? Object.values(screenRectFor(revA.pivot, {}) || {}).map(Math.round) : null,
+                scale: +revA.pivot.scale.x.toFixed(4),
+                quat: revA.pivot.quaternion.toArray().map((v) => +v.toFixed(3)),
+                partQuat: part ? part.pivot.quaternion.toArray().map((v) => +v.toFixed(3)) : null,
+              }
+            : null,
           gap: rig ? +rig.gap.toFixed(4) : null,
         },
         camera: state.camera
