@@ -6,7 +6,7 @@ modules**. No framework, no backend, no runtime data. Everything ships as static
 ```
 /                → index.html                 Sheet 00, the hub
 /work/arm/       → work/arm/index.html        Sheet 01, the v6 film
-/work/arm/process/ → work/arm/process/index.html  Sheet 01 / process, steps 01-06 (3D on the hero + steps 01-04)
+/work/arm/process/ → work/arm/process/index.html  Sheet 01 / process, the EPQ in acts 01-13 (3D on the hero, 01, 04, 08, 09)
 /work/nora/      → work/nora/index.html       Sheet 02, Nora
 /work/nora/demo/ → work/nora/demo/index.html  the desk-cat demo (iframe target; ?full = full page)
 /work/drone/     → work/drone/index.html      Sheet 03, FPV drone (published; concept render in, build figures to come)
@@ -82,9 +82,14 @@ personal-page/
 - The process page owns one canvas (`src/process-stage.js`): an act that shows a 3D object carries
   `data-stage="ring|printer|motors|print|compare"`, and `process.js` feeds the stage each act's
   position (`setTrack`) plus Rev B's frame rect (`setSlot`) so every object rides its own act.
-  Step 03 (`print`) runs the A1 mini's print of the J1 → J2 link once and reports it through
-  `onPrint`; `body.print-done` then swaps the progress line for the download link. Step 04
-  (`compare`) parks that link in Rev B's frame; Rev A is a placeholder until its model exists.
+  08 / Printing (`print`) runs the A1 mini's print of the J1 → J2 link once and reports it through
+  `onPrint`; `body.print-done` then swaps the progress line for the download link. 09 / Revision
+  (`compare`) parks that link in Rev B's frame, so the print and compare acts must stay neighbours;
+  Rev A runs its own small scene (`compare-a.js`). Acts without `data-stage` (the brief, loops,
+  gearboxes, torque, design, control, cost, evaluation, next) are copy + tables (`.act--data`); the
+  tracks are clamped, so the stage simply stands empty behind them and `body.stage-idle` hides the
+  no-WebGL still. An act taller than the screen (tables on a phone) keeps its copy lit until its
+  bottom edge comes up (`overrun` in `process.js`).
 
 ## Status vocabulary
 
@@ -123,7 +128,7 @@ project status.
 | `src/nora-sheet.js` | Sheet 02 only: marks the demo iframe `.is-focused` from its window focus/blur events (keyboard focus lands inside the child document, where `:focus`/`:focus-within` never match) | touch anything but the demo iframe |
 | `src/nora-loader.js` | Sheet 02 only: the readiness promise behind the curtain — fonts, the eight monitor frames decoded, the demo document loaded, then two frames for the projected hero | draw or animate the curtain (that is `film-loader.js`) |
 | `work/arm/index.html` + `src/style.css`, `main.js`, `arm-scene.js` | The film, unchanged (v4/v6 contracts) | be reused by the hub or sheets |
-| `work/arm/process/index.html` + `src/process.js` | The process page: film chrome, eight acts (hero, steps 01–06, back), the stage wiring (tracks, Rev B slot, print status → `body.print-done`); copy lives in the HTML | touch the arm scene |
+| `work/arm/process/index.html` + `src/process.js` | The process page: film chrome, fifteen acts (hero, the EPQ's 01–13, back), the stage wiring (tracks, Rev B slot, print status → `body.print-done`); copy and tables live in the HTML and follow Ethan's EPQ report — no figures that aren't in it | touch the arm scene |
 | `src/film-loader.js` | The shared loading curtain: promise-based lift on the page's first real frame, real progress reporting, safety valve | know what the page renders |
 | `src/printer-scene.js` | The process page's A1 mini: framing presets, idle sway, pointer parallax, dispose | know the page layout |
 | `work/nora/demo/*` | The desk-cat page (copied) + embed/demo adaptations | talk to a server or read real data |

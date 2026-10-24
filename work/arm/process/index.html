@@ -8,12 +8,12 @@
     <title>Process — 5-axis arm · Ethan Antoine Li</title>
     <meta
       name="description"
-      content="The process behind the five-axis arm, in the order it happened. Step 01: the 3D printer that gave me access to personalised parts."
+      content="How the five-axis arm got made, from my EPQ: the brief, motors and gearboxes, the torque check, CAD, printing, the RS485 bus, the cost, and an honest evaluation."
     />
     <meta property="og:title" content="Process — 5-axis arm · Ethan Antoine Li" />
     <meta
       property="og:description"
-      content="How the five-axis arm got made, in the order it happened. Step 01 — a 3D printer, and parts of my own."
+      content="How the five-axis arm got made, from my EPQ: eight requirements, five geared steppers, one joint short on torque, ¥3,483.58 — and what comes next."
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Ethan Antoine Li" />
@@ -24,7 +24,7 @@
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="Process card: 'How the arm got made' beside the Bambu Lab A1 mini that printed the arm's parts."
+      content="Process card: 'How the arm got made' beside a Bambu Lab A1 mini 3D printer."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="author" content="Ethan Antoine Li" />
@@ -46,7 +46,7 @@
       <p class="loader-count" id="loader-count">000</p>
       <div class="loader-bar"><span id="loader-bar"></span></div>
       <p class="loader-ascii mono" id="loader-ascii">----------</p>
-      <p class="mono loader-foot">A1 mini · process · CAD</p>
+      <p class="mono loader-foot">EPQ · process · CAD</p>
     </div>
 
     <!-- ----------------------------------------------------------- cursor -->
@@ -90,16 +90,23 @@
     </header>
 
     <!-- ----------------------------------------------------- index overlay -->
-    <nav class="index-panel" id="index-panel" aria-label="Sections" hidden>
+    <nav class="index-panel index-panel--long" id="index-panel" aria-label="Sections" hidden>
       <ol>
         <li><a href="#top"><span class="mono">00</span>How it got made</a></li>
-        <li><a href="#start"><span class="mono">01</span>How it all started</a></li>
-        <li><a href="#motors"><span class="mono">02</span>Motors</a></li>
-        <li><a href="#printing"><span class="mono">03</span>Printing</a></li>
-        <li><a href="#revision"><span class="mono">04</span>Revision</a></li>
-        <li><a href="#design"><span class="mono">05</span>Design</a></li>
-        <li><a href="#assemble"><span class="mono">06</span>Assemble</a></li>
-        <li><a href="#back"><span class="mono">07</span>Back to the arm</a></li>
+        <li><a href="#why"><span class="mono">01</span>Why</a></li>
+        <li><a href="#brief"><span class="mono">02</span>The brief</a></li>
+        <li><a href="#loops"><span class="mono">03</span>Open or closed loop</a></li>
+        <li><a href="#motors"><span class="mono">04</span>Motors</a></li>
+        <li><a href="#gearboxes"><span class="mono">05</span>Gearboxes</a></li>
+        <li><a href="#torque"><span class="mono">06</span>Torque check</a></li>
+        <li><a href="#design"><span class="mono">07</span>Design</a></li>
+        <li><a href="#printing"><span class="mono">08</span>Printing</a></li>
+        <li><a href="#revision"><span class="mono">09</span>Revision</a></li>
+        <li><a href="#control"><span class="mono">10</span>Control</a></li>
+        <li><a href="#cost"><span class="mono">11</span>Cost</a></li>
+        <li><a href="#evaluation"><span class="mono">12</span>Evaluation</a></li>
+        <li><a href="#next"><span class="mono">13</span>Next</a></li>
+        <li><a href="#back"><span class="mono">14</span>Back to the arm</a></li>
       </ol>
       <p class="index-foot mono">ethan.li.1@outlook.com</p>
     </nav>
@@ -116,10 +123,21 @@
         <li></li>
         <li></li>
         <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
       </ol>
     </aside>
 
     <!-- ------------------------------------------------------------ main -->
+    <!-- The page follows the EPQ report section by section. Acts with a
+         data-stage own a 3D object; the rest are copy and tables only, and the
+         stage stands empty behind them. Printing and Revision must stay
+         neighbours: the printed link flies from the bed into Rev B's frame. -->
     <main id="main">
       <!-- =========================================================== HERO -->
       <section class="act act--hero" id="top" data-ghost="MAKE" data-index="1" data-stage="ring" data-preset="hero" data-ex="rise">
@@ -134,12 +152,12 @@
 
           <div class="hero-foot">
             <p class="hero-line">
-              The five-axis arm,<br />
-              told in the order<br />
-              it actually happened.
+              The five-axis arm, from my EPQ:<br />
+              why it exists, how each part<br />
+              was chosen, and what didn’t work.
             </p>
-            <p class="pull">A printer first.<br />Everything else followed.</p>
-            <a class="scroll-cue" href="#start" data-cursor="scroll">
+            <p class="pull">Designed with six axes.<br />Built with five.</p>
+            <a class="scroll-cue" href="#why" data-cursor="scroll">
               <span class="scroll-dots" aria-hidden="true"></span>
               <span class="mono">Scroll</span>
             </a>
@@ -147,47 +165,397 @@
         </div>
       </section>
 
-      <!-- =========================================================== START -->
-      <section class="act act--step" id="start" data-ghost="PRINT" data-index="2" data-stage="printer" data-preset="step" data-ent="rise" data-ex="rise">
+      <!-- ============================================================= WHY -->
+      <section class="act act--step" id="why" data-ghost="WHY" data-index="2" data-stage="printer" data-preset="step" data-ent="rise" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>01 / How it all started</p>
+            <p class="eyebrow mono"><span class="dot"></span>01 / Why</p>
             <h2 class="act-title">
-              A 3D printer,<br />
-              <em>then parts of my own.</em>
+              Rescue, without<br />
+              <em>a second rescuer.</em>
             </h2>
           </div>
 
           <div class="act-bottom">
             <p class="act-copy">
-              The 3D printer is what gave me access to personalised parts — pieces designed
-              for this arm instead of picked out of a supplier’s catalogue. That is the part
-              that changed everything: the design stopped being limited to what someone else
-              already sells.
+              I ski, and every season I see people get hurt on the slopes — and more people go
+              out onto the same ground to bring them back. Why not send a robot? I found very
+              few, and a 3D printer meant I could make the parts for one. A whole robot was too
+              much for one project, so I started with its arm.
             </p>
-            <p class="act-note mono">One printer · geometry to my design · the arm came after</p>
+            <p class="act-note mono">Ski rescue · the full robot is out of scope · the arm first</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================== BRIEF -->
+      <section class="act act--step act--data" id="brief" data-ghost="SPEC" data-index="3" data-ent="rise" data-ex="swing">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>02 / The brief</p>
+            <h2 class="act-title">
+              Eight requirements,<br />
+              <em>set before the build.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <div class="data-copy">
+              <p class="act-copy">
+                Five functional requirements say what the arm has to do; three non-functional
+                ones limit how it gets made. Each one comes back at the end, scored.
+              </p>
+              <p class="act-note mono">Must ×4 · Should ×4 · scored in 12 / Evaluation</p>
+            </div>
+            <div class="data-fig">
+              <table class="sheet-table sheet-table--brief">
+                <caption class="mono">Table 1 · Design requirements</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Requirement</th>
+                    <th scope="col">Target</th>
+                    <th scope="col" class="col-pri">Priority</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">FR-01</th>
+                    <td>Lift and hold a payload at full horizontal extension</td>
+                    <td>≥ 500 g at full extension</td>
+                    <td class="col-pri">Must</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">FR-02</th>
+                    <td>Independently actuated rotational joints</td>
+                    <td>5 DOF built (6 DOF designed)</td>
+                    <td class="col-pri">Must</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">FR-03</th>
+                    <td>Each joint moves through its range of motion</td>
+                    <td>Shoulder 0–120°, elbow 0–100°</td>
+                    <td class="col-pri">Must</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">FR-04</th>
+                    <td>One controller commands every axis over a shared bus</td>
+                    <td>5 axes, RS485</td>
+                    <td class="col-pri">Must</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">FR-05</th>
+                    <td>The end effector returns to a commanded position</td>
+                    <td>±2 mm over 10 trials</td>
+                    <td class="col-pri">Should</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">NFR-01</th>
+                    <td>Actuators and structure stay within the budget</td>
+                    <td>≤ ¥2,000</td>
+                    <td class="col-pri">Should</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">NFR-02</th>
+                    <td>Links can be made with the equipment available</td>
+                    <td>FDM printing, M3 fasteners, heat-set inserts</td>
+                    <td class="col-pri">Should</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">NFR-03</th>
+                    <td>Runs from a single DC supply</td>
+                    <td>24 V</td>
+                    <td class="col-pri">Should</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================== LOOPS -->
+      <section class="act act--step act--data" id="loops" data-ghost="LOOP" data-index="4" data-ent="swing" data-ex="rise">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>03 / Open or closed loop</p>
+            <h2 class="act-title">
+              Trust the input,<br />
+              <em>or measure the output.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <div class="data-copy">
+              <p class="act-copy">
+                Before choosing a motor, the first question is whether anything checks its work.
+                Each architecture is a trade-off: simplicity against self-correction.
+              </p>
+              <p class="act-note mono">The arm ends up closed-loop · see 04 / Motors</p>
+            </div>
+            <div class="data-fig">
+              <dl class="loop-pair">
+                <div class="loop">
+                  <dt class="mono">Open loop</dt>
+                  <dd class="loop-chain mono" aria-hidden="true">input → controller → actuator → output</dd>
+                  <dd>
+                    Runs on preset inputs and timings and never checks its output. Fewer parts,
+                    lower cost, easier to design and no measuring delay — but disturbances and
+                    calibration errors go uncorrected.
+                  </dd>
+                  <dd class="loop-eg mono">e.g. a toaster on a timer · fixed-time traffic lights</dd>
+                </div>
+                <div class="loop">
+                  <dt class="mono">Closed loop</dt>
+                  <dd class="loop-chain mono" aria-hidden="true">input → controller → actuator → output ↺ sensor</dd>
+                  <dd>
+                    Sensors feed the output back so it is compared with the target, and the system
+                    corrects itself. More sensors, more cost and slower — but it rejects
+                    disturbances and needs no perfect calibration.
+                  </dd>
+                  <dd class="loop-eg mono">e.g. cruise control · an automatic water-level controller</dd>
+                </div>
+              </dl>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- ========================================================== MOTORS -->
-      <section class="act act--step" id="motors" data-ghost="DRIVE" data-index="3" data-stage="motors" data-ent="rise" data-ex="rise">
+      <section class="act act--step" id="motors" data-ghost="DRIVE" data-index="5" data-stage="motors" data-ent="rise" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>02 / Motors</p>
+            <p class="eyebrow mono"><span class="dot"></span>04 / Motors</p>
             <h2 class="act-title">
-              Five motors,<br />
-              <em>two sizes.</em>
+              Steppers, geared<br />
+              <em>and closed-loop.</em>
             </h2>
           </div>
 
           <div class="act-bottom">
             <p class="act-copy">
-              The joints run on five steppers — one UMIR57 at the base, four UMIR42s
-              further out — all on one RS485 / Modbus-RTU bus. Picking them
-              was the first time the build had to match a datasheet.
+              The arm is meant for a battery-powered robot, so only DC motors were in the running.
+              Brushed motors wear out; brushless ones need a controller to commutate. A stepper
+              moves in exact steps without a sensor, but not with enough torque alone — so each
+              joint got a gearbox, and a driver that closes the loop over RS485.
             </p>
-            <p class="act-note mono">UMIR57 ×1 · UMIR42 ×4 · RS485 / Modbus-RTU</p>
+            <p class="act-note mono">UMIR57 ×1 · UMIR42 ×4 · stepper + gearbox + driver = servo</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================= GEARBOXES -->
+      <section class="act act--step act--data" id="gearboxes" data-ghost="GEAR" data-index="6" data-ent="rise" data-ex="swing">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>05 / Gearboxes</p>
+            <h2 class="act-title">
+              Worm at the shoulder,<br />
+              <em>planetary for the rest.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <div class="data-copy">
+              <p class="act-copy">
+                Spur and bevel suppliers wanted 15 or more units; I needed at most six. A worm
+                drive self-locks, so it holds a load without drawing current, but sits at a right
+                angle. A planetary is coaxial and compact, but back-drives, so holding still costs
+                current and heat. UMot sold matched sets one at a time.
+              </p>
+              <p class="act-note mono">Supplier · UMot · matched motor + gearbox · single units</p>
+            </div>
+            <div class="data-fig">
+              <table class="sheet-table">
+                <caption class="mono">Actuators as built</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Joint</th>
+                    <th scope="col">Drive</th>
+                    <th scope="col" class="num">Rated</th>
+                    <th scope="col">Why</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">J1 · base</th>
+                    <td>57×55 stepper · planetary 25:1</td>
+                    <td class="num">19 N·m</td>
+                    <td>Coaxial, fits a robot’s chest</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">J2 · shoulder</th>
+                    <td>42×40 stepper · worm 50:1</td>
+                    <td class="num">5.4 N·m</td>
+                    <td>Most heavily loaded; self-locks, cheaper</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">J3 · roll</th>
+                    <td>42×40 stepper · planetary 50:1</td>
+                    <td class="num">10 N·m</td>
+                    <td>A worm’s motor would stick out</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">J4 · pitch</th>
+                    <td>42×34 stepper · planetary 50:1</td>
+                    <td class="num">10 N·m</td>
+                    <td>Lightest option, far from the base</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">J5 · roll</th>
+                    <td>42×34 stepper · planetary 50:1</td>
+                    <td class="num">10 N·m</td>
+                    <td>A worm’s motor would stick out</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================== TORQUE -->
+      <section class="act act--step act--data" id="torque" data-ghost="LOAD" data-index="7" data-ent="swing" data-ex="rise">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>06 / Torque check</p>
+            <h2 class="act-title">
+              One joint<br />
+              <em>comes up short.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <div class="data-copy">
+              <p class="act-copy">
+                Holding still, each joint carries everything beyond it: mass × distance × g. With
+                500 g at the tip, the shoulder needs 6.24 N·m, or 12.5 N·m with a safety factor of
+                2. Its worm gearbox is rated 5.4 N·m. The full calculation was only finished after
+                assembly, when the actuator could no longer be changed.
+              </p>
+              <p class="act-note mono">J2 · 9.81 × 0.6358 kg·m ≈ 6.24 N·m · FR-01 not met</p>
+            </div>
+            <div class="data-fig">
+              <table class="sheet-table sheet-table--num">
+                <caption class="mono">Static torque at each joint, arm hanging, 500 g payload</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Joint</th>
+                    <th scope="col" class="num">Static</th>
+                    <th scope="col" class="num">At SF 2</th>
+                    <th scope="col" class="num">Rated</th>
+                    <th scope="col">Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">J1</th>
+                    <td class="num">4.37</td>
+                    <td class="num">8.7</td>
+                    <td class="num">19</td>
+                    <td><span class="verdict verdict--ok">Pass</span></td>
+                  </tr>
+                  <tr class="is-fail">
+                    <th scope="row">J2</th>
+                    <td class="num">6.24</td>
+                    <td class="num">12.5</td>
+                    <td class="num">5.4</td>
+                    <td><span class="verdict verdict--no">Fail</span></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">J3</th>
+                    <td class="num">1.15</td>
+                    <td class="num">2.3</td>
+                    <td class="num">10</td>
+                    <td><span class="verdict verdict--ok">Pass</span></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">J4</th>
+                    <td class="num">1.15</td>
+                    <td class="num">2.3</td>
+                    <td class="num">10</td>
+                    <td><span class="verdict verdict--ok">Pass</span></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">J5</th>
+                    <td class="num">0</td>
+                    <td class="num">0</td>
+                    <td class="num">10</td>
+                    <td><span class="verdict verdict--ok">Pass</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="table-foot mono">
+                N·m · SF 2 covers acceleration, gearbox friction, and the screws and links left out of
+                the masses
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================== DESIGN -->
+      <section class="act act--step act--data" id="design" data-ghost="DRAW" data-index="8" data-ent="rise" data-ex="rise">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>07 / Design</p>
+            <h2 class="act-title">
+              Six axes,<br />
+              <em>drawn in Shapr3D.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <div class="data-copy">
+              <p class="act-copy">
+                Every part was modelled before it was printed: six axes on screen, five of them
+                built. Shapr3D’s direct modelling took the least effort to learn, it fit the
+                budget, and it runs on an iPad, so the modelling could carry on away from the desk.
+              </p>
+              <p class="act-note mono">6 axes drawn · 5 built · exported as STEP</p>
+            </div>
+            <div class="data-fig">
+              <table class="sheet-table sheet-table--choice">
+                <caption class="mono">Software</caption>
+                <tbody>
+                  <tr>
+                    <th scope="row">SolidWorks</th>
+                    <td>The industry standard, but a basic licence was $235 a month</td>
+                    <td class="pick"></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">AutoCAD</th>
+                    <td>Trialled; the workflow wasn’t intuitive and was hard to master</td>
+                    <td class="pick"></td>
+                  </tr>
+                  <tr class="is-pick">
+                    <th scope="row">Shapr3D</th>
+                    <td>Direct modelling, free tutorials, iPad · $11 a month</td>
+                    <td class="pick mono">Chosen</td>
+                  </tr>
+                </tbody>
+              </table>
+              <table class="sheet-table sheet-table--choice">
+                <caption class="mono">Export format</caption>
+                <tbody>
+                  <tr>
+                    <th scope="row">STL</th>
+                    <td>From 1987; turns every circle into a polygon of triangles</td>
+                    <td class="pick"></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">3MF</th>
+                    <td>More modern, but still a triangle mesh</td>
+                    <td class="pick"></td>
+                  </tr>
+                  <tr class="is-pick">
+                    <th scope="row">STEP</th>
+                    <td>Keeps true curves and smooth surfaces</td>
+                    <td class="pick mono">Chosen</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
@@ -195,21 +563,22 @@
       <!-- ======================================================== PRINTING -->
       <!-- The A1 mini comes back and prints the J1 → J2 link; the download
            link only shows once the print is done (body.print-done). -->
-      <section class="act act--step act--print" id="printing" data-ghost="LAYER" data-index="4" data-stage="print" data-ent="rise" data-ex="rise">
+      <section class="act act--step act--print" id="printing" data-ghost="LAYER" data-index="9" data-stage="print" data-ent="rise" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>03 / Printing</p>
+            <p class="eyebrow mono"><span class="dot"></span>08 / Printing</p>
             <h2 class="act-title">
-              Printed here,<br />
-              <em>layer by layer.</em>
+              Printed in PLA,<br />
+              <em>held with brass.</em>
             </h2>
           </div>
 
           <div class="act-bottom">
             <p class="act-copy">
-              The arm’s printed parts came off this A1 mini, one layer at a time — on screen,
-              the link between joint 1 and joint 2. The models are free to download: the whole
-              arm, the printer, and every part on its own.
+              Every link was printed in PLA on a Bambu Lab H2S: the cheapest filament, and the
+              easiest to print. Overhangs stand on tree supports with a PETG interface that peels
+              off cleanly. Printed threads stripped at the first assembly, so the final links take
+              M3 screws in heat-set brass inserts.
             </p>
             <div class="print-get">
               <p class="print-status mono" id="print-status" aria-hidden="true">
@@ -230,7 +599,7 @@
                 >
               </div>
             </div>
-            <p class="act-note mono">glTF 2.0 · arm · printer · 9 parts · 5.2 MB zip</p>
+            <p class="act-note mono">PLA · PETG interface · M3 heat-set inserts · on screen: an A1 mini model</p>
           </div>
         </div>
       </section>
@@ -238,10 +607,10 @@
       <!-- ======================================================== REVISION -->
       <!-- Rev A runs its own small scene for the first design; Rev B's frame
            (#compare-slot) is where the stage parks the printed link. -->
-      <section class="act act--step act--revision" id="revision" data-ghost="REV" data-index="5" data-stage="compare" data-ent="rise" data-ex="rise">
+      <section class="act act--step act--revision" id="revision" data-ghost="REV" data-index="10" data-stage="compare" data-ent="rise" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>04 / Revision</p>
+            <p class="eyebrow mono"><span class="dot"></span>09 / Revision</p>
             <h2 class="act-title">
               One link,<br />
               <em>drawn twice.</em>
@@ -259,7 +628,7 @@
                   alt="The first design of the J1 → J2 link: two printed plates, a motor block and three steel shafts."
                 />
               </div>
-              <p class="compare-cap mono"><span>Rev A</span> · first design · 146 × 70 × 59 mm</p>
+              <p class="compare-cap mono"><span>Rev A</span> · motor level with the axis · 146 × 70 × 59 mm</p>
             </div>
             <span class="compare-arrow mono" aria-hidden="true">→</span>
             <div class="compare-cell">
@@ -267,82 +636,284 @@
                 <span class="compare-rev mono">Rev B</span>
                 <img class="compare-still" src="/img/link-j1-j2.png" alt="" />
               </div>
-              <p class="compare-cap mono"><span>Rev B</span> · on the arm now · 99 × 116 × 59 mm</p>
+              <p class="compare-cap mono"><span>Rev B</span> · motor above the axis · 99 × 116 × 59 mm</p>
             </div>
           </figure>
 
           <div class="act-bottom">
             <p class="act-copy">
-              One part changed on the way: the link between joint 1 and joint 2, from the base
-              to the shoulder. The first design is on the left, the one on the arm now on the right.
+              A torque check while modelling caught what the sketches hadn’t. In Rev A the shoulder
+              motor sat level with the base axis, so joint 1 carried every motor beyond it. Rev B
+              angles the link to lift that motor 56 mm above the axis, where its weight works
+              against the rest of the arm.
             </p>
-            <p class="act-note mono">Link J1 → J2 · base → shoulder · rev A → rev B</p>
+            <p class="act-note mono">Link J1 → J2 · J1 now holds 4.37 N·m on a 19 N·m drive</p>
           </div>
         </div>
       </section>
 
-      <!-- ========================================================== DESIGN -->
-      <section class="act act--step" id="design" data-ghost="DRAW" data-index="6" data-ent="rise" data-ex="swing">
+      <!-- ========================================================= CONTROL -->
+      <section class="act act--step act--data" id="control" data-ghost="BUS" data-index="11" data-ent="rise" data-ex="swing">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>05 / Design</p>
+            <p class="eyebrow mono"><span class="dot"></span>10 / Control</p>
             <h2 class="act-title">
-              Six axes,<br />
-              <em>drawn in CAD.</em>
+              Five drivers, one bus,<br />
+              <em>no reply.</em>
             </h2>
           </div>
 
           <div class="act-bottom">
-            <p class="act-copy">
-              Every part of the arm was modelled before it was made: six axes on screen,
-              five of them built. The printed parts were sized to the motors instead of
-              picked to fit a catalogue — that is what the printer made possible.
-            </p>
-            <p class="act-note mono">6 axes drawn · 5 built · CAD assembly</p>
+            <div class="data-copy">
+              <p class="act-copy">
+                RS485 is half duplex, and a microcontroller would have needed extra parts to know
+                when to talk and when to listen. So a PC drives the arm: a USB-to-RS485 converter,
+                Python’s MinimalModbus as the master, and the five drivers daisy-chained A to A,
+                B to B, at addresses 1 to 5. Every request timed out.
+              </p>
+              <p class="act-note mono">PC master · USB → RS485 · Modbus-RTU · slaves 1–5</p>
+            </div>
+            <div class="data-fig">
+              <table class="sheet-table sheet-table--log">
+                <caption class="mono">Fault log</caption>
+                <tbody>
+                  <tr>
+                    <th scope="row">Symptom</th>
+                    <td>No reply from any driver. A Modbus slave always answers a frame addressed to it, so silence means nothing was getting through.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Checked</th>
+                    <td>A and B swapped both ways; a common ground connected. Still nothing.</td>
+                  </tr>
+                  <tr class="is-pick">
+                    <th scope="row">Likely cause</th>
+                    <td>MinimalModbus defaults to 8N1. The drivers expect odd parity, so every byte fails their check and every frame is discarded — found afterwards, reviewing the fault with an AI assistant (AI log).</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Next limit</th>
+                    <td>A driver accepts at most 16 registers per request.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Lesson</th>
+                    <td>I tried fixes one after another. Checking first whether any valid bytes reached the drivers would have pointed to the settings, not the wiring.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- ======================================================== ASSEMBLE -->
-      <section class="act act--step" id="assemble" data-ghost="BUILD" data-index="7" data-ent="curtain" data-ex="swing">
+      <!-- ============================================================ COST -->
+      <section class="act act--step act--data" id="cost" data-ghost="COST" data-index="12" data-ent="swing" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>06 / Assemble</p>
+            <p class="eyebrow mono"><span class="dot"></span>11 / Cost</p>
             <h2 class="act-title">
-              Five joints,<br />
-              <em>one arm.</em>
+              ¥3,483.58,<br />
+              <em>74% over budget.</em>
             </h2>
           </div>
 
           <div class="act-bottom">
-            <p class="act-copy">
-              Printed parts, motors and wiring go together into one five-axis arm, each
-              joint fitted around the parts it has to hold. What came out of this bench
-              is the machine on sheet 01.
-            </p>
-            <p class="act-note mono">printed parts · five motors · one arm</p>
+            <div class="data-copy">
+              <p class="act-copy">
+                The budget was ¥2,000. The five gearmotors were about 70% of the spend, which is
+                why the build stopped at five joints: a sixth would have added roughly ¥400. Cost
+                shaped earlier calls too — no bulk-only gearboxes, UMot on price and quality,
+                Shapr3D over SolidWorks.
+              </p>
+              <p class="act-note mono">NFR-01 · ≤ ¥2,000 · not met</p>
+            </div>
+            <div class="data-fig">
+              <div class="spend" role="img" aria-label="Spend by category against the ¥2,000 budget: actuation ¥2,385.90, control and power ¥516.60, structure ¥543.08, other ¥38.00.">
+                <span class="spend-seg spend-seg--act" style="--w: 68.49%"></span>
+                <span class="spend-seg spend-seg--ctl" style="--w: 14.83%"></span>
+                <span class="spend-seg spend-seg--str" style="--w: 15.59%"></span>
+                <span class="spend-seg spend-seg--oth" style="--w: 1.09%"></span>
+                <span class="spend-budget mono" style="--at: 57.41%">Budget ¥2,000</span>
+              </div>
+              <table class="sheet-table sheet-table--cost">
+                <caption class="mono">Bill of materials, by category</caption>
+                <tbody>
+                  <tr>
+                    <th scope="row"><i class="key key--act" aria-hidden="true"></i>Actuation</th>
+                    <td>Five UMot gearmotors: 57×55 planetary, 42×40 planetary, two 42×34 planetary, 42×40 worm</td>
+                    <td class="num">¥2,385.90</td>
+                  </tr>
+                  <tr>
+                    <th scope="row"><i class="key key--ctl" aria-hidden="true"></i>Control &amp; power</th>
+                    <td>24 V LRS-450-24 supply, USB-to-RS485 converter, shielded twisted pair, 12 / 14 AWG wire, harnesses</td>
+                    <td class="num">¥516.60</td>
+                  </tr>
+                  <tr>
+                    <th scope="row"><i class="key key--str" aria-hidden="true"></i>Structure</th>
+                    <td>6 kg filament, 1,200 M3 screws, 900 heat-set inserts</td>
+                    <td class="num">¥543.08</td>
+                  </tr>
+                  <tr>
+                    <th scope="row"><i class="key key--oth" aria-hidden="true"></i>Other</th>
+                    <td>Emergency stop button</td>
+                    <td class="num">¥38.00</td>
+                  </tr>
+                  <tr class="is-total">
+                    <th scope="row">Total</th>
+                    <td></td>
+                    <td class="num">¥3,483.58</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================== EVALUATION -->
+      <section class="act act--step act--data" id="evaluation" data-ghost="EVAL" data-index="13" data-ent="rise" data-ex="swing">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>12 / Evaluation</p>
+            <h2 class="act-title">
+              Four met, three missed,<br />
+              <em>one untested.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <div class="data-copy">
+              <p class="act-copy">
+                The arm doesn’t run yet, so it was judged by analysis, not by test. The torque was
+                calculated, but the shoulder actuator was chosen by judgement. A calculation only
+                helps a design if it is used to make the decision.
+              </p>
+              <p class="act-note mono">J2 · 0.84 N·m (13%) short before any safety factor</p>
+            </div>
+            <div class="data-fig">
+              <table class="sheet-table sheet-table--eval">
+                <caption class="mono">Requirements, scored</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Target</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="col-why">Evidence</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">FR-01</th>
+                    <td>≥ 500 g at full extension</td>
+                    <td><span class="verdict verdict--no">Not met</span></td>
+                    <td class="col-why">J2 gives 5.4 of the 6.24 N·m needed</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">FR-02</th>
+                    <td>6 DOF</td>
+                    <td><span class="verdict verdict--no">Not met</span></td>
+                    <td class="col-why">6 designed, 5 built: the budget ran out</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">FR-03</th>
+                    <td>Shoulder 0–120°, elbow 0–100°</td>
+                    <td><span class="verdict verdict--ok">Met</span></td>
+                    <td class="col-why">0–150° and 0–140°, simulated in Shapr3D</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">FR-04</th>
+                    <td>5 axes on one RS485 bus</td>
+                    <td><span class="verdict verdict--ok">Met</span></td>
+                    <td class="col-why">One daisy chain, unique addresses 1–5</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">FR-05</th>
+                    <td>±2 mm over 10 trials</td>
+                    <td><span class="verdict verdict--tbd">Untested</span></td>
+                    <td class="col-why">Needs a working arm</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">NFR-01</th>
+                    <td>≤ ¥2,000</td>
+                    <td><span class="verdict verdict--no">Not met</span></td>
+                    <td class="col-why">¥3,483.58, 74% over</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">NFR-02</th>
+                    <td>FDM, M3, heat-set inserts</td>
+                    <td><span class="verdict verdict--ok">Met</span></td>
+                    <td class="col-why">PLA on an H2S, M3 in brass inserts</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">NFR-03</th>
+                    <td>Single 24 V supply</td>
+                    <td><span class="verdict verdict--ok">Met</span></td>
+                    <td class="col-why">All five drivers on one LRS-450-24</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ NEXT -->
+      <section class="act act--step act--data" id="next" data-ghost="NEXT" data-index="14" data-ent="swing" data-ex="swing">
+        <div class="act-inner">
+          <div class="act-top">
+            <p class="eyebrow mono"><span class="dot"></span>13 / Next</p>
+            <h2 class="act-title">
+              Make the bus talk,<br />
+              <em>then rebuild the shoulder.</em>
+            </h2>
+          </div>
+
+          <div class="act-bottom">
+            <div class="data-copy">
+              <p class="act-copy">
+                The arm doesn’t meet its aim yet, but it is a clear starting point. The likely fault
+                needs no new parts, only a few lines of code; the shoulder needs an actuator chosen
+                from the numbers.
+              </p>
+              <p class="act-note mono">Then FR-05 can be tested · ±2 mm over 10 trials</p>
+            </div>
+            <div class="data-fig">
+              <ol class="next-steps">
+                <li>
+                  <b>Match the serial settings.</b> Set MinimalModbus to the drivers’ odd parity and
+                  check every other default against them.
+                </li>
+                <li>
+                  <b>Trace one request.</b> Joint 1 alone, one register, debug mode on, and a second
+                  USB-to-RS485 adapter listening on the wire. A reply clears the settings; an
+                  exception means a wrong register or address; a request with no reply, a wrong
+                  frame; an empty bus, the converter.
+                </li>
+                <li>
+                  <b>Add drivers one at a time.</b> Each with its own address, every driver read back
+                  before the next goes on, so a new fault points at the last one connected.
+                </li>
+                <li>
+                  <b>Second iteration.</b> A shoulder actuator chosen from the calculation, and
+                  lighter links to cut the torque from the arm’s own weight.
+                </li>
+              </ol>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- ============================================================ BACK -->
-      <section class="act act--contact" id="back" data-ghost="HI" data-index="3" data-ent="dolly">
+      <section class="act act--contact" id="back" data-ghost="HI" data-index="15" data-ent="dolly">
         <div class="act-inner">
           <div class="act-top">
-            <p class="eyebrow mono"><span class="dot"></span>07 / Back to the arm</p>
+            <p class="eyebrow mono"><span class="dot"></span>14 / Back to the arm</p>
           </div>
-
           <h2 class="act-title contact-title">That’s the process<br /><em>so far.</em></h2>
-
-          <p class="act-note mono">More steps go up as they are written</p>
-
+          <p class="act-note mono">Next up: the serial fix, then the first test</p>
           <a class="email" href="../">← back to the arm</a>
-
           <div class="links">
             <a href="mailto:ethan.li.1@outlook.com">ethan.li.1@outlook.com</a>
             <a href="https://github.com/EthanAntoineLi" target="_blank" rel="noopener">GitHub ↗</a>
           </div>
-
           <p class="colophon mono">Built by hand · no tracking · no cookies</p>
         </div>
       </section>
