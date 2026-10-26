@@ -6,8 +6,13 @@
 // printed-black PLA material and the same slow turn as the parked Rev B part,
 // so the two plates read as one object drawn twice.
 //
+// Rev B is parked at the frame's *eased* rect (process-stage TRACK.smooth), so
+// while the page scrolls it drifts a few pixels against its frame. Rev A used
+// to sit dead still inside its frame, which read as a different weight; it now
+// eases its frame rect the same way and offsets the model by the lag.
+//
 // Lazy: the caller initialises this only when the frame comes near the screen.
-// Reduced motion: one static frame, no turn.
+// Reduced motion: one static frame, no turn, no drift.
 // No WebGL / failed load: resolves false and the baked image stays in the frame.
 // ============================================================================
 import * as THREE from 'three'
@@ -19,6 +24,7 @@ const MODEL_URL = import.meta.env.BASE_URL + 'models/arm-parts/parts/link-J1-J2-
 const FOV = 30
 const SPIN = 0.32 // rad/s — same as the stage's parked link
 const FILL = 0.62 // fraction of the frame the part fills
+const DRIFT_RATE = 9 // 1/s — the stage's TRACK.smooth, so both parts share a weight
 const UP = new THREE.Vector3(0, 1, 0)
 const BASE_QUAT = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI)
 
@@ -79,6 +85,15 @@ export function initCompareA(canvas, { reducedMotion = false } = {}) {
     let onScreen = false
     let running = false
     let lastTime = 0
+    // the frame's rect in viewport fractions, eased the way the stage eases
+    // Rev B's slot; the difference from the real rect is the drift, in viewports
+    let driftY = null
+    let driftH = null
+    // the stage captures Rev B's slot in its onFrame (after that frame's
+    // ease), so the parked part always chases a rect one frame old. Keep the
+    // same one-frame-old target here, or Rev A would lead Rev B slightly.
+    let pendingY = null
+    let pendingH = null
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect()
@@ -101,6 +116,34 @@ export function initCompareA(canvas, { reducedMotion = false } = {}) {
       camera.lookAt(0, 0, 0)
     }
 
+    // Mirror the parked Rev B: the part is drawn at a position that lags the
+    // frame by ~1/TRACK.smooth of a second, so scrolling makes it float a few
+    // pixels inside its drawing frame instead of being glued to it.
+    const applyDrift = (dt) => {
+      const rect = canvas.getBoundingClientRect()
+      const vh = window.innerHeight || 1
+      if (!(rect.height > 0)) return
+      const targetY = rect.top / vh
+      const targetH = rect.height / vh
+      if (driftY === null || reducedMotion) {
+        driftY = targetY
+        driftH = targetH
+        pendingY = targetY
+        pendingH = targetH
+      } else {
+        const k = 1 - Math.exp(-DRIFT_RATE * Math.max(0, dt))
+        driftY += (pendingY - driftY) * k
+        driftH += (pendingH - driftH) * k
+        pendingY = targetY
+        pendingH = targetH
+      }
+      // one viewport of screen = this much world at the pivot's depth
+      const viewH = 2 * distance * Math.tan((FOV * Math.PI) / 360)
+      pivot.position.y = -(driftY - targetY) * viewH
+      const scale = targetH > 0 ? driftH / targetH : 1
+      pivot.scale.setScalar(scale)
+    }
+
     const renderStatic = () => {
       if (!ready) return
       pivot.quaternion.setFromAxisAngle(UP, spin).multiply(BASE_QUAT)
@@ -111,6 +154,7 @@ export function initCompareA(canvas, { reducedMotion = false } = {}) {
       if (!running) return
       const dt = Math.min(0.05, (now - lastTime) / 1000 || 0.016)
       lastTime = now
+      applyDrift(dt)
       if (!reducedMotion) spin += dt * SPIN
       pivot.quaternion.setFromAxisAngle(UP, spin).multiply(BASE_QUAT)
       renderer.render(scene, camera)
@@ -156,6 +200,26 @@ export function initCompareA(canvas, { reducedMotion = false } = {}) {
         renderStatic()
       })
       ro.observe(canvas)
+    }
+
+    // dev-only probe: the QA script reads the drift while it scrolls
+    if (import.meta.env.DEV) {
+      window.__compareA = {
+        drift: () => {
+          const rect = canvas.getBoundingClientRect()
+          const vh = window.innerHeight || 1
+          const rectY = rect.top / vh
+          return {
+            ready,
+            running,
+            offsetPx: driftY === null ? 0 : (driftY - rectY) * vh,
+            y: driftY,
+            targetY: rectY,
+            h: driftH,
+            targetH: rect.height / vh,
+          }
+        },
+      }
     }
 
     loader
