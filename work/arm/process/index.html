@@ -605,8 +605,8 @@
       </section>
 
       <!-- ======================================================== REVISION -->
-      <!-- Rev A runs its own small scene for the first design; Rev B's frame
-           (#compare-slot) is where the stage parks the printed link. -->
+      <!-- The stage draws both links: the printed one parks in Rev B's frame
+           (#compare-slot), the first design sits in Rev A's (#compare-slot-a). -->
       <section class="act act--step act--revision" id="revision" data-ghost="REV" data-index="10" data-stage="compare" data-ent="rise" data-ex="rise">
         <div class="act-inner">
           <div class="act-top">
@@ -619,9 +619,8 @@
 
           <figure class="compare" aria-label="The link between joint 1 and joint 2: the first design beside the one on the arm now">
             <div class="compare-cell">
-              <div class="compare-frame">
+              <div class="compare-frame" id="compare-slot-a">
                 <span class="compare-rev mono">Rev A</span>
-                <canvas class="compare-canvas" id="compare-a-canvas" aria-hidden="true"></canvas>
                 <img
                   class="compare-plate"
                   src="/img/link-j1-j2-rev-a.png"

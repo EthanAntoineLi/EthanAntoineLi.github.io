@@ -1114,3 +1114,30 @@ had six steps in its own order (printer, motors, printing, revision, design, ass
   390×844; zero console errors or failed requests; no horizontal overflow; index panel at both
   sizes and a jump to 11; hero → 01 → 04 → 08 → 09 hand-offs intact (the link lands in Rev B's
   frame); the arm film still loads clean; `npm run build` green.
+
+## 2026-10-24 — process: both revisions under one physics; bigger tables
+
+Ethan, on the PR: "One link, drawn twice — the two models don't have the same physics", and the
+acts with no 3D model should carry bigger tables.
+
+- **Why they differed.** Rev A ran in its own little canvas (`compare-a.js`): its own camera
+  (az 30°, el 18°), lights fixed to that camera, its own clock for the turn, fixed rigidly to the
+  page and fitted to its own frame. Rev B is drawn by the stage: the stage's eye, eased with the
+  scroll, tipped 0.16 rad, its turn on the stage clock. Same material, different everything else.
+- **Now one system.** The stage loads `link-J1-J2-rev-a.glb` too and draws it in Rev A's frame
+  (`setSlotA`, fed by `process.js` once the act is revealed). Both links go through one
+  `slotPose` (position, tilt, turn) and one `easeSlot` (the scroll lag), under the same lights and
+  the same printed-PLA material with layer lines; their quaternions read back identical in
+  `debug()`. Rev A's CAD export stands upside down with its rings on x, so it is turned into Rev
+  B's frame once at load (rings on z, coupling down). Both are drawn to **one scale** — the larger
+  part fills its frame — so their real sizes compare like two views on a sheet. Rev A fades in with
+  its frame. `compare-a.js` and its canvas are gone; the baked plate stays as the fallback.
+- **Bigger tables.** On the data acts the figure takes 8 of 12 columns (was 7); table type
+  15→19 px (was 13.5), row IDs 11.5 px, heads 10 px, rows ~1.5× the padding, torque and cost
+  figures at display size, bigger verdict badges, spend bar, loop pair and next steps. Cells sit on
+  the baseline. Short laptop screens (≤ 800 px tall) keep the type and tighten the rows; phones get
+  a size up too.
+- **Verified** — revision act settled at 1440×900 (Rev A and Rev B same quaternion and scale);
+  every act at 1440×900, 1280×720, 390×844, no console errors, no horizontal overflow; data acts
+  fit one screen at 1440×900 and 1280×720 (the brief runs 4% over there and scrolls fine);
+  `npm run build` green.
